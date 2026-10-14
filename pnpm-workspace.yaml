@@ -1,3 +1,7 @@
 packages:
   - 'apps/*'
   - 'libs/*'
+
+# Scripts d'installation bloqués volontairement (télémétrie de swagger-ui-dist)
+ignoredBuiltDependencies:
+  - '@scarf/scarf'

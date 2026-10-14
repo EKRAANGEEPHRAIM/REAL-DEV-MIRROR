@@ -8,6 +8,7 @@
     "node": ">=22"
   },
   "scripts": {
+    "api:dev": "pnpm --filter @devmirror/api start:dev",
     "lint": "eslint . && pnpm -r --if-present lint",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
