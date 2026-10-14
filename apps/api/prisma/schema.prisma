@@ -1,0 +1,208 @@
+// Prisma 7.10 — l'URL de connexion vit dans prisma.config.ts (migrations)
+// et dans PrismaService (adaptateur Neon), jamais dans ce fichier.
+
+generator client {
+  provider            = "prisma-client"
+  output              = "../src/generated/prisma"
+  runtime             = "nodejs"
+  moduleFormat        = "esm"
+  importFileExtension = "js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum ProjectStatus {
+  IDEA
+  IN_PROGRESS
+  PAUSED
+  DONE
+  ARCHIVED
+}
+
+enum TaskStatus {
+  TODO
+  IN_PROGRESS
+  IN_REVIEW
+  DONE
+}
+
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum AuthTokenType {
+  EMAIL_VERIFY
+  PASSWORD_RESET
+}
+
+model User {
+  id            String         @id @default(cuid())
+  email         String         @unique
+  passwordHash  String
+  name          String
+  avatarUrl     String?
+  bio           String?
+  links         Json           @default("{}")
+  preferences   Json           @default("{}")
+  emailVerified Boolean        @default(false)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  refreshTokens RefreshToken[]
+  authTokens    AuthToken[]
+  projects      Project[]
+  tasks         Task[]
+  goals         Goal[]
+  notes         Note[]
+  tags          Tag[]
+  activities    Activity[]
+}
+
+model RefreshToken {
+  id        String    @id @default(cuid())
+  tokenHash String    @unique
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId])
+}
+
+model AuthToken {
+  id        String        @id @default(cuid())
+  type      AuthTokenType
+  tokenHash String        @unique
+  userId    String
+  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime      @default(now())
+
+  @@index([userId, type])
+}
+
+model Project {
+  id          String        @id @default(cuid())
+  name        String
+  description String?
+  status      ProjectStatus @default(IDEA)
+  techStack   String[]
+  repoUrl     String?
+  demoUrl     String?
+  color       String?
+  userId      String
+  user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tasks       Task[]
+  notes       Note[]
+  tags        Tag[]
+  goals       Goal[]
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  @@index([userId, status])
+}
+
+model Task {
+  id          String     @id @default(cuid())
+  title       String
+  description String?
+  status      TaskStatus @default(TODO)
+  priority    Priority   @default(MEDIUM)
+  dueDate     DateTime?
+  position    Int        @default(0)
+  completedAt DateTime?
+  projectId   String?
+  project     Project?   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  subtasks    Subtask[]
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  @@index([userId, status])
+  @@index([userId, dueDate])
+  @@index([projectId])
+}
+
+model Subtask {
+  id       String  @id @default(cuid())
+  title    String
+  done     Boolean @default(false)
+  position Int     @default(0)
+  taskId   String
+  task     Task    @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  @@index([taskId])
+}
+
+model Goal {
+  id          String      @id @default(cuid())
+  title       String
+  description String?
+  targetDate  DateTime?
+  userId      String
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  milestones  Milestone[]
+  projects    Project[]
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  @@index([userId])
+}
+
+model Milestone {
+  id       String  @id @default(cuid())
+  title    String
+  done     Boolean @default(false)
+  position Int     @default(0)
+  goalId   String
+  goal     Goal    @relation(fields: [goalId], references: [id], onDelete: Cascade)
+
+  @@index([goalId])
+}
+
+model Note {
+  id        String   @id @default(cuid())
+  title     String
+  content   String
+  pinned    Boolean  @default(false)
+  projectId String?
+  project   Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tags      Tag[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId, pinned])
+}
+
+model Tag {
+  id       String    @id @default(cuid())
+  name     String
+  color    String?
+  userId   String
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  projects Project[]
+  notes    Note[]
+
+  @@unique([userId, name])
+}
+
+model Activity {
+  id         String   @id @default(cuid())
+  type       String
+  entityType String
+  entityId   String
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+
+  @@index([userId, createdAt])
+}

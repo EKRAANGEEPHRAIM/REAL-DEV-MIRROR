@@ -1,5 +1,14 @@
 import { plainToInstance, Type } from 'class-transformer';
-import { IsEnum, IsInt, IsNotEmpty, IsString, Max, Min, validateSync } from 'class-validator';
+import {
+  IsEnum,
+  IsInt,
+  IsNotEmpty,
+  IsString,
+  Matches,
+  Max,
+  Min,
+  validateSync,
+} from 'class-validator';
 
 export enum NodeEnv {
   Development = 'development',
@@ -24,6 +33,10 @@ export class EnvironmentVariables {
   @IsString()
   @IsNotEmpty()
   CORS_ORIGIN = 'http://localhost:4200';
+
+  /** URL poolée de Neon ; obligatoire, sans valeur par défaut. */
+  @Matches(/^postgres(ql)?:\/\//, { message: 'DATABASE_URL doit être une URL postgresql://' })
+  DATABASE_URL: string;
 }
 
 /** Valide `process.env` au démarrage : l'API refuse de démarrer avec une configuration invalide. */

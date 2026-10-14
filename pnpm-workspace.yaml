@@ -2,6 +2,11 @@ packages:
   - 'apps/*'
   - 'libs/*'
 
+# Scripts d'installation autorisés (moteurs Prisma)
+onlyBuiltDependencies:
+  - '@prisma/engines'
+  - 'prisma'
+
 # Scripts d'installation bloqués volontairement (télémétrie de swagger-ui-dist)
 ignoredBuiltDependencies:
   - '@scarf/scarf'

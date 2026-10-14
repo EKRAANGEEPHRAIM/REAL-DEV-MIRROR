@@ -19,10 +19,10 @@ describe('API (e2e)', () => {
     await app.init();
   });
 
-  it('GET /api/v1/health renvoie le statut ok', async () => {
+  it('GET /api/v1/health renvoie ok et une base Neon joignable', async () => {
     const response = await request(app.getHttpServer()).get('/api/v1/health').expect(200);
 
-    expect(response.body).toMatchObject({ status: 'ok' });
+    expect(response.body).toMatchObject({ status: 'ok', database: 'up' });
   });
 
   it('ajoute les en-têtes de sécurité Helmet', async () => {
