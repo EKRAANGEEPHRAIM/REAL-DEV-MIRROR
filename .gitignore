@@ -32,3 +32,6 @@ pnpm-debug.log*
 !.vscode/settings.json
 .DS_Store
 Thumbs.db
+
+# Cache Nx (créé par le CLI Spartan)
+.nx/

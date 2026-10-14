@@ -5,10 +5,11 @@
   "description": "DevMirror — plateforme de gestion de projets pour développeurs (Angular 22, NestJS, Prisma 7, Neon)",
   "packageManager": "pnpm@10.34.7",
   "engines": {
-    "node": ">=22"
+    "node": ">=24"
   },
   "scripts": {
     "api:dev": "pnpm --filter @devmirror/api start:dev",
+    "web:dev": "pnpm --filter @devmirror/web start",
     "lint": "eslint . && pnpm -r --if-present lint",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
