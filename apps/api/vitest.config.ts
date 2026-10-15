@@ -10,5 +10,8 @@ export default defineConfig({
     include: ['src/**/*.spec.ts'],
     // Les décorateurs class-validator/class-transformer lisent les métadonnées de type
     setupFiles: ['reflect-metadata'],
+    // Le module de test Nest peut dépasser 5 s quand l'API et le web sont testés en parallèle.
+    testTimeout: 15_000,
+    hookTimeout: 15_000,
   },
 });

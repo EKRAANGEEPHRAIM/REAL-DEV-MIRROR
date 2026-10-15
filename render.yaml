@@ -1,0 +1,28 @@
+# Blueprint Render : API NestJS (Dashboard Render > New > Blueprint > ce dépôt)
+services:
+  - type: web
+    name: devmirror-api
+    runtime: node
+    plan: free
+    region: frankfurt
+    branch: main
+    # NODE_ENV=development pendant l'installation : Nest CLI et Prisma CLI sont en devDependencies
+    buildCommand: >-
+      corepack enable pnpm &&
+      NODE_ENV=development pnpm install --frozen-lockfile &&
+      pnpm --filter @devmirror/api build &&
+      pnpm --filter @devmirror/api prisma:deploy
+    startCommand: pnpm --filter @devmirror/api start:prod
+    healthCheckPath: /api/v1/health
+    autoDeploy: true
+    envVars:
+      - key: NODE_VERSION
+        value: 24.21.0
+      - key: NODE_ENV
+        value: production
+      # URL poolée de la branche Neon "main" (production), saisie dans le dashboard
+      - key: DATABASE_URL
+        sync: false
+      # URL du front Vercel, par exemple https://devmirror.vercel.app
+      - key: CORS_ORIGIN
+        sync: false

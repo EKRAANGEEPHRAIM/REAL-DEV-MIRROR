@@ -1,0 +1,72 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    name: Format, lint, tests unitaires, build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      # Version de pnpm lue dans le champ packageManager du package.json racine
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      # postinstall de l'API : prisma generate (aucune base nécessaire)
+      - run: pnpm install --frozen-lockfile
+
+      - run: pnpm format:check
+      - run: pnpm lint
+      - run: pnpm test
+      - run: pnpm build
+
+  api-e2e:
+    name: Tests e2e de l'API (branche Neon test)
+    runs-on: ubuntu-latest
+    env:
+      NODE_ENV: test
+      DATABASE_URL: ${{ secrets.DATABASE_URL_TEST }}
+    steps:
+      - name: Vérifier le secret DATABASE_URL_TEST
+        id: secret
+        run: |
+          if [ -z "$DATABASE_URL" ]; then
+            echo "::warning::Secret DATABASE_URL_TEST absent : tests e2e ignorés."
+            echo "available=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "available=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - if: steps.secret.outputs.available == 'true'
+        uses: actions/checkout@v5
+
+      - if: steps.secret.outputs.available == 'true'
+        uses: pnpm/action-setup@v4
+
+      - if: steps.secret.outputs.available == 'true'
+        uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - if: steps.secret.outputs.available == 'true'
+        run: pnpm install --frozen-lockfile
+
+      - name: Appliquer les migrations sur la branche test
+        if: steps.secret.outputs.available == 'true'
+        run: pnpm --filter @devmirror/api prisma:deploy
+
+      - if: steps.secret.outputs.available == 'true'
+        run: pnpm --filter @devmirror/api test:e2e
