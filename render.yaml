@@ -6,13 +6,13 @@ services:
     plan: free
     region: frankfurt
     branch: main
-    # NODE_ENV=development pendant l'installation : Nest CLI et Prisma CLI sont en devDependencies
+    # pnpm via npx : le /usr/bin de Render est en lecture seule (corepack enable échoue).
+    # NODE_ENV=development pendant l'installation : Nest CLI et Prisma CLI sont en devDependencies.
     buildCommand: >-
-      corepack enable pnpm &&
-      NODE_ENV=development pnpm install --frozen-lockfile &&
-      pnpm --filter @devmirror/api build &&
-      pnpm --filter @devmirror/api prisma:deploy
-    startCommand: pnpm --filter @devmirror/api start:prod
+      NODE_ENV=development npx --yes pnpm@10.34.7 install --frozen-lockfile &&
+      npx --yes pnpm@10.34.7 --filter @devmirror/api build &&
+      npx --yes pnpm@10.34.7 --filter @devmirror/api prisma:deploy
+    startCommand: node apps/api/dist/main.js
     healthCheckPath: /api/v1/health
     autoDeploy: true
     envVars:
