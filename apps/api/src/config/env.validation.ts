@@ -1,4 +1,4 @@
-import { plainToInstance, Type } from 'class-transformer';
+import { plainToInstance, Transform, Type } from 'class-transformer';
 import {
   IsEnum,
   IsInt,
@@ -34,7 +34,10 @@ export class EnvironmentVariables {
   @IsNotEmpty()
   CORS_ORIGIN = 'http://localhost:4200';
 
-  /** URL poolée de Neon ; obligatoire, sans valeur par défaut. */
+  /** URL poolée de Neon ; obligatoire, sans valeur par défaut. Guillemets éventuels retirés. */
+  @Transform(({ value }: { value: unknown }) =>
+    typeof value === 'string' ? value.trim().replace(/^(['"])(.*)\1$/, '$2') : value,
+  )
   @Matches(/^postgres(ql)?:\/\//, { message: 'DATABASE_URL doit être une URL postgresql://' })
   DATABASE_URL: string;
 }

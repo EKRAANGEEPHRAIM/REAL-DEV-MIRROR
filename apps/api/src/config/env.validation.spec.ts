@@ -15,6 +15,10 @@ describe('validateEnv', () => {
     expect(validateEnv({ DATABASE_URL, PORT: '8080' }).PORT).toBe(8080);
   });
 
+  it('retire les guillemets copiés autour de DATABASE_URL', () => {
+    expect(validateEnv({ DATABASE_URL: ` "${DATABASE_URL}" ` }).DATABASE_URL).toBe(DATABASE_URL);
+  });
+
   it('exige DATABASE_URL', () => {
     expect(() => validateEnv({})).toThrow(/DATABASE_URL/);
   });
