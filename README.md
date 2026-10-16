@@ -4,6 +4,15 @@ Plateforme de gestion de projets et de suivi de progression pour développeurs.
 
 > Projet en cours de construction — voir le [plan jour par jour](docs/README.md).
 
+## En ligne
+
+- Application : https://real-dev-mirror-5q1b.vercel.app
+- API : https://devmirror-api.onrender.com/api/v1/health
+- Documentation de l'API (Swagger) : https://devmirror-api.onrender.com/api/docs
+
+L'API est sur le plan gratuit de Render : après 15 minutes d'inactivité, la première
+requête prend environ 30 secondes.
+
 ## Stack
 
 | Couche          | Technologie                                          |
