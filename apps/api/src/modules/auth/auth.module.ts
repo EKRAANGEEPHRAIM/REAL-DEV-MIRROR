@@ -7,6 +7,7 @@ import { EnvironmentVariables } from '../../config/env.validation.js';
 import { UsersModule } from '../users/users.module.js';
 import { AuthController } from './auth.controller.js';
 import { AuthService } from './auth.service.js';
+import { OneTimeTokenService } from './one-time-token.service.js';
 import { PasswordService } from './password.service.js';
 import { TokenService } from './token.service.js';
 
@@ -30,6 +31,7 @@ import { TokenService } from './token.service.js';
     AuthService,
     PasswordService,
     TokenService,
+    OneTimeTokenService,
     // Toutes les routes exigent un jeton d'accès, sauf celles marquées @Public().
     { provide: APP_GUARD, useClass: JwtAuthGuard },
   ],

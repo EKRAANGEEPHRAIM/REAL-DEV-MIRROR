@@ -1,16 +1,30 @@
 import { Module } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
-import { validateEnv } from './config/env.validation.js';
+import { ConfigModule, ConfigService } from '@nestjs/config';
+import { APP_GUARD } from '@nestjs/core';
+import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
+import { EnvironmentVariables, validateEnv } from './config/env.validation.js';
 import { AuthModule } from './modules/auth/auth.module.js';
 import { HealthModule } from './modules/health/health.module.js';
+import { MailModule } from './modules/mail/mail.module.js';
 import { PrismaModule } from './prisma/prisma.module.js';
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true, cache: true, validate: validateEnv }),
+    ThrottlerModule.forRootAsync({
+      inject: [ConfigService],
+      useFactory: (config: ConfigService<EnvironmentVariables, true>) => ({
+        // 100 requêtes par minute et par IP sur toute l'API ; les routes d'auth sont plus strictes.
+        throttlers: [{ name: 'default', ttl: 60_000, limit: 100 }],
+        errorMessage: 'Trop de tentatives, réessayez dans une minute',
+        skipIf: () => !config.get('RATE_LIMIT_ENABLED', { infer: true }),
+      }),
+    }),
     PrismaModule,
+    MailModule,
     HealthModule,
     AuthModule,
   ],
+  providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
 })
 export class AppModule {}

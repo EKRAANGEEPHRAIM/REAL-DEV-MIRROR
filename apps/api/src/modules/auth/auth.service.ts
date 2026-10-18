@@ -1,9 +1,14 @@
-import { ConflictException, Injectable, UnauthorizedException } from '@nestjs/common';
-import { Prisma, type User } from '../../generated/prisma/client.js';
+import { ConflictException, Injectable, Logger, UnauthorizedException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import { EnvironmentVariables } from '../../config/env.validation.js';
+import { AuthTokenType, Prisma, type User } from '../../generated/prisma/client.js';
+import { type MailMessage, MailService } from '../mail/mail.service.js';
 import { UserResponseDto } from '../users/dto/user-response.dto.js';
 import { UsersService } from '../users/users.service.js';
+import { passwordResetEmail, verificationEmail } from './auth-mails.js';
 import type { LoginDto } from './dto/login.dto.js';
 import type { RegisterDto } from './dto/register.dto.js';
+import { OneTimeTokenService } from './one-time-token.service.js';
 import { PasswordService } from './password.service.js';
 import { INVALID_REFRESH_MESSAGE, type IssuedRefreshToken, TokenService } from './token.service.js';
 
@@ -20,11 +25,19 @@ export interface AuthSession {
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
+  private readonly appUrl: string;
+
   constructor(
     private readonly users: UsersService,
     private readonly passwords: PasswordService,
     private readonly tokens: TokenService,
-  ) {}
+    private readonly oneTimeTokens: OneTimeTokenService,
+    private readonly mail: MailService,
+    config: ConfigService<EnvironmentVariables, true>,
+  ) {
+    this.appUrl = config.get('APP_URL', { infer: true }).replace(/\/+$/, '');
+  }
 
   async register(dto: RegisterDto): Promise<AuthSession> {
     if (await this.users.findByEmail(dto.email)) {
@@ -42,7 +55,43 @@ export class AuthService {
       }
       throw error;
     }
+
+    // Un échec d'envoi ne doit pas annuler l'inscription : le lien peut être renvoyé.
+    await this.sendVerificationEmail(user);
     return this.openSession(user);
+  }
+
+  async verifyEmail(token: string): Promise<void> {
+    const userId = await this.oneTimeTokens.consume(token, AuthTokenType.EMAIL_VERIFY);
+    await this.users.markEmailVerified(userId);
+  }
+
+  /** Renvoie le lien de vérification ; sans effet si l'adresse est déjà vérifiée. */
+  async resendVerification(userId: string): Promise<void> {
+    const user = await this.users.findById(userId);
+    if (user && !user.emailVerified) await this.sendVerificationEmail(user);
+  }
+
+  /**
+   * Toujours la même réponse, que l'email soit inscrit ou non (pas d'énumération des comptes).
+   * L'envoi n'est pas attendu, pour que le temps de réponse ne trahisse rien non plus.
+   */
+  async forgotPassword(email: string): Promise<void> {
+    const user = await this.users.findByEmail(email);
+    if (!user) return;
+
+    const token = await this.oneTimeTokens.create(user.id, AuthTokenType.PASSWORD_RESET);
+    void this.sendSafely(
+      passwordResetEmail(user, `${this.appUrl}/reset-password?token=${token}`),
+      user.id,
+    );
+  }
+
+  /** Change le mot de passe et ferme toutes les sessions ouvertes (appareils perdus, vol). */
+  async resetPassword(token: string, password: string): Promise<void> {
+    const userId = await this.oneTimeTokens.consume(token, AuthTokenType.PASSWORD_RESET);
+    await this.users.updatePassword(userId, await this.passwords.hash(password));
+    await this.tokens.revokeAll(userId);
   }
 
   /** Vérifie les identifiants ; le même message couvre l'email inconnu et le mauvais mot de passe. */
@@ -73,6 +122,25 @@ export class AuthService {
 
   logoutAll(userId: string): Promise<void> {
     return this.tokens.revokeAll(userId);
+  }
+
+  private async sendVerificationEmail(user: User): Promise<void> {
+    const token = await this.oneTimeTokens.create(user.id, AuthTokenType.EMAIL_VERIFY);
+    await this.sendSafely(
+      verificationEmail(user, `${this.appUrl}/verify-email?token=${token}`),
+      user.id,
+    );
+  }
+
+  private async sendSafely(message: MailMessage, userId: string): Promise<void> {
+    try {
+      await this.mail.send(message);
+    } catch (error) {
+      this.logger.error(
+        `Échec d'envoi de l'email « ${message.subject} » (utilisateur ${userId})`,
+        error,
+      );
+    }
   }
 
   private async openSession(user: User): Promise<AuthSession> {

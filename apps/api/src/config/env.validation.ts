@@ -1,9 +1,12 @@
 import { plainToInstance, Transform, Type } from 'class-transformer';
 import {
+  IsBoolean,
   IsEnum,
   IsInt,
   IsNotEmpty,
+  IsOptional,
   IsString,
+  IsUrl,
   Matches,
   Max,
   Min,
@@ -16,6 +19,10 @@ export enum NodeEnv {
   Production = 'production',
   Test = 'test',
 }
+
+/** "true" / "false" (chaînes d'environnement) vers booléen ; toute autre valeur reste invalide. */
+const toBoolean = ({ value }: { value: unknown }) =>
+  value === 'true' ? true : value === 'false' ? false : value;
 
 /** Variables d'environnement de l'API ; les valeurs par défaut servent au développement local. */
 export class EnvironmentVariables {
@@ -60,6 +67,30 @@ export class EnvironmentVariables {
   @Min(1)
   @Max(90)
   REFRESH_TOKEN_TTL_DAYS: number = 7;
+
+  /** URL du front, utilisée dans les liens des emails (vérification, mot de passe oublié). */
+  @IsUrl({ require_tld: false, protocols: ['http', 'https'], require_protocol: true })
+  APP_URL = 'http://localhost:4200';
+
+  /** Clé d'API Resend ; absente = emails affichés dans les logs (développement). */
+  @IsOptional()
+  @IsString()
+  RESEND_API_KEY?: string;
+
+  /** Expéditeur des emails ; l'adresse de test Resend n'écrit qu'au propriétaire du compte. */
+  @IsString()
+  @IsNotEmpty()
+  MAIL_FROM = 'DevMirror <onboarding@resend.dev>';
+
+  /** Limitation du nombre de requêtes (désactivée dans les tests e2e). */
+  @Transform(toBoolean)
+  @IsBoolean()
+  RATE_LIMIT_ENABLED = true;
+
+  /** true derrière Vercel + Render : l'IP du client est lue dans X-Forwarded-For. */
+  @Transform(toBoolean)
+  @IsBoolean()
+  TRUST_PROXY = false;
 }
 
 /** Valide `process.env` au démarrage : l'API refuse de démarrer avec une configuration invalide. */

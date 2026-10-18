@@ -29,3 +29,12 @@ services:
       # Secret des jetons d'accès, généré aléatoirement par Render à la création
       - key: JWT_ACCESS_SECRET
         generateValue: true
+      # Liens des emails (vérification, mot de passe oublié)
+      - key: APP_URL
+        value: https://real-dev-mirror-5q1b.vercel.app
+      # Vercel puis Render : l'IP du client est dans X-Forwarded-For
+      - key: TRUST_PROXY
+        value: 'true'
+      # Clé d'API Resend ; sans elle, aucun email n'est envoyé
+      - key: RESEND_API_KEY
+        sync: false

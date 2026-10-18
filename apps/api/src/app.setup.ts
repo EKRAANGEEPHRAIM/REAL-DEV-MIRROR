@@ -12,6 +12,11 @@ export const SWAGGER_PATH = 'api/docs';
 export function configureApp(app: INestApplication): void {
   const config = app.get<ConfigService<EnvironmentVariables, true>>(ConfigService);
 
+  if (config.get('TRUST_PROXY', { infer: true })) {
+    // Derrière Vercel puis Render : req.ip devient l'IP du client (X-Forwarded-For),
+    // indispensable pour que la limitation de débit compte par utilisateur et non par proxy.
+    app.getHttpAdapter().getInstance().set('trust proxy', true);
+  }
   app.use(helmet());
   // Lit le cookie httpOnly du refresh token (routes /api/v1/auth).
   app.use(cookieParser());

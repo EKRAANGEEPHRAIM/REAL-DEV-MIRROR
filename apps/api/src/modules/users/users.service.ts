@@ -26,6 +26,14 @@ export class UsersService {
       data: { ...data, email: normalizeEmail(data.email), name: data.name.trim() },
     });
   }
+
+  async markEmailVerified(id: string): Promise<void> {
+    await this.prisma.user.update({ where: { id }, data: { emailVerified: true } });
+  }
+
+  async updatePassword(id: string, passwordHash: string): Promise<void> {
+    await this.prisma.user.update({ where: { id }, data: { passwordHash } });
+  }
 }
 
 export function normalizeEmail(email: string): string {

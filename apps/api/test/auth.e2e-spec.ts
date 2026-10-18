@@ -4,7 +4,24 @@ import request from 'supertest';
 import { App } from 'supertest/types.js';
 import { AppModule } from './../src/app.module.js';
 import { configureApp } from './../src/app.setup.js';
+import { type MailMessage, MailService } from './../src/modules/mail/mail.service.js';
 import { PrismaService } from './../src/prisma/prisma.service.js';
+
+/** Remplace l'envoi réel : garde les emails pour en extraire les liens. */
+const sentMails: MailMessage[] = [];
+const fakeMail = { send: async (message: MailMessage) => void sentMails.push(message) };
+
+/** Jeton du dernier email envoyé à cette adresse dont le sujet contient `subject`. */
+async function tokenFromMail(to: string, subject: string): Promise<string> {
+  const mail = await vi.waitFor(() => {
+    const found = sentMails.findLast((m) => m.to === to && m.subject.includes(subject));
+    if (!found) throw new Error(`Aucun email « ${subject} » pour ${to}`);
+    return found;
+  });
+  const token = /token=([\w-]{43})/.exec(mail.text)?.[1];
+  if (!token) throw new Error('Lien sans jeton');
+  return token;
+}
 
 // Comptes créés sur la base de dev/test, supprimés en fin de suite.
 const EMAIL_DOMAIN = '@e2e.devmirror.test';
@@ -24,7 +41,10 @@ describe('Auth (e2e)', () => {
   let server: App;
 
   beforeAll(async () => {
-    const moduleRef = await Test.createTestingModule({ imports: [AppModule] }).compile();
+    const moduleRef = await Test.createTestingModule({ imports: [AppModule] })
+      .overrideProvider(MailService)
+      .useValue(fakeMail)
+      .compile();
     app = moduleRef.createNestApplication();
     configureApp(app);
     await app.init();
@@ -181,6 +201,98 @@ describe('Auth (e2e)', () => {
         .post('/api/v1/auth/refresh')
         .set('Cookie', refreshCookie(laptop).header)
         .expect(401);
+    });
+  });
+
+  describe('vérification de l’email', () => {
+    it('l’inscription envoie un lien ; POST /auth/verify-email confirme l’adresse une seule fois', async () => {
+      const token = await tokenFromMail(email, 'Confirmez votre adresse');
+
+      await request(server).post('/api/v1/auth/verify-email').send({ token }).expect(204);
+
+      const login = await request(server).post('/api/v1/auth/login').send({ email, password });
+      expect(login.body.user.emailVerified).toBe(true);
+
+      const reused = await request(server)
+        .post('/api/v1/auth/verify-email')
+        .send({ token })
+        .expect(400);
+      expect(reused.body.message).toBe('Lien invalide ou expiré');
+    });
+
+    it('POST /auth/resend-verification exige un jeton d’accès (401)', () => {
+      return request(server).post('/api/v1/auth/resend-verification').expect(401);
+    });
+  });
+
+  describe('mot de passe oublié', () => {
+    const resetEmail = `reset-${Date.now()}${EMAIL_DOMAIN}`;
+    const newPassword = 'NouveauMotDePasse2026';
+
+    beforeAll(async () => {
+      await request(server)
+        .post('/api/v1/auth/register')
+        .send({ name: 'Grace E2E', email: resetEmail, password })
+        .expect(201);
+    });
+
+    it('POST /auth/forgot-password répond 202 même pour un email inconnu, sans rien envoyer', async () => {
+      const before = sentMails.length;
+
+      await request(server)
+        .post('/api/v1/auth/forgot-password')
+        .send({ email: `inconnu${EMAIL_DOMAIN}` })
+        .expect(202);
+
+      expect(sentMails.length).toBe(before);
+    });
+
+    it('le lien reçu change le mot de passe, ferme les sessions et ne sert qu’une fois', async () => {
+      const session = await request(server)
+        .post('/api/v1/auth/login')
+        .send({ email: resetEmail, password });
+
+      await request(server)
+        .post('/api/v1/auth/forgot-password')
+        .send({ email: resetEmail.toUpperCase() })
+        .expect(202);
+      const token = await tokenFromMail(resetEmail, 'Réinitialisation');
+
+      await request(server)
+        .post('/api/v1/auth/reset-password')
+        .send({ token, password: newPassword })
+        .expect(204);
+
+      // Ancien mot de passe refusé, nouveau accepté
+      await request(server)
+        .post('/api/v1/auth/login')
+        .send({ email: resetEmail, password })
+        .expect(401);
+      await request(server)
+        .post('/api/v1/auth/login')
+        .send({ email: resetEmail, password: newPassword })
+        .expect(200);
+
+      // La session ouverte avant la réinitialisation est fermée
+      await request(server)
+        .post('/api/v1/auth/refresh')
+        .set('Cookie', refreshCookie(session).header)
+        .expect(401);
+
+      // Lien à usage unique
+      await request(server)
+        .post('/api/v1/auth/reset-password')
+        .send({ token, password: 'EncoreUnAutre2026' })
+        .expect(400);
+    });
+
+    it('POST /auth/reset-password refuse un mot de passe faible avant même de lire le jeton (400)', async () => {
+      const response = await request(server)
+        .post('/api/v1/auth/reset-password')
+        .send({ token: 'x'.repeat(43), password: 'faible' })
+        .expect(400);
+
+      expect((response.body.message as string[]).join(' ')).toContain('mot de passe');
     });
   });
 });

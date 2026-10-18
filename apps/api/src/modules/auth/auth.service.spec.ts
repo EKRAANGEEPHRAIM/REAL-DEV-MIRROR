@@ -1,8 +1,11 @@
 import { ConflictException, UnauthorizedException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { Test } from '@nestjs/testing';
-import { Prisma, type User } from '../../generated/prisma/client.js';
+import { AuthTokenType, Prisma, type User } from '../../generated/prisma/client.js';
+import { MailService } from '../mail/mail.service.js';
 import { UsersService } from '../users/users.service.js';
 import { AuthService, INVALID_CREDENTIALS_MESSAGE } from './auth.service.js';
+import { OneTimeTokenService } from './one-time-token.service.js';
 import { PasswordService } from './password.service.js';
 import { TokenService } from './token.service.js';
 
@@ -23,7 +26,16 @@ const user: User = {
 const refreshToken = { token: 'refresh-opaque', expiresAt: new Date('2026-10-25T09:00:00Z') };
 
 describe('AuthService', () => {
-  const users = { findByEmail: vi.fn(), findById: vi.fn(), create: vi.fn() };
+  const users = {
+    findByEmail: vi.fn(),
+    findById: vi.fn(),
+    create: vi.fn(),
+    markEmailVerified: vi.fn(),
+    updatePassword: vi.fn(),
+  };
+  const oneTimeTokens = { create: vi.fn(), consume: vi.fn() };
+  const mail = { send: vi.fn() };
+  const config = { get: vi.fn(() => 'https://app.devmirror.dev/') };
   const passwords = { hash: vi.fn(), verify: vi.fn() };
   const tokens = {
     accessTokenTtlSeconds: 900,
@@ -39,12 +51,17 @@ describe('AuthService', () => {
     vi.clearAllMocks();
     tokens.signAccessToken.mockResolvedValue('jwt-acces');
     tokens.createRefreshToken.mockResolvedValue(refreshToken);
+    oneTimeTokens.create.mockResolvedValue('lien-secret');
+    mail.send.mockResolvedValue(undefined);
     const moduleRef = await Test.createTestingModule({
       providers: [
         AuthService,
         { provide: UsersService, useValue: users },
         { provide: PasswordService, useValue: passwords },
         { provide: TokenService, useValue: tokens },
+        { provide: OneTimeTokenService, useValue: oneTimeTokens },
+        { provide: MailService, useValue: mail },
+        { provide: ConfigService, useValue: config },
       ],
     }).compile();
     service = moduleRef.get(AuthService);
@@ -81,6 +98,33 @@ describe('AuthService', () => {
           createdAt: user.createdAt,
         },
       });
+    });
+
+    it('envoie l’email de vérification avec un lien vers le front', async () => {
+      users.findByEmail.mockResolvedValue(null);
+      passwords.hash.mockResolvedValue('hash-secret');
+      users.create.mockResolvedValue(user);
+
+      await service.register(dto);
+
+      expect(oneTimeTokens.create).toHaveBeenCalledWith('user-1', AuthTokenType.EMAIL_VERIFY);
+      expect(mail.send).toHaveBeenCalledWith(
+        expect.objectContaining({
+          to: 'ada@devmirror.dev',
+          text: expect.stringContaining(
+            'https://app.devmirror.dev/verify-email?token=lien-secret',
+          ) as string,
+        }),
+      );
+    });
+
+    it('ouvre la session même si l’envoi de l’email échoue', async () => {
+      users.findByEmail.mockResolvedValue(null);
+      passwords.hash.mockResolvedValue('hash-secret');
+      users.create.mockResolvedValue(user);
+      mail.send.mockRejectedValue(new Error('Resend indisponible'));
+
+      await expect(service.register(dto)).resolves.toMatchObject({ accessToken: 'jwt-acces' });
     });
 
     it('refuse un email déjà inscrit (409)', async () => {
@@ -158,6 +202,59 @@ describe('AuthService', () => {
       users.findById.mockResolvedValue(null);
 
       await expect(service.refresh('ancien')).rejects.toBeInstanceOf(UnauthorizedException);
+    });
+  });
+
+  describe('vérification de l’email', () => {
+    it('verifyEmail consomme le lien et marque l’adresse vérifiée', async () => {
+      oneTimeTokens.consume.mockResolvedValue('user-1');
+
+      await service.verifyEmail('jeton');
+
+      expect(oneTimeTokens.consume).toHaveBeenCalledWith('jeton', AuthTokenType.EMAIL_VERIFY);
+      expect(users.markEmailVerified).toHaveBeenCalledWith('user-1');
+    });
+
+    it('resendVerification n’envoie rien si l’adresse est déjà vérifiée', async () => {
+      users.findById.mockResolvedValue({ ...user, emailVerified: true });
+
+      await service.resendVerification('user-1');
+
+      expect(mail.send).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('mot de passe oublié', () => {
+    it('forgotPassword ne fait rien pour un email inconnu', async () => {
+      users.findByEmail.mockResolvedValue(null);
+
+      await service.forgotPassword('inconnu@devmirror.dev');
+
+      expect(oneTimeTokens.create).not.toHaveBeenCalled();
+      expect(mail.send).not.toHaveBeenCalled();
+    });
+
+    it('forgotPassword envoie un lien de réinitialisation à un compte existant', async () => {
+      users.findByEmail.mockResolvedValue(user);
+
+      await service.forgotPassword(user.email);
+      await vi.waitFor(() => expect(mail.send).toHaveBeenCalled());
+
+      expect(oneTimeTokens.create).toHaveBeenCalledWith('user-1', AuthTokenType.PASSWORD_RESET);
+      expect(mail.send.mock.calls[0][0].text).toContain(
+        'https://app.devmirror.dev/reset-password?token=lien-secret',
+      );
+    });
+
+    it('resetPassword enregistre le nouveau hash et ferme toutes les sessions', async () => {
+      oneTimeTokens.consume.mockResolvedValue('user-1');
+      passwords.hash.mockResolvedValue('nouveau-hash');
+
+      await service.resetPassword('jeton', 'NouveauMotDePasse2026');
+
+      expect(oneTimeTokens.consume).toHaveBeenCalledWith('jeton', AuthTokenType.PASSWORD_RESET);
+      expect(users.updatePassword).toHaveBeenCalledWith('user-1', 'nouveau-hash');
+      expect(tokens.revokeAll).toHaveBeenCalledWith('user-1');
     });
   });
 

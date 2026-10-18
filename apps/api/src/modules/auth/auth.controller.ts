@@ -1,6 +1,8 @@
 import { Body, Controller, HttpCode, HttpStatus, Post, Req, Res } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { Throttle } from '@nestjs/throttler';
 import {
+  ApiAcceptedResponse,
   ApiBadRequestResponse,
   ApiBearerAuth,
   ApiConflictResponse,
@@ -10,6 +12,7 @@ import {
   ApiOkResponse,
   ApiOperation,
   ApiTags,
+  ApiTooManyRequestsResponse,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import type { Request, Response } from 'express';
@@ -20,10 +23,18 @@ import { EnvironmentVariables, NodeEnv } from '../../config/env.validation.js';
 import { AuthService, type AuthSession } from './auth.service.js';
 import { AuthResponseDto } from './dto/auth-response.dto.js';
 import { LoginDto } from './dto/login.dto.js';
+import { ForgotPasswordDto, ResetPasswordDto, VerifyEmailDto } from './dto/one-time-link.dto.js';
 import { RegisterDto } from './dto/register.dto.js';
 import { REFRESH_COOKIE, refreshCookieOptions } from './refresh-cookie.js';
 
+const ONE_MINUTE = 60_000;
+/** Routes sensibles : 5 requêtes par minute et par IP (cahier des charges, section 4.1). */
+const STRICT_LIMIT = { default: { limit: 5, ttl: ONE_MINUTE } };
+/** Routes qui envoient un email : 3 par minute, pour ne pas servir de relais de spam. */
+const MAIL_LIMIT = { default: { limit: 3, ttl: ONE_MINUTE } };
+
 @ApiTags('auth')
+@ApiTooManyRequestsResponse({ description: 'Trop de tentatives, réessayez dans une minute' })
 @Controller('auth')
 export class AuthController {
   private readonly secureCookies: boolean;
@@ -36,6 +47,7 @@ export class AuthController {
   }
 
   @Public()
+  @Throttle(STRICT_LIMIT)
   @Post('register')
   @ApiOperation({ summary: 'Créer un compte et ouvrir une session' })
   @ApiCreatedResponse({ type: AuthResponseDto, description: 'Pose aussi le cookie dm_refresh' })
@@ -49,6 +61,7 @@ export class AuthController {
   }
 
   @Public()
+  @Throttle(STRICT_LIMIT)
   @Post('login')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Se connecter' })
@@ -79,6 +92,51 @@ export class AuthController {
       this.clearCookie(res);
       throw error;
     }
+  }
+
+  @Public()
+  @Throttle(STRICT_LIMIT)
+  @Post('verify-email')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: 'Confirmer l’adresse email avec le jeton reçu par email' })
+  @ApiNoContentResponse()
+  @ApiBadRequestResponse({ description: 'Lien invalide, expiré ou déjà utilisé' })
+  verifyEmail(@Body() dto: VerifyEmailDto): Promise<void> {
+    return this.auth.verifyEmail(dto.token);
+  }
+
+  @Throttle(MAIL_LIMIT)
+  @Post('resend-verification')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Renvoyer l’email de vérification' })
+  @ApiNoContentResponse({ description: 'Envoyé, ou rien à faire si l’adresse est déjà vérifiée' })
+  @ApiUnauthorizedResponse({ description: 'Jeton d’accès manquant ou invalide' })
+  resendVerification(@CurrentUser() user: AuthUser): Promise<void> {
+    return this.auth.resendVerification(user.id);
+  }
+
+  @Public()
+  @Throttle(MAIL_LIMIT)
+  @Post('forgot-password')
+  @HttpCode(HttpStatus.ACCEPTED)
+  @ApiOperation({ summary: 'Demander un lien de réinitialisation du mot de passe' })
+  @ApiAcceptedResponse({
+    description: 'Toujours renvoyé, que l’email soit inscrit ou non (pas d’énumération)',
+  })
+  async forgotPassword(@Body() dto: ForgotPasswordDto): Promise<void> {
+    await this.auth.forgotPassword(dto.email);
+  }
+
+  @Public()
+  @Throttle(STRICT_LIMIT)
+  @Post('reset-password')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: 'Choisir un nouveau mot de passe ; ferme toutes les sessions' })
+  @ApiNoContentResponse()
+  @ApiBadRequestResponse({ description: 'Lien invalide ou expiré, ou mot de passe trop faible' })
+  resetPassword(@Body() dto: ResetPasswordDto): Promise<void> {
+    return this.auth.resetPassword(dto.token, dto.password);
   }
 
   @Public()

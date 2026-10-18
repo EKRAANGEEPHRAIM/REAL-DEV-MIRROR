@@ -6,7 +6,7 @@ export default defineConfig({
     globals: true,
     root: './',
     include: ['test/**/*.e2e-spec.ts'],
-    setupFiles: ['reflect-metadata'],
+    setupFiles: ['./test/setup-e2e.ts'],
     // Une base Neon en veille peut mettre quelques secondes à répondre.
     testTimeout: 30_000,
     hookTimeout: 30_000,

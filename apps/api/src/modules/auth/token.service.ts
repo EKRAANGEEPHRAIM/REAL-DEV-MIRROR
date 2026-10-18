@@ -1,8 +1,8 @@
-import { createHash, randomBytes } from 'node:crypto';
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import type { AccessTokenPayload, AuthUser } from '../../common/auth/auth-user.js';
+import { generateOpaqueToken, hashOpaqueToken } from '../../common/crypto/opaque-token.js';
 import { EnvironmentVariables } from '../../config/env.validation.js';
 import { PrismaService } from '../../prisma/prisma.service.js';
 
@@ -13,14 +13,8 @@ export interface IssuedRefreshToken {
   expiresAt: Date;
 }
 
-/**
- * Refresh tokens opaques (32 octets aléatoires). Seul leur SHA-256 est stocké : une fuite
- * de la base ne permet pas de rejouer une session. SHA-256 suffit ici (pas bcrypt) car
- * le jeton a 256 bits d'entropie, contrairement à un mot de passe.
- */
-export function hashRefreshToken(token: string): string {
-  return createHash('sha256').update(token).digest('hex');
-}
+/** Refresh tokens opaques ; seule leur empreinte SHA-256 est stockée. */
+export const hashRefreshToken = hashOpaqueToken;
 
 @Injectable()
 export class TokenService {
@@ -40,7 +34,7 @@ export class TokenService {
   }
 
   async createRefreshToken(userId: string): Promise<IssuedRefreshToken> {
-    const token = randomBytes(32).toString('base64url');
+    const token = generateOpaqueToken();
     const ttlDays = this.config.get('REFRESH_TOKEN_TTL_DAYS', { infer: true });
     const expiresAt = new Date(Date.now() + ttlDays * 24 * 60 * 60 * 1000);
 
