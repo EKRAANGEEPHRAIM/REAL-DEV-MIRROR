@@ -6,9 +6,11 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import type { Response } from 'express';
+import { Public } from '../../common/decorators/public.decorator.js';
 import { PrismaService } from '../../prisma/prisma.service.js';
 import { HealthResponseDto } from './health-response.dto.js';
 
+@Public()
 @ApiTags('health')
 @Controller('health')
 export class HealthController {

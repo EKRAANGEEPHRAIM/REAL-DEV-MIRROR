@@ -26,3 +26,6 @@ services:
       # URL du front Vercel, par exemple https://devmirror.vercel.app
       - key: CORS_ORIGIN
         sync: false
+      # Secret des jetons d'accès, généré aléatoirement par Render à la création
+      - key: JWT_ACCESS_SECRET
+        generateValue: true

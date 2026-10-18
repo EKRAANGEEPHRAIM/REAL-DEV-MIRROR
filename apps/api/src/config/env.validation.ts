@@ -7,6 +7,7 @@ import {
   Matches,
   Max,
   Min,
+  MinLength,
   validateSync,
 } from 'class-validator';
 
@@ -40,6 +41,25 @@ export class EnvironmentVariables {
   )
   @Matches(/^postgres(ql)?:\/\//, { message: 'DATABASE_URL doit être une URL postgresql://' })
   DATABASE_URL: string;
+
+  /** Secret de signature des jetons d'accès (HS256) ; obligatoire, 32 caractères minimum. */
+  @IsString()
+  @MinLength(32, { message: 'JWT_ACCESS_SECRET doit contenir au moins 32 caractères' })
+  JWT_ACCESS_SECRET: string;
+
+  /** Durée de vie du jeton d'accès, en secondes (15 minutes). */
+  @Type(() => Number)
+  @IsInt()
+  @Min(60)
+  @Max(3600)
+  ACCESS_TOKEN_TTL_SECONDS: number = 900;
+
+  /** Durée de vie du refresh token, en jours. */
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(90)
+  REFRESH_TOKEN_TTL_DAYS: number = 7;
 }
 
 /** Valide `process.env` au démarrage : l'API refuse de démarrer avec une configuration invalide. */

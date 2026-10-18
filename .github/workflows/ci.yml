@@ -38,6 +38,8 @@ jobs:
     env:
       NODE_ENV: test
       DATABASE_URL: ${{ secrets.DATABASE_URL_TEST }}
+      # Secret de test uniquement : les jetons signés ne servent qu'à la CI.
+      JWT_ACCESS_SECRET: ci-only-secret-not-used-anywhere-else-0123456789
     steps:
       - name: Vérifier le secret DATABASE_URL_TEST
         id: secret

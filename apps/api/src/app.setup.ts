@@ -1,6 +1,7 @@
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import cookieParser from 'cookie-parser';
 import helmet from 'helmet';
 import { EnvironmentVariables } from './config/env.validation.js';
 
@@ -12,6 +13,8 @@ export function configureApp(app: INestApplication): void {
   const config = app.get<ConfigService<EnvironmentVariables, true>>(ConfigService);
 
   app.use(helmet());
+  // Lit le cookie httpOnly du refresh token (routes /api/v1/auth).
+  app.use(cookieParser());
   app.enableCors({
     origin: config
       .get('CORS_ORIGIN', { infer: true })
