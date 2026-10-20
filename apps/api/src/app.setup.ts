@@ -1,8 +1,10 @@
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { DocumentBuilder, type OpenAPIObject, SwaggerModule } from '@nestjs/swagger';
 import cookieParser from 'cookie-parser';
 import helmet from 'helmet';
+import { ErrorResponseDto } from './common/dto/error-response.dto.js';
+import { PaginationMetaDto } from './common/dto/paginated-response.dto.js';
 import { EnvironmentVariables } from './config/env.validation.js';
 
 export const API_PREFIX = 'api/v1';
@@ -48,8 +50,14 @@ export function buildOpenApiConfig() {
     .build();
 }
 
+/** Document OpenAPI complet, avec les modèles communs (erreurs, pagination) utilisés par le client. */
+export function createOpenApiDocument(app: INestApplication): OpenAPIObject {
+  return SwaggerModule.createDocument(app, buildOpenApiConfig(), {
+    extraModels: [ErrorResponseDto, PaginationMetaDto],
+  });
+}
+
 /** Documentation OpenAPI sur /api/docs (JSON sur /api/docs-json). */
 export function setupSwagger(app: INestApplication): void {
-  const document = SwaggerModule.createDocument(app, buildOpenApiConfig());
-  SwaggerModule.setup(SWAGGER_PATH, app, document);
+  SwaggerModule.setup(SWAGGER_PATH, app, createOpenApiDocument(app));
 }

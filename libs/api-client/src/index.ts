@@ -14,3 +14,12 @@ export type VerifyEmailRequest = Schemas['VerifyEmailDto'];
 export type ForgotPasswordRequest = Schemas['ForgotPasswordDto'];
 export type ResetPasswordRequest = Schemas['ResetPasswordDto'];
 export type HealthResponse = Schemas['HealthResponseDto'];
+
+/** Format commun des erreurs de l'API. */
+export type ApiErrorBody = Schemas['ErrorResponseDto'];
+export type PaginationMeta = Schemas['PaginationMetaDto'];
+/** Réponse des listes paginées : `{ data, meta }`. */
+export interface Paginated<T> {
+  data: T[];
+  meta: PaginationMeta;
+}

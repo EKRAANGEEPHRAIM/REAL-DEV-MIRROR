@@ -13,15 +13,14 @@ process.env.DATABASE_URL ??= 'postgresql://openapi:openapi@localhost:5432/openap
 process.env.JWT_ACCESS_SECRET ??= 'openapi-export-only-not-a-real-secret-000';
 
 const { NestFactory } = await import('@nestjs/core');
-const { SwaggerModule } = await import('@nestjs/swagger');
 const { AppModule } = await import('./app.module.js');
-const { API_PREFIX, buildOpenApiConfig } = await import('./app.setup.js');
+const { API_PREFIX, createOpenApiDocument } = await import('./app.setup.js');
 
 const output = resolve(process.argv[2] ?? 'openapi.json');
 const app = await NestFactory.create(AppModule, { preview: true, logger: false });
 app.setGlobalPrefix(API_PREFIX);
 
-const document = SwaggerModule.createDocument(app, buildOpenApiConfig());
+const document = createOpenApiDocument(app);
 await mkdir(dirname(output), { recursive: true });
 await writeFile(output, `${JSON.stringify(document, null, 2)}\n`);
 await app.close();

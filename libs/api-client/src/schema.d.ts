@@ -287,6 +287,34 @@ export interface components {
        */
       password: string;
     };
+    ErrorResponseDto: {
+      /** @example 404 */
+      statusCode: number;
+      /**
+       * @description Message affichable ; liste de messages pour les erreurs de validation
+       * @example Ressource introuvable
+       */
+      message: string | string[];
+      /** @example Not Found */
+      error: string;
+      /** @example /api/v1/projects/clx1a2b3c */
+      path: string;
+      /** @example 2026-10-20T09:00:00.000Z */
+      timestamp: string;
+    };
+    PaginationMetaDto: {
+      /**
+       * @description Nombre total d’éléments correspondant aux filtres
+       * @example 42
+       */
+      total: number;
+      /** @example 1 */
+      page: number;
+      /** @example 20 */
+      limit: number;
+      /** @example 3 */
+      totalPages: number;
+    };
   };
   responses: never;
   parameters: never;

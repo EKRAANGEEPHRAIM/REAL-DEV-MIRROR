@@ -500,6 +500,66 @@
           }
         },
         "required": ["token", "password"]
+      },
+      "ErrorResponseDto": {
+        "type": "object",
+        "properties": {
+          "statusCode": {
+            "type": "number",
+            "example": 404
+          },
+          "message": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            ],
+            "example": "Ressource introuvable",
+            "description": "Message affichable ; liste de messages pour les erreurs de validation"
+          },
+          "error": {
+            "type": "string",
+            "example": "Not Found"
+          },
+          "path": {
+            "type": "string",
+            "example": "/api/v1/projects/clx1a2b3c"
+          },
+          "timestamp": {
+            "type": "string",
+            "example": "2026-10-20T09:00:00.000Z"
+          }
+        },
+        "required": ["statusCode", "message", "error", "path", "timestamp"]
+      },
+      "PaginationMetaDto": {
+        "type": "object",
+        "properties": {
+          "total": {
+            "type": "number",
+            "example": 42,
+            "description": "Nombre total d’éléments correspondant aux filtres"
+          },
+          "page": {
+            "type": "number",
+            "example": 1
+          },
+          "limit": {
+            "type": "number",
+            "example": 20
+          },
+          "totalPages": {
+            "type": "number",
+            "example": 3
+          }
+        },
+        "required": ["total", "page", "limit", "totalPages"]
       }
     }
   }

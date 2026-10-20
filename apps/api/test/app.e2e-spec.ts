@@ -50,6 +50,25 @@ describe('API (e2e)', () => {
     return request(app.getHttpServer()).get('/health').expect(404);
   });
 
+  it('formate toutes les erreurs de la même façon (route inconnue)', async () => {
+    const response = await request(app.getHttpServer()).get('/api/v1/inexistant').expect(404);
+
+    expect(response.body).toEqual({
+      statusCode: 404,
+      message: 'Cannot GET /api/v1/inexistant',
+      error: 'Not Found',
+      path: '/api/v1/inexistant',
+      timestamp: expect.any(String),
+    });
+  });
+
+  it('expose les modèles communs (erreurs, pagination) dans l’OpenAPI', async () => {
+    const response = await request(app.getHttpServer()).get('/api/docs-json').expect(200);
+
+    expect(response.body.components.schemas).toHaveProperty('ErrorResponseDto');
+    expect(response.body.components.schemas).toHaveProperty('PaginationMetaDto');
+  });
+
   afterEach(async () => {
     await app.close();
   });
