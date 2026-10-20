@@ -3,12 +3,12 @@ import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { RouterLink, RouterOutlet } from '@angular/router';
 import { NgIcon, provideIcons } from '@ng-icons/core';
 import { lucideMenu, lucideScanFace } from '@ng-icons/lucide';
-import { HlmAvatarImports } from '@spartan-ng/helm/avatar';
 import { HlmButtonImports } from '@spartan-ng/helm/button';
 import { HlmSheetImports } from '@spartan-ng/helm/sheet';
 import { ThemeToggle } from '../theme/theme-toggle';
 import { MAIN_NAV, SECONDARY_NAV } from './navigation';
 import { SidebarNav } from './sidebar-nav';
+import { UserMenu } from './user-menu';
 
 /** Mise en page de l'espace connecté : barre latérale (bureau), menu tiroir (mobile), barre du haut. */
 @Component({
@@ -18,11 +18,11 @@ import { SidebarNav } from './sidebar-nav';
     RouterOutlet,
     RouterLink,
     NgIcon,
-    HlmAvatarImports,
     HlmButtonImports,
     HlmSheetImports,
     SidebarNav,
     ThemeToggle,
+    UserMenu,
   ],
   providers: [provideIcons({ lucideMenu, lucideScanFace })],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -83,9 +83,7 @@ import { SidebarNav } from './sidebar-nav';
 
           <div class="ms-auto flex items-center gap-1">
             <dm-theme-toggle />
-            <hlm-avatar size="sm" class="ms-1">
-              <span hlmAvatarFallback aria-label="Profil">DM</span>
-            </hlm-avatar>
+            <dm-user-menu />
           </div>
         </header>
 

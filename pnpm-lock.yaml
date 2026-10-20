@@ -177,6 +177,9 @@ importers:
       '@ng-icons/lucide':
         specifier: '>=32.0.0 <34.0.0'
         version: 33.4.0
+      '@ngrx/operators':
+        specifier: ^22.0.1
+        version: 22.0.1(rxjs@7.8.2)
       '@ngrx/signals':
         specifier: ^22.0.1
         version: 22.0.1(@angular/core@22.2.2(@angular/compiler@22.2.2)(rxjs@7.8.2))(rxjs@7.8.2)
@@ -1963,6 +1966,11 @@ packages:
 
   '@ng-icons/lucide@33.4.0':
     resolution: {integrity: sha512-fOztOy5T+Y07fru7nWq27PC96B35Y2DeJY357ZeKBr5R1yUJhxqQXPRcxOf+wrTJes8I20sKBqfWhHH1eiL9JQ==}
+
+  '@ngrx/operators@22.0.1':
+    resolution: {integrity: sha512-UyF1ESIKX8sClhXCz4/B+YhC4Baa4sZ4O0neHzMwdqFxvXg4P19AT6+RQ5lNCuwmYt/aH1dZuHr+EBaQSRFNyQ==}
+    peerDependencies:
+      rxjs: ^6.5.3 || ^7.4.0
 
   '@ngrx/signals@22.0.1':
     resolution: {integrity: sha512-R62VsPrnH54LgA3LAqw+GWA9FHii526CH1aqah8aiK1RZocp+3N9rS3g5wrrXU655eVH65jhN4k/k+EFyxO/RA==}
@@ -8148,6 +8156,11 @@ snapshots:
 
   '@ng-icons/lucide@33.4.0':
     dependencies:
+      tslib: 2.8.1
+
+  '@ngrx/operators@22.0.1(rxjs@7.8.2)':
+    dependencies:
+      rxjs: 7.8.2
       tslib: 2.8.1
 
   '@ngrx/signals@22.0.1(@angular/core@22.2.2(@angular/compiler@22.2.2)(rxjs@7.8.2))(rxjs@7.8.2)':

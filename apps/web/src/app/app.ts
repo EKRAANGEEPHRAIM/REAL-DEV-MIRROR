@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import { HlmToasterImports } from '@spartan-ng/helm/sonner';
+import { AuthStore } from './core/auth/auth.store';
 import { ThemeStore } from './core/theme/theme.store';
 
 @Component({
@@ -15,4 +16,6 @@ import { ThemeStore } from './core/theme/theme.store';
 export class App {
   // Injecté dès le démarrage pour appliquer le thème mémorisé.
   protected readonly theme = inject(ThemeStore);
+  // Créé dès le démarrage : la restauration de session part en parallèle du chargement des routes.
+  private readonly auth = inject(AuthStore);
 }

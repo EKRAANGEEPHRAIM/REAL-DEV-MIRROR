@@ -1,12 +1,27 @@
 import { Routes } from '@angular/router';
+import { authGuard, guestGuard } from './core/auth/auth.guards';
 import { Shell } from './core/layout/shell';
+import { AuthLayout } from './features/auth/auth-layout';
 
 const comingSoon = () => import('./shared/pages/coming-soon').then((m) => m.ComingSoon);
 
 export const routes: Routes = [
   {
     path: '',
+    component: AuthLayout,
+    canActivate: [guestGuard],
+    children: [
+      {
+        path: 'login',
+        title: 'Connexion · DevMirror',
+        loadComponent: () => import('./features/auth/login/login.page').then((m) => m.LoginPage),
+      },
+    ],
+  },
+  {
+    path: '',
     component: Shell,
+    canActivate: [authGuard],
     children: [
       { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
       {
