@@ -10,6 +10,7 @@
   "scripts": {
     "api:dev": "pnpm --filter @devmirror/api start:dev",
     "web:dev": "pnpm --filter @devmirror/web start",
+    "api-client:generate": "pnpm --filter @devmirror/api build && pnpm --filter @devmirror/api openapi:export && pnpm --filter @devmirror/api-client generate && prettier --write libs/api-client",
     "lint": "eslint . && pnpm -r --if-present lint",
     "format": "prettier --write .",
     "format:check": "prettier --check .",

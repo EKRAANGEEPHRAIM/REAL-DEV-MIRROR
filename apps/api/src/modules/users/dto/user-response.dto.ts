@@ -1,4 +1,4 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { ApiProperty } from '@nestjs/swagger';
 import type { User } from '../../../generated/prisma/client.js';
 
 /** Représentation publique d'un compte : jamais de hash de mot de passe. */
@@ -12,7 +12,7 @@ export class UserResponseDto {
   @ApiProperty({ example: 'Ada Lovelace' })
   name: string;
 
-  @ApiPropertyOptional({ type: String, nullable: true, example: null })
+  @ApiProperty({ type: String, nullable: true, example: null })
   avatarUrl: string | null;
 
   @ApiProperty({ example: false })

@@ -37,16 +37,19 @@ export function configureApp(app: INestApplication): void {
   );
 }
 
-/** Documentation OpenAPI sur /api/docs (JSON sur /api/docs-json, source du client généré). */
+/** Métadonnées du document OpenAPI, partagées par Swagger UI et l'export du client (openapi.ts). */
+export function buildOpenApiConfig() {
+  return new DocumentBuilder()
+    .setTitle('DevMirror API')
+    .setDescription('API REST de DevMirror : projets, tâches, objectifs, notes et statistiques.')
+    .setVersion('1.0')
+    .addBearerAuth()
+    .addCookieAuth('dm_refresh')
+    .build();
+}
+
+/** Documentation OpenAPI sur /api/docs (JSON sur /api/docs-json). */
 export function setupSwagger(app: INestApplication): void {
-  const document = SwaggerModule.createDocument(
-    app,
-    new DocumentBuilder()
-      .setTitle('DevMirror API')
-      .setDescription('API REST de DevMirror : projets, tâches, objectifs, notes et statistiques.')
-      .setVersion('1.0')
-      .addBearerAuth()
-      .build(),
-  );
+  const document = SwaggerModule.createDocument(app, buildOpenApiConfig());
   SwaggerModule.setup(SWAGGER_PATH, app, document);
 }

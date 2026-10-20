@@ -6,7 +6,7 @@ export class AuthResponseDto {
   @ApiProperty({ example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9…' })
   accessToken: string;
 
-  @ApiProperty({ example: 'Bearer' })
+  @ApiProperty({ enum: ['Bearer'], example: 'Bearer' })
   tokenType: 'Bearer';
 
   @ApiProperty({ example: 900, description: "Durée de vie du jeton d'accès, en secondes" })

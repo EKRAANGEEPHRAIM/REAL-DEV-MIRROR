@@ -35,6 +35,33 @@ describe('App', () => {
     expect(TestBed.inject(Router).url).toBe('/dashboard');
   });
 
+  it('« / » sans session mène à la connexion, pas à un layout vide', async () => {
+    const fixture = TestBed.createComponent(App);
+    const navigation = TestBed.inject(Router).navigateByUrl('/');
+    backend
+      .expectOne('/api/v1/auth/refresh')
+      .flush(null, { status: 401, statusText: 'Unauthorized' });
+    await navigation;
+    await fixture.whenStable();
+
+    expect(TestBed.inject(Router).url).toBe('/login?returnUrl=%2Fdashboard');
+  });
+
+  it('les pages publiques s’ouvrent sans session', async () => {
+    const fixture = TestBed.createComponent(App);
+    const navigation = TestBed.inject(Router).navigateByUrl('/register');
+    backend
+      .expectOne('/api/v1/auth/refresh')
+      .flush(null, { status: 401, statusText: 'Unauthorized' });
+    await navigation;
+    await fixture.whenStable();
+
+    expect(TestBed.inject(Router).url).toBe('/register');
+    expect((fixture.nativeElement as HTMLElement).querySelector('h1')?.textContent).toContain(
+      'Créer un compte',
+    );
+  });
+
   it('affiche la page de connexion sans session', async () => {
     const fixture = TestBed.createComponent(App);
     const navigation = TestBed.inject(Router).navigateByUrl('/projects');

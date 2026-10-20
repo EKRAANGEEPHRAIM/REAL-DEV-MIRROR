@@ -2,12 +2,13 @@ import { ChangeDetectionStrategy, Component, inject, input, type OnInit } from '
 import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { NgIcon, provideIcons } from '@ng-icons/core';
-import { lucideCircleAlert, lucideLoader2 } from '@ng-icons/lucide';
+import { lucideLoader2 } from '@ng-icons/lucide';
 import { HlmButtonImports } from '@spartan-ng/helm/button';
 import { HlmCardImports } from '@spartan-ng/helm/card';
 import { HlmInputImports } from '@spartan-ng/helm/input';
 import { HlmLabelImports } from '@spartan-ng/helm/label';
 import { AuthStore } from '../../../core/auth/auth.store';
+import { FormAlert } from '../../../shared/ui-kit/form-alert';
 
 @Component({
   selector: 'dm-login-page',
@@ -19,8 +20,9 @@ import { AuthStore } from '../../../core/auth/auth.store';
     HlmCardImports,
     HlmInputImports,
     HlmLabelImports,
+    FormAlert,
   ],
-  providers: [provideIcons({ lucideCircleAlert, lucideLoader2 })],
+  providers: [provideIcons({ lucideLoader2 })],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section hlmCard>
@@ -37,13 +39,7 @@ import { AuthStore } from '../../../core/auth/auth.store';
         novalidate
       >
         @if (store.error(); as error) {
-          <p
-            role="alert"
-            class="border-destructive/40 bg-destructive/10 text-destructive flex items-start gap-2 rounded-md border px-3 py-2 text-sm"
-          >
-            <ng-icon name="lucideCircleAlert" class="mt-0.5 shrink-0" aria-hidden="true" />
-            {{ error }}
-          </p>
+          <dm-form-alert>{{ error }}</dm-form-alert>
         }
 
         <div class="flex flex-col gap-2">

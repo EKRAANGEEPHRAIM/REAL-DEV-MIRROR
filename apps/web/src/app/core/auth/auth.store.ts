@@ -24,7 +24,7 @@ import {
 } from 'rxjs';
 import { apiErrorMessage } from '../http/api-error';
 import { AuthApi } from './auth.api';
-import type { AuthResponse, LoginRequest, RegisterRequest, User } from './auth.models';
+import type { AuthResponse, LoginRequest, RegisterRequest, User } from '@devmirror/api-client';
 
 /** restoring : session en cours de restauration au démarrage (refresh silencieux). */
 export type AuthStatus = 'restoring' | 'authenticated' | 'anonymous';
@@ -145,6 +145,12 @@ export const AuthStore = signalStore(
 
       clearSession,
       clearError: () => patchState(store, { error: null }),
+
+      /** Après une vérification réussie : met à jour la session ouverte, s'il y en a une. */
+      markEmailVerified: () => {
+        const user = store.user();
+        if (user) patchState(store, { user: { ...user, emailVerified: true } });
+      },
     };
   }),
   withHooks({

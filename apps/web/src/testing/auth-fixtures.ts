@@ -1,4 +1,4 @@
-import type { AuthResponse } from '../app/core/auth/auth.models';
+import type { AuthResponse } from '@devmirror/api-client';
 
 /** Réponse d'authentification de test (login, register, refresh). */
 export const sessionResponse = (token = 'jwt-1'): AuthResponse => ({

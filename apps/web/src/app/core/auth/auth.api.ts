@@ -1,8 +1,16 @@
 import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
+import type {
+  AuthResponse,
+  ForgotPasswordRequest,
+  LoginRequest,
+  RegisterRequest,
+  ResetPasswordRequest,
+  User,
+  VerifyEmailRequest,
+} from '@devmirror/api-client';
 import type { Observable } from 'rxjs';
 import { API_BASE_URL } from '../http/api-base-url';
-import type { AuthResponse, LoginRequest, RegisterRequest, User } from './auth.models';
 
 /** Appels HTTP de l'authentification ; le refresh token voyage seul, dans le cookie httpOnly. */
 @Injectable({ providedIn: 'root' })
@@ -24,6 +32,22 @@ export class AuthApi {
 
   logout(): Observable<void> {
     return this.http.post<void>(`${this.baseUrl}/auth/logout`, {});
+  }
+
+  verifyEmail(body: VerifyEmailRequest): Observable<void> {
+    return this.http.post<void>(`${this.baseUrl}/auth/verify-email`, body);
+  }
+
+  resendVerification(): Observable<void> {
+    return this.http.post<void>(`${this.baseUrl}/auth/resend-verification`, {});
+  }
+
+  forgotPassword(body: ForgotPasswordRequest): Observable<void> {
+    return this.http.post<void>(`${this.baseUrl}/auth/forgot-password`, body);
+  }
+
+  resetPassword(body: ResetPasswordRequest): Observable<void> {
+    return this.http.post<void>(`${this.baseUrl}/auth/reset-password`, body);
   }
 
   me(): Observable<User> {

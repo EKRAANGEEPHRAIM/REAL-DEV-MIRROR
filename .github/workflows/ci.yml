@@ -32,6 +32,14 @@ jobs:
       - run: pnpm test
       - run: pnpm build
 
+      - name: Vérifier que le client API généré est à jour
+        run: |
+          pnpm api-client:generate
+          git diff --exit-code -- libs/api-client || {
+            echo "::error::libs/api-client ne correspond plus à l'API : lancez pnpm api-client:generate et commitez le résultat."
+            exit 1
+          }
+
   api-e2e:
     name: Tests e2e de l'API (branche Neon test)
     runs-on: ubuntu-latest

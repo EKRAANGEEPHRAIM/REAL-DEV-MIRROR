@@ -6,6 +6,7 @@ import { lucideMenu, lucideScanFace } from '@ng-icons/lucide';
 import { HlmButtonImports } from '@spartan-ng/helm/button';
 import { HlmSheetImports } from '@spartan-ng/helm/sheet';
 import { ThemeToggle } from '../theme/theme-toggle';
+import { EmailVerificationBanner } from './email-verification-banner';
 import { MAIN_NAV, SECONDARY_NAV } from './navigation';
 import { SidebarNav } from './sidebar-nav';
 import { UserMenu } from './user-menu';
@@ -23,6 +24,7 @@ import { UserMenu } from './user-menu';
     SidebarNav,
     ThemeToggle,
     UserMenu,
+    EmailVerificationBanner,
   ],
   providers: [provideIcons({ lucideMenu, lucideScanFace })],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -86,6 +88,8 @@ import { UserMenu } from './user-menu';
             <dm-user-menu />
           </div>
         </header>
+
+        <dm-email-verification-banner />
 
         <main id="contenu" tabindex="-1" class="flex-1 px-4 py-6 outline-none md:px-8">
           <router-outlet />

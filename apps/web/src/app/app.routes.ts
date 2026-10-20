@@ -5,19 +5,9 @@ import { AuthLayout } from './features/auth/auth-layout';
 
 const comingSoon = () => import('./shared/pages/coming-soon').then((m) => m.ComingSoon);
 
+// Ordre important : les deux layouts ont un chemin vide. Le shell vient en premier pour que
+// « / » y soit résolu ; un layout à chemin vide sans enfant correspondant s'afficherait vide.
 export const routes: Routes = [
-  {
-    path: '',
-    component: AuthLayout,
-    canActivate: [guestGuard],
-    children: [
-      {
-        path: 'login',
-        title: 'Connexion · DevMirror',
-        loadComponent: () => import('./features/auth/login/login.page').then((m) => m.LoginPage),
-      },
-    ],
-  },
   {
     path: '',
     component: Shell,
@@ -59,6 +49,49 @@ export const routes: Routes = [
         title: 'Paramètres · DevMirror',
         loadComponent: comingSoon,
         data: { heading: 'Paramètres', day: '32' },
+      },
+    ],
+  },
+  {
+    path: '',
+    component: AuthLayout,
+    children: [
+      {
+        path: 'login',
+        title: 'Connexion · DevMirror',
+        canActivate: [guestGuard],
+        loadComponent: () => import('./features/auth/login/login.page').then((m) => m.LoginPage),
+      },
+      {
+        path: 'register',
+        title: 'Créer un compte · DevMirror',
+        canActivate: [guestGuard],
+        loadComponent: () =>
+          import('./features/auth/register/register.page').then((m) => m.RegisterPage),
+      },
+      {
+        path: 'forgot-password',
+        title: 'Mot de passe oublié · DevMirror',
+        canActivate: [guestGuard],
+        loadComponent: () =>
+          import('./features/auth/forgot-password/forgot-password.page').then(
+            (m) => m.ForgotPasswordPage,
+          ),
+      },
+      // Liens reçus par email : accessibles même avec une session ouverte dans ce navigateur.
+      {
+        path: 'reset-password',
+        title: 'Nouveau mot de passe · DevMirror',
+        loadComponent: () =>
+          import('./features/auth/reset-password/reset-password.page').then(
+            (m) => m.ResetPasswordPage,
+          ),
+      },
+      {
+        path: 'verify-email',
+        title: 'Vérification de l’email · DevMirror',
+        loadComponent: () =>
+          import('./features/auth/verify-email/verify-email.page').then((m) => m.VerifyEmailPage),
       },
     ],
   },
