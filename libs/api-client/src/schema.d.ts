@@ -264,6 +264,46 @@ export interface paths {
     patch: operations['TagsController_update'];
     trace?: never;
   };
+  '/api/v1/tasks': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Lister ses tâches (projet, statut, priorité, échéance, recherche) */
+    get: operations['TasksController_findAll'];
+    put?: never;
+    /** Créer une tâche */
+    post: operations['TasksController_create'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/tasks/{id}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Détail d’une tâche */
+    get: operations['TasksController_findOne'];
+    put?: never;
+    post?: never;
+    /** Supprimer une tâche et ses sous-tâches */
+    delete: operations['TasksController_remove'];
+    options?: never;
+    head?: never;
+    /**
+     * Modifier une tâche
+     * @description Passer à DONE renseigne completedAt ; changer de statut sans position place la tâche en bas de la colonne.
+     */
+    patch: operations['TasksController_update'];
+    trace?: never;
+  };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -541,6 +581,103 @@ export interface components {
       name?: string;
       /** @example #dd0031 */
       color?: string | null;
+    };
+    /** @enum {string} */
+    TaskStatus: 'TODO' | 'IN_PROGRESS' | 'IN_REVIEW' | 'DONE';
+    /** @enum {string} */
+    Priority: 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
+    TaskProjectDto: {
+      /** @example clx1a2b3c0000qz8h4k9d7f2e */
+      id: string;
+      /** @example DevMirror */
+      name: string;
+      /** @example #6366f1 */
+      color: string | null;
+    };
+    SubtaskDto: {
+      /** @example clx0sub000001 */
+      id: string;
+      /** @example Cas nominal */
+      title: string;
+      /** @example false */
+      done: boolean;
+      /** @example 0 */
+      position: number;
+    };
+    TaskResponseDto: {
+      /** @example clx0task00001 */
+      id: string;
+      /** @example Écrire les tests du module tasks */
+      title: string;
+      /** @example null */
+      description: string | null;
+      /** @example TODO */
+      status: components['schemas']['TaskStatus'];
+      /** @example MEDIUM */
+      priority: components['schemas']['Priority'];
+      /**
+       * Format: date-time
+       * @example 2026-10-30T17:00:00.000Z
+       */
+      dueDate: string | null;
+      /**
+       * @description Position dans la colonne du Kanban
+       * @example 0
+       */
+      position: number;
+      /**
+       * Format: date-time
+       * @example null
+       */
+      completedAt: string | null;
+      project: components['schemas']['TaskProjectDto'] | null;
+      subtasks: components['schemas']['SubtaskDto'][];
+      /**
+       * Format: date-time
+       * @example 2026-10-22T09:00:00.000Z
+       */
+      createdAt: string;
+      /**
+       * Format: date-time
+       * @example 2026-10-22T09:00:00.000Z
+       */
+      updatedAt: string;
+    };
+    CreateTaskDto: {
+      /** @example Écrire les tests du module tasks */
+      title: string;
+      description?: string | null;
+      /** @default TODO */
+      status: components['schemas']['TaskStatus'];
+      /** @default MEDIUM */
+      priority: components['schemas']['Priority'];
+      /**
+       * Format: date-time
+       * @example 2026-10-30T17:00:00.000Z
+       */
+      dueDate?: string | null;
+      /** @description Projet de rattachement (un de ses projets) ; null = tâche sans projet */
+      projectId?: string | null;
+      /** @description Position dans la colonne du Kanban ; par défaut en bas de la colonne */
+      position?: number;
+    };
+    UpdateTaskDto: {
+      /** @example Écrire les tests du module tasks */
+      title?: string;
+      description?: string | null;
+      /** @default TODO */
+      status: components['schemas']['TaskStatus'];
+      /** @default MEDIUM */
+      priority: components['schemas']['Priority'];
+      /**
+       * Format: date-time
+       * @example 2026-10-30T17:00:00.000Z
+       */
+      dueDate?: string | null;
+      /** @description Projet de rattachement (un de ses projets) ; null = tâche sans projet */
+      projectId?: string | null;
+      /** @description Position dans la colonne du Kanban ; par défaut en bas de la colonne */
+      position?: number;
     };
   };
   responses: never;
@@ -1293,6 +1430,236 @@ export interface operations {
       };
       /** @description Un tag porte déjà ce nom */
       409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponseDto'];
+        };
+      };
+    };
+  };
+  TasksController_findAll: {
+    parameters: {
+      query?: {
+        page?: number;
+        limit?: number;
+        /** @description Tâches d’un projet */
+        projectId?: string;
+        /** @description Uniquement les tâches sans projet */
+        withoutProject?: boolean;
+        status?: components['schemas']['TaskStatus'];
+        priority?: components['schemas']['Priority'];
+        /** @description Recherche dans le titre */
+        q?: string;
+        /** @description Échéance à partir de (incluse) ; bornes calculées par le client dans son fuseau */
+        dueFrom?: string;
+        /** @description Échéance avant (exclue) */
+        dueTo?: string;
+        /** @description Échéance passée et tâche non terminée */
+        overdue?: boolean;
+        /** @description Uniquement les tâches sans échéance */
+        noDueDate?: boolean;
+        /** @description Tri : createdAt, updatedAt, dueDate, priority, position, title suivi de :asc ou :desc (priority:desc = urgentes d’abord) */
+        sort?: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            data: components['schemas']['TaskResponseDto'][];
+            meta: components['schemas']['PaginationMetaDto'];
+          };
+        };
+      };
+      /** @description Paramètres invalides */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponseDto'];
+        };
+      };
+      /** @description Jeton d’accès manquant ou invalide */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponseDto'];
+        };
+      };
+    };
+  };
+  TasksController_create: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CreateTaskDto'];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['TaskResponseDto'];
+        };
+      };
+      /** @description Données invalides ou projet introuvable */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponseDto'];
+        };
+      };
+      /** @description Jeton d’accès manquant ou invalide */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponseDto'];
+        };
+      };
+    };
+  };
+  TasksController_findOne: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['TaskResponseDto'];
+        };
+      };
+      /** @description Jeton d’accès manquant ou invalide */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponseDto'];
+        };
+      };
+      /** @description Tâche introuvable */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponseDto'];
+        };
+      };
+    };
+  };
+  TasksController_remove: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Jeton d’accès manquant ou invalide */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponseDto'];
+        };
+      };
+      /** @description Tâche introuvable */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponseDto'];
+        };
+      };
+    };
+  };
+  TasksController_update: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['UpdateTaskDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['TaskResponseDto'];
+        };
+      };
+      /** @description Données invalides ou projet introuvable */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponseDto'];
+        };
+      };
+      /** @description Jeton d’accès manquant ou invalide */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponseDto'];
+        };
+      };
+      /** @description Tâche introuvable */
+      404: {
         headers: {
           [name: string]: unknown;
         };

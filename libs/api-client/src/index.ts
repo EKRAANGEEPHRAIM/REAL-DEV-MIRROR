@@ -30,6 +30,17 @@ export type TagUsage = Schemas['TagUsageDto'];
 export type CreateTagRequest = Schemas['CreateTagDto'];
 export type UpdateTagRequest = Schemas['UpdateTagDto'];
 
+export type Task = Schemas['TaskResponseDto'];
+export type TaskStatus = Schemas['TaskResponseDto']['status'];
+export type TaskPriority = Schemas['TaskResponseDto']['priority'];
+export type TaskProject = Schemas['TaskProjectDto'];
+export type Subtask = Schemas['SubtaskDto'];
+export type CreateTaskRequest = Schemas['CreateTaskDto'];
+export type UpdateTaskRequest = Schemas['UpdateTaskDto'];
+export type TaskListQuery = NonNullable<
+  operations['TasksController_findAll']['parameters']['query']
+>;
+
 /** Format commun des erreurs de l'API. */
 export type ApiErrorBody = Schemas['ErrorResponseDto'];
 export type PaginationMeta = Schemas['PaginationMetaDto'];

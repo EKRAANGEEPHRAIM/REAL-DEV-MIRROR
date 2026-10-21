@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { type Paginated, paginate } from '../../common/dto/paginated-response.dto.js';
 import { toSkipTake } from '../../common/dto/pagination-query.dto.js';
 import { parseSort } from '../../common/dto/sort.js';
@@ -149,6 +149,12 @@ export class ProjectsService {
       if (isNotFound(error)) throw new NotFoundException(PROJECT_NOT_FOUND);
       throw error;
     }
+  }
+
+  /** Vérifie qu'un projet appartient à l'utilisateur avant d'y rattacher une tâche ou une note. */
+  async assertOwned(userId: string, projectId: string): Promise<void> {
+    const owned = await this.prisma.project.count({ where: { id: projectId, userId } });
+    if (owned === 0) throw new BadRequestException(PROJECT_NOT_FOUND);
   }
 
   private buildWhere(userId: string, query: ProjectQueryDto): Prisma.ProjectWhereInput {

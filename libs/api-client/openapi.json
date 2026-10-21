@@ -894,6 +894,408 @@
         "summary": "Supprimer un tag (retiré des projets et notes)",
         "tags": ["tags"]
       }
+    },
+    "/api/v1/tasks": {
+      "get": {
+        "operationId": "TasksController_findAll",
+        "parameters": [
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "default": 1,
+              "example": 1,
+              "type": "number"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20,
+              "example": 20,
+              "type": "number"
+            }
+          },
+          {
+            "name": "projectId",
+            "required": false,
+            "in": "query",
+            "description": "Tâches d’un projet",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "withoutProject",
+            "required": false,
+            "in": "query",
+            "description": "Uniquement les tâches sans projet",
+            "schema": {
+              "default": false,
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "status",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/TaskStatus"
+            }
+          },
+          {
+            "name": "priority",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/Priority"
+            }
+          },
+          {
+            "name": "q",
+            "required": false,
+            "in": "query",
+            "description": "Recherche dans le titre",
+            "schema": {
+              "example": "tests",
+              "type": "string"
+            }
+          },
+          {
+            "name": "dueFrom",
+            "required": false,
+            "in": "query",
+            "description": "Échéance à partir de (incluse) ; bornes calculées par le client dans son fuseau",
+            "schema": {
+              "format": "date-time",
+              "type": "string"
+            }
+          },
+          {
+            "name": "dueTo",
+            "required": false,
+            "in": "query",
+            "description": "Échéance avant (exclue)",
+            "schema": {
+              "format": "date-time",
+              "type": "string"
+            }
+          },
+          {
+            "name": "overdue",
+            "required": false,
+            "in": "query",
+            "description": "Échéance passée et tâche non terminée",
+            "schema": {
+              "default": false,
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "noDueDate",
+            "required": false,
+            "in": "query",
+            "description": "Uniquement les tâches sans échéance",
+            "schema": {
+              "default": false,
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "sort",
+            "required": false,
+            "in": "query",
+            "description": "Tri : createdAt, updatedAt, dueDate, priority, position, title suivi de :asc ou :desc (priority:desc = urgentes d’abord)",
+            "schema": {
+              "default": "createdAt:desc",
+              "example": "dueDate:asc",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["data", "meta"],
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/TaskResponseDto"
+                      }
+                    },
+                    "meta": {
+                      "$ref": "#/components/schemas/PaginationMetaDto"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Paramètres invalides",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Jeton d’accès manquant ou invalide",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Lister ses tâches (projet, statut, priorité, échéance, recherche)",
+        "tags": ["tasks"]
+      },
+      "post": {
+        "operationId": "TasksController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateTaskDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TaskResponseDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Données invalides ou projet introuvable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Jeton d’accès manquant ou invalide",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Créer une tâche",
+        "tags": ["tasks"]
+      }
+    },
+    "/api/v1/tasks/{id}": {
+      "get": {
+        "operationId": "TasksController_findOne",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TaskResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Jeton d’accès manquant ou invalide",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Tâche introuvable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Détail d’une tâche",
+        "tags": ["tasks"]
+      },
+      "patch": {
+        "description": "Passer à DONE renseigne completedAt ; changer de statut sans position place la tâche en bas de la colonne.",
+        "operationId": "TasksController_update",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateTaskDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TaskResponseDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Données invalides ou projet introuvable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Jeton d’accès manquant ou invalide",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Tâche introuvable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Modifier une tâche",
+        "tags": ["tasks"]
+      },
+      "delete": {
+        "operationId": "TasksController_remove",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          },
+          "401": {
+            "description": "Jeton d’accès manquant ou invalide",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Tâche introuvable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Supprimer une tâche et ses sous-tâches",
+        "tags": ["tasks"]
+      }
     }
   },
   "info": {
@@ -1444,6 +1846,240 @@
             "type": "string",
             "nullable": true,
             "example": "#dd0031"
+          }
+        }
+      },
+      "TaskStatus": {
+        "type": "string",
+        "enum": ["TODO", "IN_PROGRESS", "IN_REVIEW", "DONE"]
+      },
+      "Priority": {
+        "type": "string",
+        "enum": ["LOW", "MEDIUM", "HIGH", "URGENT"]
+      },
+      "TaskProjectDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "clx1a2b3c0000qz8h4k9d7f2e"
+          },
+          "name": {
+            "type": "string",
+            "example": "DevMirror"
+          },
+          "color": {
+            "type": "string",
+            "nullable": true,
+            "example": "#6366f1"
+          }
+        },
+        "required": ["id", "name", "color"]
+      },
+      "SubtaskDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "clx0sub000001"
+          },
+          "title": {
+            "type": "string",
+            "example": "Cas nominal"
+          },
+          "done": {
+            "type": "boolean",
+            "example": false
+          },
+          "position": {
+            "type": "number",
+            "example": 0
+          }
+        },
+        "required": ["id", "title", "done", "position"]
+      },
+      "TaskResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "clx0task00001"
+          },
+          "title": {
+            "type": "string",
+            "example": "Écrire les tests du module tasks"
+          },
+          "description": {
+            "type": "string",
+            "nullable": true,
+            "example": null
+          },
+          "status": {
+            "example": "TODO",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/TaskStatus"
+              }
+            ]
+          },
+          "priority": {
+            "example": "MEDIUM",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Priority"
+              }
+            ]
+          },
+          "dueDate": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true,
+            "example": "2026-10-30T17:00:00.000Z"
+          },
+          "position": {
+            "type": "number",
+            "example": 0,
+            "description": "Position dans la colonne du Kanban"
+          },
+          "completedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true,
+            "example": null
+          },
+          "project": {
+            "nullable": true,
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/TaskProjectDto"
+              }
+            ]
+          },
+          "subtasks": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SubtaskDto"
+            }
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string",
+            "example": "2026-10-22T09:00:00.000Z"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string",
+            "example": "2026-10-22T09:00:00.000Z"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "description",
+          "status",
+          "priority",
+          "dueDate",
+          "position",
+          "completedAt",
+          "project",
+          "subtasks",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
+      "CreateTaskDto": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "example": "Écrire les tests du module tasks",
+            "maxLength": 200
+          },
+          "description": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 5000
+          },
+          "status": {
+            "default": "TODO",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/TaskStatus"
+              }
+            ]
+          },
+          "priority": {
+            "default": "MEDIUM",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Priority"
+              }
+            ]
+          },
+          "dueDate": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true,
+            "example": "2026-10-30T17:00:00.000Z"
+          },
+          "projectId": {
+            "type": "string",
+            "nullable": true,
+            "description": "Projet de rattachement (un de ses projets) ; null = tâche sans projet"
+          },
+          "position": {
+            "type": "number",
+            "minimum": 0,
+            "description": "Position dans la colonne du Kanban ; par défaut en bas de la colonne"
+          }
+        },
+        "required": ["title"]
+      },
+      "UpdateTaskDto": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "example": "Écrire les tests du module tasks",
+            "maxLength": 200
+          },
+          "description": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 5000
+          },
+          "status": {
+            "default": "TODO",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/TaskStatus"
+              }
+            ]
+          },
+          "priority": {
+            "default": "MEDIUM",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Priority"
+              }
+            ]
+          },
+          "dueDate": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true,
+            "example": "2026-10-30T17:00:00.000Z"
+          },
+          "projectId": {
+            "type": "string",
+            "nullable": true,
+            "description": "Projet de rattachement (un de ses projets) ; null = tâche sans projet"
+          },
+          "position": {
+            "type": "number",
+            "minimum": 0,
+            "description": "Position dans la colonne du Kanban ; par défaut en bas de la colonne"
           }
         }
       }
