@@ -2,6 +2,7 @@ import { NotFoundException } from '@nestjs/common';
 import { Prisma, ProjectStatus, TaskStatus } from '../../generated/prisma/client.js';
 import type { PrismaService } from '../../prisma/prisma.service.js';
 import { ProjectQueryDto } from './dto/project-query.dto.js';
+import type { TagsService } from '../tags/tags.service.js';
 import { ProjectsService } from './projects.service.js';
 
 const project = (id: string) => ({
@@ -35,7 +36,11 @@ describe('ProjectsService', () => {
     },
     task: { groupBy: vi.fn() },
   };
-  const service = new ProjectsService(prisma as unknown as PrismaService);
+  const tags = { assertOwned: vi.fn() };
+  const service = new ProjectsService(
+    prisma as unknown as PrismaService,
+    tags as unknown as TagsService,
+  );
 
   beforeEach(() => {
     vi.clearAllMocks();

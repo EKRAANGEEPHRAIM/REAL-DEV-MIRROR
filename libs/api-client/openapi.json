@@ -674,6 +674,226 @@
         "summary": "Supprimer un projet et ses tâches",
         "tags": ["projects"]
       }
+    },
+    "/api/v1/tags": {
+      "get": {
+        "operationId": "TagsController_findAll",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TagResponseDto"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Jeton d’accès manquant ou invalide",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Lister ses tags (ordre alphabétique) avec leur utilisation",
+        "tags": ["tags"]
+      },
+      "post": {
+        "operationId": "TagsController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateTagDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TagResponseDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Données invalides ou limite atteinte",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Jeton d’accès manquant ou invalide",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Un tag porte déjà ce nom",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Créer un tag (nom enregistré en minuscules)",
+        "tags": ["tags"]
+      }
+    },
+    "/api/v1/tags/{id}": {
+      "patch": {
+        "operationId": "TagsController_update",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateTagDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TagResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Jeton d’accès manquant ou invalide",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Tag introuvable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Un tag porte déjà ce nom",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Renommer un tag ou changer sa couleur",
+        "tags": ["tags"]
+      },
+      "delete": {
+        "operationId": "TagsController_remove",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          },
+          "401": {
+            "description": "Jeton d’accès manquant ou invalide",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Tag introuvable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Supprimer un tag (retiré des projets et notes)",
+        "tags": ["tags"]
+      }
     }
   },
   "info": {
@@ -1084,6 +1304,15 @@
             "type": "string",
             "nullable": true,
             "example": "#6366f1"
+          },
+          "tagIds": {
+            "maxItems": 20,
+            "description": "Ids de ses propres tags ; en modification, remplace la liste entière ([] retire tout)",
+            "example": ["clx0tag000001"],
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
           }
         },
         "required": ["name"]
@@ -1132,6 +1361,89 @@
             "type": "string",
             "nullable": true,
             "example": "#6366f1"
+          },
+          "tagIds": {
+            "maxItems": 20,
+            "description": "Ids de ses propres tags ; en modification, remplace la liste entière ([] retire tout)",
+            "example": ["clx0tag000001"],
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "TagUsageDto": {
+        "type": "object",
+        "properties": {
+          "projects": {
+            "type": "number",
+            "example": 3
+          },
+          "notes": {
+            "type": "number",
+            "example": 5
+          }
+        },
+        "required": ["projects", "notes"]
+      },
+      "TagResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "clx0tag000001"
+          },
+          "name": {
+            "type": "string",
+            "example": "angular"
+          },
+          "color": {
+            "type": "string",
+            "nullable": true,
+            "example": "#dd0031"
+          },
+          "usage": {
+            "description": "Nombre de projets et de notes qui l’utilisent",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/TagUsageDto"
+              }
+            ]
+          }
+        },
+        "required": ["id", "name", "color", "usage"]
+      },
+      "CreateTagDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "example": "angular",
+            "maxLength": 30,
+            "description": "Enregistré en minuscules"
+          },
+          "color": {
+            "type": "string",
+            "nullable": true,
+            "example": "#dd0031"
+          }
+        },
+        "required": ["name"]
+      },
+      "UpdateTagDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "example": "angular",
+            "maxLength": 30,
+            "description": "Enregistré en minuscules"
+          },
+          "color": {
+            "type": "string",
+            "nullable": true,
+            "example": "#dd0031"
           }
         }
       }

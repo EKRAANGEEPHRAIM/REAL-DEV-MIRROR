@@ -228,6 +228,42 @@ export interface paths {
     patch: operations['ProjectsController_update'];
     trace?: never;
   };
+  '/api/v1/tags': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Lister ses tags (ordre alphabétique) avec leur utilisation */
+    get: operations['TagsController_findAll'];
+    put?: never;
+    /** Créer un tag (nom enregistré en minuscules) */
+    post: operations['TagsController_create'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/tags/{id}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    /** Supprimer un tag (retiré des projets et notes) */
+    delete: operations['TagsController_remove'];
+    options?: never;
+    head?: never;
+    /** Renommer un tag ou changer sa couleur */
+    patch: operations['TagsController_update'];
+    trace?: never;
+  };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -435,6 +471,13 @@ export interface components {
       demoUrl?: string | null;
       /** @example #6366f1 */
       color?: string | null;
+      /**
+       * @description Ids de ses propres tags ; en modification, remplace la liste entière ([] retire tout)
+       * @example [
+       *       "clx0tag000001"
+       *     ]
+       */
+      tagIds?: string[];
     };
     UpdateProjectDto: {
       /** @example DevMirror */
@@ -456,6 +499,47 @@ export interface components {
       /** @example https://devmirror.vercel.app */
       demoUrl?: string | null;
       /** @example #6366f1 */
+      color?: string | null;
+      /**
+       * @description Ids de ses propres tags ; en modification, remplace la liste entière ([] retire tout)
+       * @example [
+       *       "clx0tag000001"
+       *     ]
+       */
+      tagIds?: string[];
+    };
+    TagUsageDto: {
+      /** @example 3 */
+      projects: number;
+      /** @example 5 */
+      notes: number;
+    };
+    TagResponseDto: {
+      /** @example clx0tag000001 */
+      id: string;
+      /** @example angular */
+      name: string;
+      /** @example #dd0031 */
+      color: string | null;
+      /** @description Nombre de projets et de notes qui l’utilisent */
+      usage: components['schemas']['TagUsageDto'];
+    };
+    CreateTagDto: {
+      /**
+       * @description Enregistré en minuscules
+       * @example angular
+       */
+      name: string;
+      /** @example #dd0031 */
+      color?: string | null;
+    };
+    UpdateTagDto: {
+      /**
+       * @description Enregistré en minuscules
+       * @example angular
+       */
+      name?: string;
+      /** @example #dd0031 */
       color?: string | null;
     };
   };
@@ -1042,6 +1126,173 @@ export interface operations {
       };
       /** @description Projet introuvable */
       404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponseDto'];
+        };
+      };
+    };
+  };
+  TagsController_findAll: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['TagResponseDto'][];
+        };
+      };
+      /** @description Jeton d’accès manquant ou invalide */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponseDto'];
+        };
+      };
+    };
+  };
+  TagsController_create: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CreateTagDto'];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['TagResponseDto'];
+        };
+      };
+      /** @description Données invalides ou limite atteinte */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponseDto'];
+        };
+      };
+      /** @description Jeton d’accès manquant ou invalide */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponseDto'];
+        };
+      };
+      /** @description Un tag porte déjà ce nom */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponseDto'];
+        };
+      };
+    };
+  };
+  TagsController_remove: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Jeton d’accès manquant ou invalide */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponseDto'];
+        };
+      };
+      /** @description Tag introuvable */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponseDto'];
+        };
+      };
+    };
+  };
+  TagsController_update: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['UpdateTagDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['TagResponseDto'];
+        };
+      };
+      /** @description Jeton d’accès manquant ou invalide */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponseDto'];
+        };
+      };
+      /** @description Tag introuvable */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponseDto'];
+        };
+      };
+      /** @description Un tag porte déjà ce nom */
+      409: {
         headers: {
           [name: string]: unknown;
         };

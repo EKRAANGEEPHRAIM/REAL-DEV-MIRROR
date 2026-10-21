@@ -4,6 +4,7 @@ import { toSkipTake } from '../../common/dto/pagination-query.dto.js';
 import { parseSort } from '../../common/dto/sort.js';
 import { Prisma, ProjectStatus, TaskStatus } from '../../generated/prisma/client.js';
 import { PrismaService } from '../../prisma/prisma.service.js';
+import { TagsService } from '../tags/tags.service.js';
 import type { CreateProjectDto } from './dto/create-project.dto.js';
 import { PROJECT_SORT_FIELDS, type ProjectQueryDto } from './dto/project-query.dto.js';
 import type { ProjectProgressDto, ProjectResponseDto } from './dto/project-response.dto.js';
@@ -40,10 +41,28 @@ function isNotFound(error: unknown): boolean {
   return error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025';
 }
 
+/** Champs modifiables d'un projet, communs à la création et à la mise à jour. */
+function projectFields(dto: CreateProjectDto | UpdateProjectDto) {
+  return {
+    name: dto.name,
+    description: dto.description,
+    status: dto.status,
+    techStack: dto.techStack,
+    repoUrl: dto.repoUrl,
+    demoUrl: dto.demoUrl,
+    color: dto.color,
+  };
+}
+
+const toConnect = (ids: readonly string[]) => ids.map((id) => ({ id }));
+
 /** Projets de l'utilisateur connecté : toute requête est filtrée par `userId`. */
 @Injectable()
 export class ProjectsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly tags: TagsService,
+  ) {}
 
   async findAll(userId: string, query: ProjectQueryDto): Promise<Paginated<ProjectResponseDto>> {
     const where = this.buildWhere(userId, query);
@@ -80,17 +99,15 @@ export class ProjectsService {
   }
 
   async create(userId: string, dto: CreateProjectDto): Promise<ProjectResponseDto> {
+    await this.tags.assertOwned(userId, dto.tagIds ?? []);
+
     const project = await this.prisma.$transaction(async (tx) => {
       const created = await tx.project.create({
         data: {
-          userId,
+          ...projectFields(dto),
           name: dto.name,
-          description: dto.description,
-          status: dto.status,
-          techStack: dto.techStack,
-          repoUrl: dto.repoUrl,
-          demoUrl: dto.demoUrl,
-          color: dto.color,
+          userId,
+          ...(dto.tagIds?.length ? { tags: { connect: toConnect(dto.tagIds) } } : {}),
         },
         include: projectInclude,
       });
@@ -103,11 +120,17 @@ export class ProjectsService {
   }
 
   async update(userId: string, id: string, dto: UpdateProjectDto): Promise<ProjectResponseDto> {
+    if (dto.tagIds) await this.tags.assertOwned(userId, dto.tagIds);
+
     try {
       // `userId` dans le where : modifier le projet d'un autre utilisateur donne P2025 -> 404.
       const project = await this.prisma.project.update({
         where: { id, userId },
-        data: dto,
+        data: {
+          ...projectFields(dto),
+          // `set` remplace la liste entière ; absent du corps, les tags restent inchangés.
+          ...(dto.tagIds ? { tags: { set: toConnect(dto.tagIds) } } : {}),
+        },
         include: projectInclude,
       });
       const progress = await this.progressByProject([id]);

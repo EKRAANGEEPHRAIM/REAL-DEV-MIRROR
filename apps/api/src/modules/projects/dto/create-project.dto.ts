@@ -2,6 +2,7 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
 import {
   ArrayMaxSize,
+  ArrayUnique,
   IsArray,
   IsEnum,
   IsOptional,
@@ -89,4 +90,18 @@ export class CreateProjectDto {
   @IsOptional()
   @Matches(/^#[0-9a-fA-F]{6}$/, { message: 'Couleur invalide (format #RRGGBB)' })
   color?: string | null;
+
+  @ApiPropertyOptional({
+    type: [String],
+    maxItems: 20,
+    description:
+      'Ids de ses propres tags ; en modification, remplace la liste entière ([] retire tout)',
+    example: ['clx0tag000001'],
+  })
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(20, { message: '20 tags au maximum' })
+  @ArrayUnique({ message: 'Un même tag est présent plusieurs fois' })
+  @IsString({ each: true })
+  tagIds?: string[];
 }

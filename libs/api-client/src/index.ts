@@ -25,6 +25,11 @@ export type ProjectListQuery = NonNullable<
   operations['ProjectsController_findAll']['parameters']['query']
 >;
 
+export type Tag = Schemas['TagResponseDto'];
+export type TagUsage = Schemas['TagUsageDto'];
+export type CreateTagRequest = Schemas['CreateTagDto'];
+export type UpdateTagRequest = Schemas['UpdateTagDto'];
+
 /** Format commun des erreurs de l'API. */
 export type ApiErrorBody = Schemas['ErrorResponseDto'];
 export type PaginationMeta = Schemas['PaginationMetaDto'];

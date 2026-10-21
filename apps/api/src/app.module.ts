@@ -8,6 +8,7 @@ import { AuthModule } from './modules/auth/auth.module.js';
 import { HealthModule } from './modules/health/health.module.js';
 import { MailModule } from './modules/mail/mail.module.js';
 import { ProjectsModule } from './modules/projects/projects.module.js';
+import { TagsModule } from './modules/tags/tags.module.js';
 import { PrismaModule } from './prisma/prisma.module.js';
 
 @Module({
@@ -27,6 +28,7 @@ import { PrismaModule } from './prisma/prisma.module.js';
     HealthModule,
     AuthModule,
     ProjectsModule,
+    TagsModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: ThrottlerGuard },
