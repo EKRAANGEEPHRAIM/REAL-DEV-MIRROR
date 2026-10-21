@@ -4,7 +4,8 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
 import type { Tag } from '@devmirror/api-client';
 import { NgIcon, provideIcons } from '@ng-icons/core';
-import { lucideFolderKanban, lucideRefreshCw, lucideSearchX } from '@ng-icons/lucide';
+import { lucideFolderKanban, lucidePlus, lucideRefreshCw, lucideSearchX } from '@ng-icons/lucide';
+import { toast } from '@spartan-ng/brain/sonner';
 import { HlmButtonImports } from '@spartan-ng/helm/button';
 import { HlmCardImports } from '@spartan-ng/helm/card';
 import { HlmSkeletonImports } from '@spartan-ng/helm/skeleton';
@@ -13,6 +14,7 @@ import { TagsApi } from '../../../shared/data/tags.api';
 import { FormAlert } from '../../../shared/ui-kit/form-alert';
 import { Pagination } from '../../../shared/ui-kit/pagination';
 import { ProjectsStore } from '../data/projects.store';
+import { ProjectDialogs } from '../form/project-dialogs';
 import {
   filtersFromUrl,
   filtersToUrl,
@@ -36,7 +38,7 @@ import { ProjectFiltersBar } from './project-filters-bar';
     ProjectCard,
     ProjectFiltersBar,
   ],
-  providers: [provideIcons({ lucideFolderKanban, lucideRefreshCw, lucideSearchX })],
+  providers: [provideIcons({ lucideFolderKanban, lucidePlus, lucideRefreshCw, lucideSearchX })],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <header class="mb-6 flex flex-wrap items-baseline justify-between gap-2">
@@ -48,6 +50,10 @@ import { ProjectFiltersBar } from './project-filters-bar';
           >
         }
       </h1>
+      <button hlmBtn (click)="create()">
+        <ng-icon name="lucidePlus" aria-hidden="true" />
+        Nouveau projet
+      </button>
     </header>
 
     <dm-project-filters-bar
@@ -109,6 +115,10 @@ import { ProjectFiltersBar } from './project-filters-bar';
           <p class="text-muted-foreground max-w-sm text-sm">
             Créez votre premier projet pour suivre ses tâches, ses notes et sa progression.
           </p>
+          <button hlmBtn (click)="create()">
+            <ng-icon name="lucidePlus" aria-hidden="true" />
+            Créer un projet
+          </button>
         }
       </section>
     } @else {
@@ -151,6 +161,7 @@ export class ProjectsPage {
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
   private readonly scroller = inject(ViewportScroller);
+  private readonly dialogs = inject(ProjectDialogs);
 
   protected readonly filters = computed(() =>
     filtersFromUrl({
@@ -191,6 +202,13 @@ export class ProjectsPage {
 
   protected resetFilters(): void {
     void this.router.navigate([], { relativeTo: this.route, queryParams: {} });
+  }
+
+  protected create(): void {
+    this.dialogs.open().subscribe((project) => {
+      toast.success(`Projet « ${project.name} » créé`);
+      this.store.reload();
+    });
   }
 
   protected reload(): void {

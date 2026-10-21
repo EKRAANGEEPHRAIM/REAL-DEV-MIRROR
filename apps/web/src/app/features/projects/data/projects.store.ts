@@ -34,10 +34,15 @@ export const ProjectsStore = signalStore(
     isEmpty: computed(() => status() === 'loaded' && entities().length === 0),
     total: computed(() => meta()?.total ?? 0),
   })),
-  withMethods((store, api = inject(ProjectsApi)) => ({
-    load: rxMethod<ProjectListQuery>(
+  withMethods((store, api = inject(ProjectsApi)) => {
+    let lastQuery: ProjectListQuery | null = null;
+
+    const load = rxMethod<ProjectListQuery>(
       pipe(
-        tap(() => patchState(store, { status: 'loading', error: null })),
+        tap((query) => {
+          lastQuery = query;
+          patchState(store, { status: 'loading', error: null });
+        }),
         switchMap((query) =>
           api.list(query).pipe(
             tapResponse({
@@ -49,6 +54,14 @@ export const ProjectsStore = signalStore(
           ),
         ),
       ),
-    ),
-  })),
+    );
+
+    return {
+      load,
+      /** Recharge la dernière page demandée (après une création ou une suppression). */
+      reload: () => {
+        if (lastQuery) load(lastQuery);
+      },
+    };
+  }),
 );
