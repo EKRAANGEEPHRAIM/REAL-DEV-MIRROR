@@ -23,8 +23,9 @@ async function tokenFromMail(to: string, subject: string): Promise<string> {
   return token;
 }
 
-// Comptes créés sur la base de dev/test, supprimés en fin de suite.
-const EMAIL_DOMAIN = '@e2e.devmirror.test';
+// Comptes créés sur la base de dev/test, supprimés en fin de suite. Domaine propre à cette suite :
+// les fichiers e2e tournent en parallèle et chacun ne nettoie que ses propres comptes.
+const EMAIL_DOMAIN = '@auth.e2e.devmirror.test';
 const email = `auth-${Date.now()}${EMAIL_DOMAIN}`;
 const password = 'MotDePasse2026';
 

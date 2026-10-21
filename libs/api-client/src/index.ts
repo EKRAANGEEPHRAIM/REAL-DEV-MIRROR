@@ -15,6 +15,16 @@ export type ForgotPasswordRequest = Schemas['ForgotPasswordDto'];
 export type ResetPasswordRequest = Schemas['ResetPasswordDto'];
 export type HealthResponse = Schemas['HealthResponseDto'];
 
+export type Project = Schemas['ProjectResponseDto'];
+export type ProjectStatus = Schemas['ProjectResponseDto']['status'];
+export type ProjectTag = Schemas['ProjectTagDto'];
+export type ProjectProgress = Schemas['ProjectProgressDto'];
+export type CreateProjectRequest = Schemas['CreateProjectDto'];
+export type UpdateProjectRequest = Schemas['UpdateProjectDto'];
+export type ProjectListQuery = NonNullable<
+  operations['ProjectsController_findAll']['parameters']['query']
+>;
+
 /** Format commun des erreurs de l'API. */
 export type ApiErrorBody = Schemas['ErrorResponseDto'];
 export type PaginationMeta = Schemas['PaginationMetaDto'];

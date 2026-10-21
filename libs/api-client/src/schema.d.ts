@@ -191,6 +191,43 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/v1/projects': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Lister ses projets (filtres, recherche, tri, pagination) */
+    get: operations['ProjectsController_findAll'];
+    put?: never;
+    /** Créer un projet */
+    post: operations['ProjectsController_create'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/projects/{id}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Détail d’un projet */
+    get: operations['ProjectsController_findOne'];
+    put?: never;
+    post?: never;
+    /** Supprimer un projet et ses tâches */
+    delete: operations['ProjectsController_remove'];
+    options?: never;
+    head?: never;
+    /** Modifier un projet (champs envoyés uniquement) */
+    patch: operations['ProjectsController_update'];
+    trace?: never;
+  };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -314,6 +351,112 @@ export interface components {
       limit: number;
       /** @example 3 */
       totalPages: number;
+    };
+    /** @enum {string} */
+    ProjectStatus: 'IDEA' | 'IN_PROGRESS' | 'PAUSED' | 'DONE' | 'ARCHIVED';
+    ProjectTagDto: {
+      /** @example clx0tag000001 */
+      id: string;
+      /** @example angular */
+      name: string;
+      /** @example #dd0031 */
+      color: string | null;
+    };
+    ProjectProgressDto: {
+      /**
+       * @description Nombre total de tâches
+       * @example 12
+       */
+      total: number;
+      /**
+       * @description Tâches terminées
+       * @example 5
+       */
+      done: number;
+      /**
+       * @description Pourcentage arrondi (0 sans tâche)
+       * @example 42
+       */
+      percent: number;
+    };
+    ProjectResponseDto: {
+      /** @example clx1a2b3c0000qz8h4k9d7f2e */
+      id: string;
+      /** @example DevMirror */
+      name: string;
+      /** @example Portfolio SaaS */
+      description: string | null;
+      /** @example IN_PROGRESS */
+      status: components['schemas']['ProjectStatus'];
+      /**
+       * @example [
+       *       "Angular",
+       *       "NestJS"
+       *     ]
+       */
+      techStack: string[];
+      /** @example https://github.com/ada/devmirror */
+      repoUrl: string | null;
+      /** @example null */
+      demoUrl: string | null;
+      /** @example #6366f1 */
+      color: string | null;
+      tags: components['schemas']['ProjectTagDto'][];
+      progress: components['schemas']['ProjectProgressDto'];
+      /**
+       * Format: date-time
+       * @example 2026-10-21T09:00:00.000Z
+       */
+      createdAt: string;
+      /**
+       * Format: date-time
+       * @example 2026-10-21T09:00:00.000Z
+       */
+      updatedAt: string;
+    };
+    CreateProjectDto: {
+      /** @example DevMirror */
+      name: string;
+      /** @example Portfolio SaaS */
+      description?: string | null;
+      /** @default IDEA */
+      status: components['schemas']['ProjectStatus'];
+      /**
+       * @example [
+       *       "Angular",
+       *       "NestJS",
+       *       "Prisma"
+       *     ]
+       */
+      techStack?: string[];
+      /** @example https://github.com/ada/devmirror */
+      repoUrl?: string | null;
+      /** @example https://devmirror.vercel.app */
+      demoUrl?: string | null;
+      /** @example #6366f1 */
+      color?: string | null;
+    };
+    UpdateProjectDto: {
+      /** @example DevMirror */
+      name?: string;
+      /** @example Portfolio SaaS */
+      description?: string | null;
+      /** @default IDEA */
+      status: components['schemas']['ProjectStatus'];
+      /**
+       * @example [
+       *       "Angular",
+       *       "NestJS",
+       *       "Prisma"
+       *     ]
+       */
+      techStack?: string[];
+      /** @example https://github.com/ada/devmirror */
+      repoUrl?: string | null;
+      /** @example https://devmirror.vercel.app */
+      demoUrl?: string | null;
+      /** @example #6366f1 */
+      color?: string | null;
     };
   };
   responses: never;
@@ -684,6 +827,227 @@ export interface operations {
           [name: string]: unknown;
         };
         content?: never;
+      };
+    };
+  };
+  ProjectsController_findAll: {
+    parameters: {
+      query?: {
+        page?: number;
+        limit?: number;
+        status?: components['schemas']['ProjectStatus'];
+        /** @description Recherche dans le nom et la description */
+        q?: string;
+        /** @description Nom d’un tag */
+        tag?: string;
+        /** @description Inclure les projets archivés (masqués par défaut, sauf filtre status=ARCHIVED) */
+        includeArchived?: boolean;
+        /** @description Tri : updatedAt, createdAt, name, status suivi de :asc ou :desc */
+        sort?: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            data: components['schemas']['ProjectResponseDto'][];
+            meta: components['schemas']['PaginationMetaDto'];
+          };
+        };
+      };
+      /** @description Paramètres invalides */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponseDto'];
+        };
+      };
+      /** @description Jeton d’accès manquant ou invalide */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponseDto'];
+        };
+      };
+    };
+  };
+  ProjectsController_create: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CreateProjectDto'];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ProjectResponseDto'];
+        };
+      };
+      /** @description Données invalides */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponseDto'];
+        };
+      };
+      /** @description Jeton d’accès manquant ou invalide */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponseDto'];
+        };
+      };
+    };
+  };
+  ProjectsController_findOne: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ProjectResponseDto'];
+        };
+      };
+      /** @description Jeton d’accès manquant ou invalide */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponseDto'];
+        };
+      };
+      /** @description Projet introuvable */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponseDto'];
+        };
+      };
+    };
+  };
+  ProjectsController_remove: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Jeton d’accès manquant ou invalide */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponseDto'];
+        };
+      };
+      /** @description Projet introuvable */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponseDto'];
+        };
+      };
+    };
+  };
+  ProjectsController_update: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['UpdateProjectDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ProjectResponseDto'];
+        };
+      };
+      /** @description Données invalides */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponseDto'];
+        };
+      };
+      /** @description Jeton d’accès manquant ou invalide */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponseDto'];
+        };
+      };
+      /** @description Projet introuvable */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponseDto'];
+        };
       };
     };
   };

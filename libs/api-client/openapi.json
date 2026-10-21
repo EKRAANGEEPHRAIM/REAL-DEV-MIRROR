@@ -320,6 +320,360 @@
         "summary": "Profil de l’utilisateur connecté",
         "tags": ["users"]
       }
+    },
+    "/api/v1/projects": {
+      "get": {
+        "operationId": "ProjectsController_findAll",
+        "parameters": [
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "default": 1,
+              "example": 1,
+              "type": "number"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20,
+              "example": 20,
+              "type": "number"
+            }
+          },
+          {
+            "name": "status",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/ProjectStatus"
+            }
+          },
+          {
+            "name": "q",
+            "required": false,
+            "in": "query",
+            "description": "Recherche dans le nom et la description",
+            "schema": {
+              "example": "portfolio",
+              "type": "string"
+            }
+          },
+          {
+            "name": "tag",
+            "required": false,
+            "in": "query",
+            "description": "Nom d’un tag",
+            "schema": {
+              "example": "angular",
+              "type": "string"
+            }
+          },
+          {
+            "name": "includeArchived",
+            "required": false,
+            "in": "query",
+            "description": "Inclure les projets archivés (masqués par défaut, sauf filtre status=ARCHIVED)",
+            "schema": {
+              "default": false,
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "sort",
+            "required": false,
+            "in": "query",
+            "description": "Tri : updatedAt, createdAt, name, status suivi de :asc ou :desc",
+            "schema": {
+              "default": "updatedAt:desc",
+              "example": "updatedAt:desc",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["data", "meta"],
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/ProjectResponseDto"
+                      }
+                    },
+                    "meta": {
+                      "$ref": "#/components/schemas/PaginationMetaDto"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Paramètres invalides",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Jeton d’accès manquant ou invalide",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Lister ses projets (filtres, recherche, tri, pagination)",
+        "tags": ["projects"]
+      },
+      "post": {
+        "operationId": "ProjectsController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateProjectDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectResponseDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Données invalides",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Jeton d’accès manquant ou invalide",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Créer un projet",
+        "tags": ["projects"]
+      }
+    },
+    "/api/v1/projects/{id}": {
+      "get": {
+        "operationId": "ProjectsController_findOne",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Jeton d’accès manquant ou invalide",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Projet introuvable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Détail d’un projet",
+        "tags": ["projects"]
+      },
+      "patch": {
+        "operationId": "ProjectsController_update",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateProjectDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectResponseDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Données invalides",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Jeton d’accès manquant ou invalide",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Projet introuvable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Modifier un projet (champs envoyés uniquement)",
+        "tags": ["projects"]
+      },
+      "delete": {
+        "operationId": "ProjectsController_remove",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          },
+          "401": {
+            "description": "Jeton d’accès manquant ou invalide",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Projet introuvable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Supprimer un projet et ses tâches",
+        "tags": ["projects"]
+      }
     }
   },
   "info": {
@@ -560,6 +914,226 @@
           }
         },
         "required": ["total", "page", "limit", "totalPages"]
+      },
+      "ProjectStatus": {
+        "type": "string",
+        "enum": ["IDEA", "IN_PROGRESS", "PAUSED", "DONE", "ARCHIVED"]
+      },
+      "ProjectTagDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "clx0tag000001"
+          },
+          "name": {
+            "type": "string",
+            "example": "angular"
+          },
+          "color": {
+            "type": "string",
+            "nullable": true,
+            "example": "#dd0031"
+          }
+        },
+        "required": ["id", "name", "color"]
+      },
+      "ProjectProgressDto": {
+        "type": "object",
+        "properties": {
+          "total": {
+            "type": "number",
+            "example": 12,
+            "description": "Nombre total de tâches"
+          },
+          "done": {
+            "type": "number",
+            "example": 5,
+            "description": "Tâches terminées"
+          },
+          "percent": {
+            "type": "number",
+            "example": 42,
+            "description": "Pourcentage arrondi (0 sans tâche)"
+          }
+        },
+        "required": ["total", "done", "percent"]
+      },
+      "ProjectResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "clx1a2b3c0000qz8h4k9d7f2e"
+          },
+          "name": {
+            "type": "string",
+            "example": "DevMirror"
+          },
+          "description": {
+            "type": "string",
+            "nullable": true,
+            "example": "Portfolio SaaS"
+          },
+          "status": {
+            "example": "IN_PROGRESS",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ProjectStatus"
+              }
+            ]
+          },
+          "techStack": {
+            "example": ["Angular", "NestJS"],
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "repoUrl": {
+            "type": "string",
+            "nullable": true,
+            "example": "https://github.com/ada/devmirror"
+          },
+          "demoUrl": {
+            "type": "string",
+            "nullable": true,
+            "example": null
+          },
+          "color": {
+            "type": "string",
+            "nullable": true,
+            "example": "#6366f1"
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProjectTagDto"
+            }
+          },
+          "progress": {
+            "$ref": "#/components/schemas/ProjectProgressDto"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string",
+            "example": "2026-10-21T09:00:00.000Z"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string",
+            "example": "2026-10-21T09:00:00.000Z"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "description",
+          "status",
+          "techStack",
+          "repoUrl",
+          "demoUrl",
+          "color",
+          "tags",
+          "progress",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
+      "CreateProjectDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "example": "DevMirror",
+            "maxLength": 120
+          },
+          "description": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 2000,
+            "example": "Portfolio SaaS"
+          },
+          "status": {
+            "default": "IDEA",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ProjectStatus"
+              }
+            ]
+          },
+          "techStack": {
+            "maxItems": 20,
+            "example": ["Angular", "NestJS", "Prisma"],
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "repoUrl": {
+            "type": "string",
+            "nullable": true,
+            "example": "https://github.com/ada/devmirror"
+          },
+          "demoUrl": {
+            "type": "string",
+            "nullable": true,
+            "example": "https://devmirror.vercel.app"
+          },
+          "color": {
+            "type": "string",
+            "nullable": true,
+            "example": "#6366f1"
+          }
+        },
+        "required": ["name"]
+      },
+      "UpdateProjectDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "example": "DevMirror",
+            "maxLength": 120
+          },
+          "description": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 2000,
+            "example": "Portfolio SaaS"
+          },
+          "status": {
+            "default": "IDEA",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ProjectStatus"
+              }
+            ]
+          },
+          "techStack": {
+            "maxItems": 20,
+            "example": ["Angular", "NestJS", "Prisma"],
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "repoUrl": {
+            "type": "string",
+            "nullable": true,
+            "example": "https://github.com/ada/devmirror"
+          },
+          "demoUrl": {
+            "type": "string",
+            "nullable": true,
+            "example": "https://devmirror.vercel.app"
+          },
+          "color": {
+            "type": "string",
+            "nullable": true,
+            "example": "#6366f1"
+          }
+        }
       }
     }
   }
