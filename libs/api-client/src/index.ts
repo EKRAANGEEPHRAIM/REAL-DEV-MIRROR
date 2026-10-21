@@ -37,6 +37,9 @@ export type TaskProject = Schemas['TaskProjectDto'];
 export type Subtask = Schemas['SubtaskDto'];
 export type CreateTaskRequest = Schemas['CreateTaskDto'];
 export type UpdateTaskRequest = Schemas['UpdateTaskDto'];
+export type ReorderTasksRequest = Schemas['ReorderTasksDto'];
+export type CreateSubtaskRequest = Schemas['CreateSubtaskDto'];
+export type UpdateSubtaskRequest = Schemas['UpdateSubtaskDto'];
 export type TaskListQuery = NonNullable<
   operations['TasksController_findAll']['parameters']['query']
 >;

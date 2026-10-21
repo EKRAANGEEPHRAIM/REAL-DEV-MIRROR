@@ -1125,6 +1125,65 @@
         "tags": ["tasks"]
       }
     },
+    "/api/v1/tasks/reorder": {
+      "patch": {
+        "description": "Statut et positions de toutes les tâches de la colonne, dans l’ordre reçu, en une transaction.",
+        "operationId": "TasksController_reorder",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReorderTasksDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Tâches de la colonne, dans le nouvel ordre",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TaskResponseDto"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Données invalides ou tâche introuvable (rien n’est modifié)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Jeton d’accès manquant ou invalide",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Enregistrer une colonne du Kanban après un glisser-déposer",
+        "tags": ["tasks"]
+      }
+    },
     "/api/v1/tasks/{id}": {
       "get": {
         "operationId": "TasksController_findOne",
@@ -1294,6 +1353,205 @@
           }
         ],
         "summary": "Supprimer une tâche et ses sous-tâches",
+        "tags": ["tasks"]
+      }
+    },
+    "/api/v1/tasks/{taskId}/subtasks": {
+      "post": {
+        "operationId": "SubtasksController_create",
+        "parameters": [
+          {
+            "name": "taskId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateSubtaskDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubtaskDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Données invalides ou limite atteinte",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Jeton d’accès manquant ou invalide",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Tâche introuvable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Ajouter une sous-tâche (en bas de la checklist)",
+        "tags": ["tasks"]
+      }
+    },
+    "/api/v1/tasks/{taskId}/subtasks/{id}": {
+      "patch": {
+        "operationId": "SubtasksController_update",
+        "parameters": [
+          {
+            "name": "taskId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateSubtaskDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubtaskDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Jeton d’accès manquant ou invalide",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Sous-tâche introuvable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Cocher, renommer ou déplacer une sous-tâche",
+        "tags": ["tasks"]
+      },
+      "delete": {
+        "operationId": "SubtasksController_remove",
+        "parameters": [
+          {
+            "name": "taskId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          },
+          "401": {
+            "description": "Jeton d’accès manquant ou invalide",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Sous-tâche introuvable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Supprimer une sous-tâche",
         "tags": ["tasks"]
       }
     }
@@ -2036,6 +2294,30 @@
         },
         "required": ["title"]
       },
+      "ReorderTasksDto": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "example": "IN_PROGRESS",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/TaskStatus"
+              }
+            ]
+          },
+          "taskIds": {
+            "minItems": 1,
+            "maxItems": 200,
+            "description": "Ids des tâches de la colonne, dans l’ordre d’affichage (la première en haut)",
+            "example": ["clx0task00002", "clx0task00001"],
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": ["status", "taskIds"]
+      },
       "UpdateTaskDto": {
         "type": "object",
         "properties": {
@@ -2080,6 +2362,36 @@
             "type": "number",
             "minimum": 0,
             "description": "Position dans la colonne du Kanban ; par défaut en bas de la colonne"
+          }
+        }
+      },
+      "CreateSubtaskDto": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "example": "Cas nominal",
+            "maxLength": 200
+          }
+        },
+        "required": ["title"]
+      },
+      "UpdateSubtaskDto": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "example": "Cas nominal et erreurs",
+            "maxLength": 200
+          },
+          "done": {
+            "type": "boolean",
+            "example": true
+          },
+          "position": {
+            "type": "number",
+            "minimum": 0,
+            "description": "Position dans la checklist"
           }
         }
       }

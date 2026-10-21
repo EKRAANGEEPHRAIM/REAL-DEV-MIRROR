@@ -1,21 +1,24 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { type Paginated, paginate } from '../../common/dto/paginated-response.dto.js';
 import { toSkipTake } from '../../common/dto/pagination-query.dto.js';
 import { parseSort } from '../../common/dto/sort.js';
 import { Prisma, TaskStatus } from '../../generated/prisma/client.js';
 import { PrismaService } from '../../prisma/prisma.service.js';
 import { ProjectsService } from '../projects/projects.service.js';
+import type { ReorderTasksDto } from './dto/reorder-tasks.dto.js';
 import { TASK_SORT_FIELDS, type TaskQueryDto } from './dto/task-query.dto.js';
 import type { TaskResponseDto } from './dto/task-response.dto.js';
 import type { CreateTaskDto, UpdateTaskDto } from './dto/task.dto.js';
 
 export const TASK_NOT_FOUND = 'Tâche introuvable';
+export const UNKNOWN_TASKS = 'Une ou plusieurs tâches sont introuvables';
 
 const taskInclude = {
   project: { select: { id: true, name: true, color: true } },
   subtasks: {
     select: { id: true, title: true, done: true, position: true },
-    orderBy: { position: 'asc' },
+    // id en second critère : ordre stable même si deux sous-tâches ont la même position
+    orderBy: [{ position: 'asc' }, { id: 'asc' }],
   },
 } satisfies Prisma.TaskInclude;
 
@@ -139,6 +142,49 @@ export class TasksService {
   async remove(userId: string, id: string): Promise<void> {
     const { count } = await this.prisma.task.deleteMany({ where: { id, userId } });
     if (count === 0) throw new NotFoundException(TASK_NOT_FOUND);
+  }
+
+  /**
+   * Enregistre une colonne du Kanban après un glisser-déposer : statut et positions 0, 1, 2…
+   * dans l'ordre reçu, en une transaction. Tout ou rien : un seul id inconnu (ou d'un autre
+   * utilisateur) refuse l'ensemble. Seules les tâches qui changent sont mises à jour.
+   */
+  async reorder(userId: string, dto: ReorderTasksDto): Promise<TaskResponseDto[]> {
+    const current = await this.prisma.task.findMany({
+      where: { userId, id: { in: dto.taskIds } },
+      select: { id: true, status: true, position: true },
+    });
+    if (current.length !== dto.taskIds.length) throw new BadRequestException(UNKNOWN_TASKS);
+    const before = new Map(current.map((task) => [task.id, task]));
+
+    await this.prisma.$transaction(async (tx) => {
+      for (const [position, id] of dto.taskIds.entries()) {
+        const previous = before.get(id)!;
+        const statusChanged = previous.status !== dto.status;
+        if (!statusChanged && previous.position === position) continue;
+
+        await tx.task.update({
+          where: { id, userId },
+          data: {
+            position,
+            status: dto.status,
+            ...(statusChanged && {
+              completedAt: dto.status === TaskStatus.DONE ? new Date() : null,
+            }),
+          },
+        });
+        if (statusChanged && dto.status === TaskStatus.DONE) {
+          await this.recordCompletion(tx, userId, id);
+        }
+      }
+    });
+
+    const tasks = await this.prisma.task.findMany({
+      where: { userId, id: { in: dto.taskIds } },
+      orderBy: { position: 'asc' },
+      include: taskInclude,
+    });
+    return tasks.map(toResponse);
   }
 
   private buildWhere(userId: string, query: TaskQueryDto): Prisma.TaskWhereInput {

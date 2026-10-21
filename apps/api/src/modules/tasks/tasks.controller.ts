@@ -25,6 +25,7 @@ import type { AuthUser } from '../../common/auth/auth-user.js';
 import { CurrentUser } from '../../common/decorators/current-user.decorator.js';
 import { ErrorResponseDto } from '../../common/dto/error-response.dto.js';
 import { ApiPaginatedResponse, type Paginated } from '../../common/dto/paginated-response.dto.js';
+import { ReorderTasksDto } from './dto/reorder-tasks.dto.js';
 import { TaskQueryDto } from './dto/task-query.dto.js';
 import { TaskResponseDto } from './dto/task-response.dto.js';
 import { CreateTaskDto, UpdateTaskDto } from './dto/task.dto.js';
@@ -60,6 +61,25 @@ export class TasksController {
   })
   create(@CurrentUser() user: AuthUser, @Body() dto: CreateTaskDto): Promise<TaskResponseDto> {
     return this.tasks.create(user.id, dto);
+  }
+
+  // Déclarée avant PATCH :id, sinon « reorder » serait pris pour un identifiant.
+  @Patch('reorder')
+  @ApiOperation({
+    summary: 'Enregistrer une colonne du Kanban après un glisser-déposer',
+    description:
+      'Statut et positions de toutes les tâches de la colonne, dans l’ordre reçu, en une transaction.',
+  })
+  @ApiOkResponse({
+    type: [TaskResponseDto],
+    description: 'Tâches de la colonne, dans le nouvel ordre',
+  })
+  @ApiBadRequestResponse({
+    type: ErrorResponseDto,
+    description: 'Données invalides ou tâche introuvable (rien n’est modifié)',
+  })
+  reorder(@CurrentUser() user: AuthUser, @Body() dto: ReorderTasksDto): Promise<TaskResponseDto[]> {
+    return this.tasks.reorder(user.id, dto);
   }
 
   @Get(':id')

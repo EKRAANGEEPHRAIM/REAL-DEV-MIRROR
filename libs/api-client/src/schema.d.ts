@@ -282,6 +282,26 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/v1/tasks/reorder': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    /**
+     * Enregistrer une colonne du Kanban après un glisser-déposer
+     * @description Statut et positions de toutes les tâches de la colonne, dans l’ordre reçu, en une transaction.
+     */
+    patch: operations['TasksController_reorder'];
+    trace?: never;
+  };
   '/api/v1/tasks/{id}': {
     parameters: {
       query?: never;
@@ -302,6 +322,41 @@ export interface paths {
      * @description Passer à DONE renseigne completedAt ; changer de statut sans position place la tâche en bas de la colonne.
      */
     patch: operations['TasksController_update'];
+    trace?: never;
+  };
+  '/api/v1/tasks/{taskId}/subtasks': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Ajouter une sous-tâche (en bas de la checklist) */
+    post: operations['SubtasksController_create'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/tasks/{taskId}/subtasks/{id}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    /** Supprimer une sous-tâche */
+    delete: operations['SubtasksController_remove'];
+    options?: never;
+    head?: never;
+    /** Cocher, renommer ou déplacer une sous-tâche */
+    patch: operations['SubtasksController_update'];
     trace?: never;
   };
 }
@@ -661,6 +716,18 @@ export interface components {
       /** @description Position dans la colonne du Kanban ; par défaut en bas de la colonne */
       position?: number;
     };
+    ReorderTasksDto: {
+      /** @example IN_PROGRESS */
+      status: components['schemas']['TaskStatus'];
+      /**
+       * @description Ids des tâches de la colonne, dans l’ordre d’affichage (la première en haut)
+       * @example [
+       *       "clx0task00002",
+       *       "clx0task00001"
+       *     ]
+       */
+      taskIds: string[];
+    };
     UpdateTaskDto: {
       /** @example Écrire les tests du module tasks */
       title?: string;
@@ -677,6 +744,18 @@ export interface components {
       /** @description Projet de rattachement (un de ses projets) ; null = tâche sans projet */
       projectId?: string | null;
       /** @description Position dans la colonne du Kanban ; par défaut en bas de la colonne */
+      position?: number;
+    };
+    CreateSubtaskDto: {
+      /** @example Cas nominal */
+      title: string;
+    };
+    UpdateSubtaskDto: {
+      /** @example Cas nominal et erreurs */
+      title?: string;
+      /** @example true */
+      done?: boolean;
+      /** @description Position dans la checklist */
       position?: number;
     };
   };
@@ -1541,6 +1620,48 @@ export interface operations {
       };
     };
   };
+  TasksController_reorder: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['ReorderTasksDto'];
+      };
+    };
+    responses: {
+      /** @description Tâches de la colonne, dans le nouvel ordre */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['TaskResponseDto'][];
+        };
+      };
+      /** @description Données invalides ou tâche introuvable (rien n’est modifié) */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponseDto'];
+        };
+      };
+      /** @description Jeton d’accès manquant ou invalide */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponseDto'];
+        };
+      };
+    };
+  };
   TasksController_findOne: {
     parameters: {
       query?: never;
@@ -1659,6 +1780,140 @@ export interface operations {
         };
       };
       /** @description Tâche introuvable */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponseDto'];
+        };
+      };
+    };
+  };
+  SubtasksController_create: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        taskId: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CreateSubtaskDto'];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['SubtaskDto'];
+        };
+      };
+      /** @description Données invalides ou limite atteinte */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponseDto'];
+        };
+      };
+      /** @description Jeton d’accès manquant ou invalide */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponseDto'];
+        };
+      };
+      /** @description Tâche introuvable */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponseDto'];
+        };
+      };
+    };
+  };
+  SubtasksController_remove: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        taskId: string;
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Jeton d’accès manquant ou invalide */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponseDto'];
+        };
+      };
+      /** @description Sous-tâche introuvable */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponseDto'];
+        };
+      };
+    };
+  };
+  SubtasksController_update: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        taskId: string;
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['UpdateSubtaskDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['SubtaskDto'];
+        };
+      };
+      /** @description Jeton d’accès manquant ou invalide */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponseDto'];
+        };
+      };
+      /** @description Sous-tâche introuvable */
       404: {
         headers: {
           [name: string]: unknown;
