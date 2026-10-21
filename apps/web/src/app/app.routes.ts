@@ -23,8 +23,14 @@ export const routes: Routes = [
       {
         path: 'projects',
         title: 'Projets · DevMirror',
+        loadComponent: () =>
+          import('./features/projects/list/projects.page').then((m) => m.ProjectsPage),
+      },
+      {
+        path: 'projects/:id',
+        title: 'Projet · DevMirror',
         loadComponent: comingSoon,
-        data: { heading: 'Projets', day: '14' },
+        data: { heading: 'Détail du projet', day: '15' },
       },
       {
         path: 'tasks',
