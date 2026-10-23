@@ -1,6 +1,6 @@
 import { DatePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
-import { Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { NgIcon, provideIcons } from '@ng-icons/core';
 import {
   lucideArrowLeft,
@@ -24,6 +24,7 @@ import { ProjectDetailStore } from '../data/project-detail.store';
 import { ProjectsApi } from '../data/projects.api';
 import { ProjectDialogs } from '../form/project-dialogs';
 import { projectStatus } from '../project-status';
+import { ProjectTasks, type ProjectTasksView } from './project-tasks';
 
 @Component({
   selector: 'dm-project-detail-page',
@@ -37,6 +38,7 @@ import { projectStatus } from '../project-status';
     HlmSkeletonImports,
     FormAlert,
     RelativeTimePipe,
+    ProjectTasks,
   ],
   providers: [
     ProjectDetailStore,
@@ -113,36 +115,14 @@ import { projectStatus } from '../project-status';
           </header>
 
           <div class="grid gap-4 lg:grid-cols-3">
-            <section hlmCard class="lg:col-span-2" aria-labelledby="tasks-title">
-              <div hlmCardHeader>
-                <h2 hlmCardTitle id="tasks-title">Tâches</h2>
-                <p hlmCardDescription>
-                  @if (project.progress.total) {
-                    {{ project.progress.done }} terminée(s) sur {{ project.progress.total }}
-                  } @else {
-                    Aucune tâche pour l’instant.
-                  }
-                </p>
-              </div>
-              <div hlmCardContent class="flex flex-col gap-3">
-                <div
-                  class="bg-muted h-2 overflow-hidden rounded-full"
-                  role="progressbar"
-                  [attr.aria-valuenow]="project.progress.percent"
-                  aria-valuemin="0"
-                  aria-valuemax="100"
-                  aria-label="Progression du projet"
-                >
-                  <div
-                    class="bg-primary h-full rounded-full"
-                    [style.width.%]="project.progress.percent"
-                  ></div>
-                </div>
-                <p class="text-muted-foreground text-sm">
-                  La liste des tâches et le Kanban de ce projet arrivent au jour 20 du plan.
-                </p>
-              </div>
-            </section>
+            <!-- En Kanban, quatre colonnes ont besoin de toute la largeur. -->
+            <dm-project-tasks
+              class="lg:col-span-2"
+              [class.lg:col-span-3]="tasksView() === 'board'"
+              [projectId]="project.id"
+              [view]="tasksView()"
+              (viewChange)="setTasksView($event)"
+            />
 
             <aside hlmCard aria-labelledby="info-title">
               <div hlmCardHeader>
@@ -225,20 +205,34 @@ import { projectStatus } from '../project-status';
 export class ProjectDetailPage {
   /** Paramètre de route :id (withComponentInputBinding). */
   readonly id = input.required<string>();
+  /** Affichage des tâches (?view=board), partageable comme sur la page des tâches. */
+  readonly view = input<string>();
 
   protected readonly store = inject(ProjectDetailStore);
   private readonly api = inject(ProjectsApi);
   private readonly dialogs = inject(ProjectDialogs);
   private readonly confirm = inject(ConfirmService);
   private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
 
   protected readonly status = computed(() => {
     const project = this.store.project();
     return projectStatus(project?.status ?? 'IDEA');
   });
+  protected readonly tasksView = computed<ProjectTasksView>(() =>
+    this.view() === 'board' ? 'board' : 'list',
+  );
 
   constructor() {
     this.store.load(this.id);
+  }
+
+  protected setTasksView(view: ProjectTasksView): void {
+    void this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { view: view === 'board' ? 'board' : null },
+      queryParamsHandling: 'merge',
+    });
   }
 
   protected edit(): void {

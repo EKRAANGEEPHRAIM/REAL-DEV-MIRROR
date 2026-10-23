@@ -67,4 +67,23 @@ describe('ProjectsStore', () => {
     expect(store.status()).toBe('error');
     expect(store.error()).toBe('Tri invalide');
   });
+
+  it('reload relance la dernière page demandée (après une création)', () => {
+    const store = TestBed.inject(ProjectsStore);
+    store.load({ page: 2, q: 'api' });
+    backend.expectOne((r) => r.url === '/api/v1/projects').flush(page([makeProject()], 13, 2));
+
+    store.reload();
+
+    const request = backend.expectOne((r) => r.url === '/api/v1/projects');
+    expect(request.request.params.get('page')).toBe('2');
+    expect(request.request.params.get('q')).toBe('api');
+    request.flush(page([makeProject(), makeProject({ id: 'p2' })], 14, 2));
+    expect(store.total()).toBe(14);
+  });
+
+  it('reload ne fait rien avant le premier chargement', () => {
+    TestBed.inject(ProjectsStore).reload();
+    backend.expectNone((r) => r.url === '/api/v1/projects');
+  });
 });

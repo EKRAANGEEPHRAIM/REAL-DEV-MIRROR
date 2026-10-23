@@ -59,4 +59,35 @@ describe('TasksStore', () => {
       'true',
     );
   });
+
+  it('upsert remplace une tâche par la version enregistrée, sans recharger', () => {
+    const store = loadedStore();
+
+    store.upsert(makeTask({ id: 't1', title: 'Titre modifié', priority: 'URGENT' }));
+
+    expect(store.entityMap()['t1']).toMatchObject({ title: 'Titre modifié', priority: 'URGENT' });
+    expect(store.ids()).toEqual(['t1', 't2']);
+  });
+
+  it('removeLocal retire une tâche supprimée de la liste', () => {
+    const store = loadedStore();
+
+    store.removeLocal('t1');
+
+    expect(store.ids()).toEqual(['t2']);
+  });
+
+  it('expose le message d’erreur et ignore une requête nulle (vue Kanban)', () => {
+    const store = TestBed.inject(TasksStore);
+
+    store.load(null);
+    backend.expectNone((r) => r.url === '/api/v1/tasks');
+
+    store.load({ page: 1 });
+    backend
+      .expectOne((r) => r.url === '/api/v1/tasks')
+      .flush({ message: 'Échéance invalide' }, { status: 400, statusText: 'Bad Request' });
+    expect(store.status()).toBe('error');
+    expect(store.error()).toBe('Échéance invalide');
+  });
 });

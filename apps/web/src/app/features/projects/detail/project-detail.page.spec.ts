@@ -48,6 +48,11 @@ describe('ProjectDetailPage', () => {
     await harness.navigateByUrl('/projects/p1');
     backend.expectOne('/api/v1/projects/p1').flush(project);
     harness.detectChanges();
+    // Section des tâches du projet, chargée une fois le projet affiché
+    backend
+      .expectOne((r) => r.url === '/api/v1/tasks')
+      .flush({ data: [], meta: { total: 0, page: 1, limit: 100, totalPages: 1 } });
+    harness.detectChanges();
     return harness.routeNativeElement as HTMLElement;
   }
 
@@ -58,7 +63,8 @@ describe('ProjectDetailPage', () => {
     const element = await open();
 
     expect(element.querySelector('h1')?.textContent).toContain('DevMirror');
-    expect(element.textContent).toContain('1 terminée(s) sur 4');
+    // La progression vient des tâches chargées (aucune ici) — testée dans project-tasks.spec
+    expect(element.textContent).toContain('Aucune tâche pour l’instant.');
     const repo = element.querySelector<HTMLAnchorElement>(
       'a[href="https://github.com/ada/devmirror"]',
     )!;
