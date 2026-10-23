@@ -22,6 +22,8 @@ export interface TaskFormContext {
   task?: Task;
   /** Projet pré-sélectionné à la création (depuis la page d'un projet). */
   projectId?: string;
+  /** Statut initial à la création (bouton « + » d'une colonne du Kanban). */
+  status?: TaskStatus;
 }
 
 export type TaskDialogResult = { type: 'saved'; task: Task } | { type: 'deleted'; id: string };
@@ -230,7 +232,7 @@ export class TaskFormDialog {
       [Validators.required, Validators.maxLength(200), Validators.pattern(/\S/)],
     ],
     description: [this.task?.description ?? '', Validators.maxLength(5000)],
-    status: [(this.task?.status ?? 'TODO') as TaskStatus],
+    status: [(this.task?.status ?? this.context.status ?? 'TODO') as TaskStatus],
     priority: [(this.task?.priority ?? 'MEDIUM') as TaskPriority],
     dueDate: [toDateInput(this.task?.dueDate)],
     projectId: [this.task?.project?.id ?? this.context.projectId ?? ''],

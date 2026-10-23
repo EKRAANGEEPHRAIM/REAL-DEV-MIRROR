@@ -1,5 +1,5 @@
 import { inject, Injectable } from '@angular/core';
-import type { Task } from '@devmirror/api-client';
+import type { Task, TaskStatus } from '@devmirror/api-client';
 import { HlmDialogService } from '@spartan-ng/helm/dialog';
 import type { Observable } from 'rxjs';
 import { type TaskDialogResult, type TaskFormContext, TaskFormDialog } from './task-form-dialog';
@@ -11,10 +11,10 @@ export class TaskDialogs {
 
   open(
     task?: Task,
-    options: { projectId?: string } = {},
+    options: { projectId?: string; status?: TaskStatus } = {},
   ): Observable<TaskDialogResult | undefined> {
     return this.dialog.open<TaskDialogResult, TaskFormContext>(TaskFormDialog, {
-      context: { task, projectId: options.projectId },
+      context: { task, projectId: options.projectId, status: options.status },
       contentClass: 'sm:max-w-xl',
     }).closed$;
   }

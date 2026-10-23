@@ -85,23 +85,26 @@ const SELECT_CLASSES =
         </select>
       </div>
 
-      <div class="flex flex-col gap-1">
-        <label hlmLabel for="task-filter-status" class="text-muted-foreground text-xs"
-          >Statut</label
-        >
-        <select
-          id="task-filter-status"
-          [class]="selectClasses"
-          (change)="emit('status', $any($event.target).value)"
-        >
-          <option value="" [selected]="!value().status">Tous</option>
-          @for (status of statuses; track status.value) {
-            <option [value]="status.value" [selected]="value().status === status.value">
-              {{ status.label }}
-            </option>
-          }
-        </select>
-      </div>
+      <!-- Sur le Kanban, les colonnes tiennent lieu de statut et d'ordre. -->
+      @if (!board()) {
+        <div class="flex flex-col gap-1">
+          <label hlmLabel for="task-filter-status" class="text-muted-foreground text-xs"
+            >Statut</label
+          >
+          <select
+            id="task-filter-status"
+            [class]="selectClasses"
+            (change)="emit('status', $any($event.target).value)"
+          >
+            <option value="" [selected]="!value().status">Tous</option>
+            @for (status of statuses; track status.value) {
+              <option [value]="status.value" [selected]="value().status === status.value">
+                {{ status.label }}
+              </option>
+            }
+          </select>
+        </div>
+      }
 
       <div class="flex flex-col gap-1">
         <label hlmLabel for="task-filter-priority" class="text-muted-foreground text-xs"
@@ -121,22 +124,24 @@ const SELECT_CLASSES =
         </select>
       </div>
 
-      <div class="flex flex-col gap-1">
-        <label hlmLabel for="task-filter-sort" class="text-muted-foreground text-xs"
-          >Trier par</label
-        >
-        <select
-          id="task-filter-sort"
-          [class]="selectClasses"
-          (change)="emit('sort', $any($event.target).value)"
-        >
-          @for (sort of sorts; track sort.value) {
-            <option [value]="sort.value" [selected]="value().sort === sort.value">
-              {{ sort.label }}
-            </option>
-          }
-        </select>
-      </div>
+      @if (!board()) {
+        <div class="flex flex-col gap-1">
+          <label hlmLabel for="task-filter-sort" class="text-muted-foreground text-xs"
+            >Trier par</label
+          >
+          <select
+            id="task-filter-sort"
+            [class]="selectClasses"
+            (change)="emit('sort', $any($event.target).value)"
+          >
+            @for (sort of sorts; track sort.value) {
+              <option [value]="sort.value" [selected]="value().sort === sort.value">
+                {{ sort.label }}
+              </option>
+            }
+          </select>
+        </div>
+      }
 
       @if (active()) {
         <button hlmBtn variant="ghost" size="sm" class="h-9" (click)="cleared.emit()">
@@ -151,6 +156,8 @@ export class TaskFiltersBar {
   readonly value = input.required<TaskFilters>();
   readonly projects = input<readonly Project[]>([]);
   readonly active = input(false);
+  /** Vue Kanban : masque les filtres de statut et de tri. */
+  readonly board = input(false);
   readonly changed = output<Partial<TaskFilters>>();
   readonly cleared = output<void>();
 

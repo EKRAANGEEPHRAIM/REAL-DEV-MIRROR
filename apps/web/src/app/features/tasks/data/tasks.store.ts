@@ -11,7 +11,7 @@ import {
 } from '@ngrx/signals/entities';
 import { rxMethod } from '@ngrx/signals/rxjs-interop';
 import { toast } from '@spartan-ng/brain/sonner';
-import { mergeMap, pipe, switchMap, tap } from 'rxjs';
+import { filter, mergeMap, pipe, switchMap, tap } from 'rxjs';
 import { apiErrorMessage } from '../../../core/http/api-error';
 import { TasksApi } from './tasks.api';
 
@@ -37,8 +37,10 @@ export const TasksStore = signalStore(
   withMethods((store, api = inject(TasksApi)) => {
     let lastQuery: TaskListQuery | null = null;
 
-    const load = rxMethod<TaskListQuery>(
+    // null : vue liste inactive (Kanban affiché), rien à charger.
+    const load = rxMethod<TaskListQuery | null>(
       pipe(
+        filter((query): query is TaskListQuery => query !== null),
         tap((query) => {
           lastQuery = query;
           patchState(store, { status: 'loading', error: null });

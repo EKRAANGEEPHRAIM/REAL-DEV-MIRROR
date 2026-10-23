@@ -2,9 +2,16 @@ import { ViewportScroller } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
-import type { Project, Task } from '@devmirror/api-client';
+import type { Project, Task, TaskStatus } from '@devmirror/api-client';
 import { NgIcon, provideIcons } from '@ng-icons/core';
-import { lucideListTodo, lucidePlus, lucideRefreshCw, lucideSearchX } from '@ng-icons/lucide';
+import {
+  lucideColumns3,
+  lucideList,
+  lucideListTodo,
+  lucidePlus,
+  lucideRefreshCw,
+  lucideSearchX,
+} from '@ng-icons/lucide';
 import { toast } from '@spartan-ng/brain/sonner';
 import { HlmButtonImports } from '@spartan-ng/helm/button';
 import { HlmSkeletonImports } from '@spartan-ng/helm/skeleton';
@@ -13,6 +20,8 @@ import { FormAlert } from '../../../shared/ui-kit/form-alert';
 import { Pagination } from '../../../shared/ui-kit/pagination';
 import { ProjectsApi } from '../../projects/data/projects.api';
 import { pageFromUrl } from '../../projects/project-filters';
+import { KanbanBoard } from '../board/kanban-board';
+import { KanbanStore } from '../data/kanban.store';
 import { TasksStore } from '../data/tasks.store';
 import { TaskDialogs } from '../form/task-dialogs';
 import type { TaskDialogResult } from '../form/task-form-dialog';
@@ -36,23 +45,55 @@ import { TaskRow } from './task-row';
     Pagination,
     TaskFiltersBar,
     TaskRow,
+    KanbanBoard,
   ],
-  providers: [provideIcons({ lucideListTodo, lucidePlus, lucideRefreshCw, lucideSearchX })],
+  providers: [
+    provideIcons({
+      lucideColumns3,
+      lucideList,
+      lucideListTodo,
+      lucidePlus,
+      lucideRefreshCw,
+      lucideSearchX,
+    }),
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <header class="mb-6 flex flex-wrap items-baseline justify-between gap-2">
+    <header class="mb-6 flex flex-wrap items-center justify-between gap-3">
       <h1 class="text-2xl font-semibold tracking-tight">
         Tâches
-        @if (store.status() === 'loaded') {
-          <span class="text-muted-foreground ms-1 text-base font-normal"
-            >({{ store.total() }})</span
-          >
+        @if (count() !== null) {
+          <span class="text-muted-foreground ms-1 text-base font-normal">({{ count() }})</span>
         }
       </h1>
-      <button hlmBtn (click)="create()">
-        <ng-icon name="lucidePlus" aria-hidden="true" />
-        Nouvelle tâche
-      </button>
+      <div class="flex items-center gap-2">
+        <div class="bg-muted flex rounded-lg p-0.5" role="group" aria-label="Affichage">
+          <button
+            hlmBtn
+            size="sm"
+            [variant]="board() ? 'ghost' : 'outline'"
+            [attr.aria-pressed]="!board()"
+            (click)="setView(null)"
+          >
+            <ng-icon name="lucideList" aria-hidden="true" />
+            Liste
+          </button>
+          <button
+            hlmBtn
+            size="sm"
+            [variant]="board() ? 'outline' : 'ghost'"
+            [attr.aria-pressed]="board()"
+            (click)="setView('board')"
+          >
+            <ng-icon name="lucideColumns3" aria-hidden="true" />
+            Kanban
+          </button>
+        </div>
+        <button hlmBtn (click)="create()">
+          <ng-icon name="lucidePlus" aria-hidden="true" />
+          Nouvelle tâche
+        </button>
+      </div>
     </header>
 
     <dm-task-filters-bar
@@ -60,11 +101,14 @@ import { TaskRow } from './task-row';
       [value]="filters()"
       [projects]="projects()"
       [active]="filtered()"
+      [board]="board()"
       (changed)="updateFilters($event)"
       (cleared)="resetFilters()"
     />
 
-    @if (store.status() === 'error' && !store.entities().length) {
+    @if (board()) {
+      <dm-kanban-board (opened)="edit($event)" (created)="create($event)" />
+    } @else if (store.status() === 'error' && !store.entities().length) {
       <div class="flex max-w-xl flex-col items-start gap-3">
         <dm-form-alert>{{ store.error() }}</dm-form-alert>
         <button hlmBtn variant="outline" (click)="store.reload()">
@@ -138,6 +182,7 @@ import { TaskRow } from './task-row';
   `,
 })
 export class TasksPage {
+  readonly view = input<string>();
   readonly project = input<string>();
   readonly status = input<string>();
   readonly priority = input<string>();
@@ -147,15 +192,18 @@ export class TasksPage {
   readonly page = input<string>();
 
   protected readonly store = inject(TasksStore);
+  private readonly kanban = inject(KanbanStore);
   private readonly dialogs = inject(TaskDialogs);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
   private readonly scroller = inject(ViewportScroller);
 
+  protected readonly board = computed(() => this.view() === 'board');
   protected readonly filters = computed(() =>
     taskFiltersFromUrl({
       project: this.project(),
-      status: this.status(),
+      // Sur le tableau, les colonnes remplacent le filtre de statut.
+      status: this.board() ? undefined : this.status(),
       priority: this.priority(),
       due: this.due(),
       q: this.q(),
@@ -163,7 +211,19 @@ export class TasksPage {
     }),
   );
   protected readonly filtered = computed(() => hasActiveTaskFilters(this.filters()));
-  private readonly query = computed(() => toTaskQuery(this.filters(), pageFromUrl(this.page())));
+
+  // Une seule vue charge ses données ; l'autre reçoit null.
+  private readonly listQuery = computed(() =>
+    this.board() ? null : toTaskQuery(this.filters(), pageFromUrl(this.page())),
+  );
+  private readonly boardQuery = computed(() =>
+    this.board() ? toTaskQuery(this.filters(), 1) : null,
+  );
+
+  protected readonly count = computed(() => {
+    if (this.board()) return this.kanban.status() === 'loaded' ? this.kanban.total() : null;
+    return this.store.status() === 'loaded' ? this.store.total() : null;
+  });
 
   protected readonly projects = toSignal(
     inject(ProjectsApi)
@@ -177,14 +237,19 @@ export class TasksPage {
   protected readonly skeletons = [1, 2, 3, 4, 5];
 
   constructor() {
-    this.store.load(this.query);
+    this.store.load(this.listQuery);
+    this.kanban.load(this.boardQuery);
   }
 
-  protected create(): void {
-    this.dialogs.open().subscribe((result) => {
+  protected setView(view: 'board' | null): void {
+    this.navigate({ view, page: null, ...(view === 'board' && { status: null, sort: null }) });
+  }
+
+  protected create(status?: TaskStatus): void {
+    this.dialogs.open(undefined, { status }).subscribe((result) => {
       if (result?.type !== 'saved') return;
       toast.success('Tâche créée');
-      this.store.reload();
+      this.refresh();
     });
   }
 
@@ -193,17 +258,24 @@ export class TasksPage {
   }
 
   private applyResult(result: TaskDialogResult | undefined): void {
-    if (result?.type === 'saved') {
+    if (result?.type === 'saved') toast.success('Tâche enregistrée');
+    if (result?.type === 'deleted') toast.success('Tâche supprimée');
+
+    if (this.board()) {
+      // Le statut ou la position ont pu changer : on recharge le tableau.
+      this.kanban.reload();
+    } else if (result?.type === 'saved') {
       this.store.upsert(result.task);
-      toast.success('Tâche enregistrée');
-    } else if (result?.type === 'deleted') {
-      this.store.removeLocal(result.id);
-      toast.success('Tâche supprimée');
-      this.store.reload();
     } else {
-      // Fenêtre fermée sans enregistrer : la checklist a pu changer entre-temps.
+      if (result?.type === 'deleted') this.store.removeLocal(result.id);
+      // Suppression, ou fenêtre fermée après avoir modifié la checklist.
       this.store.reload();
     }
+  }
+
+  private refresh(): void {
+    if (this.board()) this.kanban.reload();
+    else this.store.reload();
   }
 
   protected updateFilters(change: Partial<TaskFilters>): void {
@@ -216,7 +288,11 @@ export class TasksPage {
   }
 
   protected resetFilters(): void {
-    void this.router.navigate([], { relativeTo: this.route, queryParams: {} });
+    // Garde la vue choisie (liste ou Kanban).
+    void this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: this.board() ? { view: 'board' } : {},
+    });
   }
 
   private navigate(queryParams: Record<string, string | null>): void {
