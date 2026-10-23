@@ -551,7 +551,7 @@ export interface components {
       /** @example Portfolio SaaS */
       description?: string | null;
       /** @default IDEA */
-      status: components['schemas']['ProjectStatus'];
+      status?: components['schemas']['ProjectStatus'];
       /**
        * @example [
        *       "Angular",
@@ -580,7 +580,7 @@ export interface components {
       /** @example Portfolio SaaS */
       description?: string | null;
       /** @default IDEA */
-      status: components['schemas']['ProjectStatus'];
+      status?: components['schemas']['ProjectStatus'];
       /**
        * @example [
        *       "Angular",
@@ -703,9 +703,9 @@ export interface components {
       title: string;
       description?: string | null;
       /** @default TODO */
-      status: components['schemas']['TaskStatus'];
+      status?: components['schemas']['TaskStatus'];
       /** @default MEDIUM */
-      priority: components['schemas']['Priority'];
+      priority?: components['schemas']['Priority'];
       /**
        * Format: date-time
        * @example 2026-10-30T17:00:00.000Z
@@ -733,9 +733,9 @@ export interface components {
       title?: string;
       description?: string | null;
       /** @default TODO */
-      status: components['schemas']['TaskStatus'];
+      status?: components['schemas']['TaskStatus'];
       /** @default MEDIUM */
-      priority: components['schemas']['Priority'];
+      priority?: components['schemas']['Priority'];
       /**
        * Format: date-time
        * @example 2026-10-30T17:00:00.000Z

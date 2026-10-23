@@ -35,8 +35,7 @@ export const routes: Routes = [
       {
         path: 'tasks',
         title: 'Tâches · DevMirror',
-        loadComponent: comingSoon,
-        data: { heading: 'Tâches', day: '18' },
+        loadComponent: () => import('./features/tasks/list/tasks.page').then((m) => m.TasksPage),
       },
       {
         path: 'goals',
