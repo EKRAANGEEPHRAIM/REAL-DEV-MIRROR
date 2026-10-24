@@ -40,8 +40,7 @@ export const routes: Routes = [
       {
         path: 'goals',
         title: 'Objectifs · DevMirror',
-        loadComponent: comingSoon,
-        data: { heading: 'Objectifs', day: '22' },
+        loadComponent: () => import('./features/goals/list/goals.page').then((m) => m.GoalsPage),
       },
       {
         path: 'notes',
