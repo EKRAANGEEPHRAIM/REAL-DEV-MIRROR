@@ -157,6 +157,17 @@ export class ProjectsService {
     if (owned === 0) throw new BadRequestException(PROJECT_NOT_FOUND);
   }
 
+  /** Même contrôle pour une liste (objectifs liés à plusieurs projets) : tout ou rien. */
+  async assertAllOwned(userId: string, projectIds: readonly string[]): Promise<void> {
+    if (projectIds.length === 0) return;
+    const owned = await this.prisma.project.count({
+      where: { userId, id: { in: [...projectIds] } },
+    });
+    if (owned !== new Set(projectIds).size) {
+      throw new BadRequestException('Un ou plusieurs projets sont introuvables');
+    }
+  }
+
   private buildWhere(userId: string, query: ProjectQueryDto): Prisma.ProjectWhereInput {
     const where: Prisma.ProjectWhereInput = { userId };
 

@@ -359,6 +359,78 @@ export interface paths {
     patch: operations['SubtasksController_update'];
     trace?: never;
   };
+  '/api/v1/goals': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Lister ses objectifs (en cours / atteints, projet, recherche) */
+    get: operations['GoalsController_findAll'];
+    put?: never;
+    /** Créer un objectif, avec ses jalons de départ */
+    post: operations['GoalsController_create'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/goals/{id}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Détail d’un objectif */
+    get: operations['GoalsController_findOne'];
+    put?: never;
+    post?: never;
+    /** Supprimer un objectif et ses jalons */
+    delete: operations['GoalsController_remove'];
+    options?: never;
+    head?: never;
+    /** Modifier un objectif (projectIds remplace la liste) */
+    patch: operations['GoalsController_update'];
+    trace?: never;
+  };
+  '/api/v1/goals/{goalId}/milestones': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Ajouter un jalon (en dernier) */
+    post: operations['GoalsController_addMilestone'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/goals/{goalId}/milestones/{id}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    /** Supprimer un jalon */
+    delete: operations['GoalsController_removeMilestone'];
+    options?: never;
+    head?: never;
+    /** Cocher, renommer ou déplacer un jalon */
+    patch: operations['GoalsController_updateMilestone'];
+    trace?: never;
+  };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -756,6 +828,109 @@ export interface components {
       /** @example true */
       done?: boolean;
       /** @description Position dans la checklist */
+      position?: number;
+    };
+    MilestoneDto: {
+      /** @example clx0mil000001 */
+      id: string;
+      /** @example Envoyer 10 candidatures */
+      title: string;
+      /** @example false */
+      done: boolean;
+      /** @example 0 */
+      position: number;
+    };
+    GoalProjectDto: {
+      /** @example clx1a2b3c0000qz8h4k9d7f2e */
+      id: string;
+      /** @example DevMirror */
+      name: string;
+      /** @example #6366f1 */
+      color: string | null;
+    };
+    GoalProgressDto: {
+      /** @example 3 */
+      total: number;
+      /** @example 1 */
+      done: number;
+      /**
+       * @description Pourcentage arrondi (0 sans jalon)
+       * @example 33
+       */
+      percent: number;
+    };
+    GoalResponseDto: {
+      /** @example clx0goal00001 */
+      id: string;
+      /** @example Décrocher une première mission freelance */
+      title: string;
+      /** @example null */
+      description: string | null;
+      /**
+       * Format: date-time
+       * @example 2026-12-31T22:59:59.999Z
+       */
+      targetDate: string | null;
+      milestones: components['schemas']['MilestoneDto'][];
+      projects: components['schemas']['GoalProjectDto'][];
+      progress: components['schemas']['GoalProgressDto'];
+      /**
+       * @description Tous les jalons sont faits (au moins un)
+       * @example false
+       */
+      completed: boolean;
+      /**
+       * Format: date-time
+       * @example 2026-10-24T09:00:00.000Z
+       */
+      createdAt: string;
+      /**
+       * Format: date-time
+       * @example 2026-10-24T09:00:00.000Z
+       */
+      updatedAt: string;
+    };
+    CreateGoalDto: {
+      /** @example Décrocher une première mission freelance */
+      title: string;
+      description?: string | null;
+      /**
+       * Format: date-time
+       * @example 2026-12-31T22:59:59.999Z
+       */
+      targetDate?: string | null;
+      /** @description Ids de ses propres projets ; en modification, remplace la liste entière */
+      projectIds?: string[];
+      /**
+       * @description Jalons de départ, dans l’ordre (création uniquement)
+       * @example [
+       *       "Mettre à jour le portfolio",
+       *       "Créer un profil Malt",
+       *       "Envoyer 10 candidatures"
+       *     ]
+       */
+      milestones?: string[];
+    };
+    UpdateGoalDto: {
+      /** @example Décrocher une première mission freelance */
+      title?: string;
+      description?: string | null;
+      /**
+       * Format: date-time
+       * @example 2026-12-31T22:59:59.999Z
+       */
+      targetDate?: string | null;
+      /** @description Ids de ses propres projets ; en modification, remplace la liste entière */
+      projectIds?: string[];
+    };
+    CreateMilestoneDto: {
+      /** @example Envoyer 10 candidatures */
+      title: string;
+    };
+    UpdateMilestoneDto: {
+      title?: string;
+      /** @example true */
+      done?: boolean;
       position?: number;
     };
   };
@@ -1914,6 +2089,360 @@ export interface operations {
         };
       };
       /** @description Sous-tâche introuvable */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponseDto'];
+        };
+      };
+    };
+  };
+  GoalsController_findAll: {
+    parameters: {
+      query?: {
+        page?: number;
+        limit?: number;
+        /** @description completed : tous les jalons faits (au moins un) ; active : les autres */
+        state?: 'active' | 'completed';
+        /** @description Objectifs liés à ce projet */
+        projectId?: string;
+        /** @description Recherche dans le titre et la description */
+        q?: string;
+        /** @description Tri : targetDate, createdAt, updatedAt, title suivi de :asc ou :desc */
+        sort?: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            data: components['schemas']['GoalResponseDto'][];
+            meta: components['schemas']['PaginationMetaDto'];
+          };
+        };
+      };
+      /** @description Paramètres invalides */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponseDto'];
+        };
+      };
+      /** @description Jeton d’accès manquant ou invalide */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponseDto'];
+        };
+      };
+    };
+  };
+  GoalsController_create: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CreateGoalDto'];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['GoalResponseDto'];
+        };
+      };
+      /** @description Données invalides ou projet introuvable */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponseDto'];
+        };
+      };
+      /** @description Jeton d’accès manquant ou invalide */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponseDto'];
+        };
+      };
+    };
+  };
+  GoalsController_findOne: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['GoalResponseDto'];
+        };
+      };
+      /** @description Jeton d’accès manquant ou invalide */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponseDto'];
+        };
+      };
+      /** @description Objectif introuvable */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponseDto'];
+        };
+      };
+    };
+  };
+  GoalsController_remove: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Jeton d’accès manquant ou invalide */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponseDto'];
+        };
+      };
+      /** @description Objectif introuvable */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponseDto'];
+        };
+      };
+    };
+  };
+  GoalsController_update: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['UpdateGoalDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['GoalResponseDto'];
+        };
+      };
+      /** @description Données invalides ou projet introuvable */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponseDto'];
+        };
+      };
+      /** @description Jeton d’accès manquant ou invalide */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponseDto'];
+        };
+      };
+      /** @description Objectif introuvable */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponseDto'];
+        };
+      };
+    };
+  };
+  GoalsController_addMilestone: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        goalId: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CreateMilestoneDto'];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['MilestoneDto'];
+        };
+      };
+      /** @description Données invalides ou limite atteinte */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponseDto'];
+        };
+      };
+      /** @description Jeton d’accès manquant ou invalide */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponseDto'];
+        };
+      };
+      /** @description Objectif introuvable */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponseDto'];
+        };
+      };
+    };
+  };
+  GoalsController_removeMilestone: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        goalId: string;
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Jeton d’accès manquant ou invalide */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponseDto'];
+        };
+      };
+      /** @description Jalon introuvable */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponseDto'];
+        };
+      };
+    };
+  };
+  GoalsController_updateMilestone: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        goalId: string;
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['UpdateMilestoneDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['MilestoneDto'];
+        };
+      };
+      /** @description Jeton d’accès manquant ou invalide */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponseDto'];
+        };
+      };
+      /** @description Jalon introuvable */
       404: {
         headers: {
           [name: string]: unknown;

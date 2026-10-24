@@ -5,6 +5,7 @@ import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter.js';
 import { EnvironmentVariables, validateEnv } from './config/env.validation.js';
 import { AuthModule } from './modules/auth/auth.module.js';
+import { GoalsModule } from './modules/goals/goals.module.js';
 import { HealthModule } from './modules/health/health.module.js';
 import { MailModule } from './modules/mail/mail.module.js';
 import { ProjectsModule } from './modules/projects/projects.module.js';
@@ -31,6 +32,7 @@ import { PrismaModule } from './prisma/prisma.module.js';
     ProjectsModule,
     TagsModule,
     TasksModule,
+    GoalsModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: ThrottlerGuard },

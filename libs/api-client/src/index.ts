@@ -44,6 +44,18 @@ export type TaskListQuery = NonNullable<
   operations['TasksController_findAll']['parameters']['query']
 >;
 
+export type Goal = Schemas['GoalResponseDto'];
+export type GoalProject = Schemas['GoalProjectDto'];
+export type GoalProgress = Schemas['GoalProgressDto'];
+export type Milestone = Schemas['MilestoneDto'];
+export type CreateGoalRequest = Schemas['CreateGoalDto'];
+export type UpdateGoalRequest = Schemas['UpdateGoalDto'];
+export type CreateMilestoneRequest = Schemas['CreateMilestoneDto'];
+export type UpdateMilestoneRequest = Schemas['UpdateMilestoneDto'];
+export type GoalListQuery = NonNullable<
+  operations['GoalsController_findAll']['parameters']['query']
+>;
+
 /** Format commun des erreurs de l'API. */
 export type ApiErrorBody = Schemas['ErrorResponseDto'];
 export type PaginationMeta = Schemas['PaginationMetaDto'];
