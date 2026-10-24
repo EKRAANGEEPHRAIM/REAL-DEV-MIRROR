@@ -4,6 +4,7 @@
 @import 'tailwindcss/utilities.css';
 
 @import '@spartan-ng/brain/hlm-tailwind-preset.css';
+@plugin '@tailwindcss/typography';
 /* You can add global styles to this file, and also import other style files */
 
 :root {
@@ -81,6 +82,88 @@
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.552 0.016 285.938);
+}
+
+/* Coloration du code des notes (highlight.js), lisible en thème clair comme sombre. */
+:root {
+  --code-bg: oklch(0.975 0.003 286);
+  --code-fg: oklch(0.27 0.01 286);
+  --code-comment: oklch(0.55 0.02 286);
+  --code-keyword: oklch(0.5 0.2 300);
+  --code-string: oklch(0.5 0.13 150);
+  --code-number: oklch(0.55 0.15 50);
+  --code-title: oklch(0.5 0.16 255);
+  --code-attr: oklch(0.52 0.13 200);
+  --code-deletion: oklch(0.55 0.19 25);
+}
+:root.dark {
+  --code-bg: oklch(0.19 0.006 286);
+  --code-fg: oklch(0.9 0.005 286);
+  --code-comment: oklch(0.62 0.02 286);
+  --code-keyword: oklch(0.75 0.15 300);
+  --code-string: oklch(0.78 0.13 150);
+  --code-number: oklch(0.8 0.12 60);
+  --code-title: oklch(0.76 0.13 250);
+  --code-attr: oklch(0.78 0.11 200);
+  --code-deletion: oklch(0.72 0.17 25);
+}
+
+.prose pre {
+  background: var(--code-bg);
+  color: var(--code-fg);
+  border: 1px solid var(--border);
+}
+.prose pre code.hljs {
+  display: block;
+  overflow-x: auto;
+  padding: 1rem;
+}
+.hljs-comment,
+.hljs-quote {
+  color: var(--code-comment);
+  font-style: italic;
+}
+.hljs-keyword,
+.hljs-selector-tag,
+.hljs-literal,
+.hljs-doctag,
+.hljs-meta .hljs-keyword {
+  color: var(--code-keyword);
+}
+.hljs-string,
+.hljs-regexp,
+.hljs-addition,
+.hljs-template-tag {
+  color: var(--code-string);
+}
+.hljs-number,
+.hljs-built_in,
+.hljs-symbol,
+.hljs-bullet {
+  color: var(--code-number);
+}
+.hljs-title,
+.hljs-section,
+.hljs-name,
+.hljs-function .hljs-title {
+  color: var(--code-title);
+}
+.hljs-attr,
+.hljs-attribute,
+.hljs-variable,
+.hljs-type,
+.hljs-property,
+.hljs-selector-class {
+  color: var(--code-attr);
+}
+.hljs-deletion {
+  color: var(--code-deletion);
+}
+.hljs-strong {
+  font-weight: 600;
+}
+.hljs-emphasis {
+  font-style: italic;
 }
 
 @layer base {

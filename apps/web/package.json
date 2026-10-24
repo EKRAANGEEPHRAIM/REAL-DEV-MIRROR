@@ -27,6 +27,10 @@
     "@spartan-ng/brain": "^1.6.3",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.1",
+    "dompurify": "^3.4.17",
+    "highlight.js": "^11.12.0",
+    "marked": "^16.4.2",
+    "marked-highlight": "^2.2.4",
     "rxjs": "~7.8.0",
     "tailwind-merge": "^3.5.0",
     "tslib": "^2.3.0"
@@ -39,6 +43,7 @@
     "@eslint/js": "^10.0.1",
     "@spartan-ng/cli": "^1.6.3",
     "@tailwindcss/postcss": "^4.1.12",
+    "@tailwindcss/typography": "^0.5.20",
     "angular-eslint": "22.6.0",
     "eslint": "^10.12.0",
     "jsdom": "^30.0.0",

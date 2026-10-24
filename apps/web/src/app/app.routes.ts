@@ -45,8 +45,13 @@ export const routes: Routes = [
       {
         path: 'notes',
         title: 'Notes · DevMirror',
-        loadComponent: comingSoon,
-        data: { heading: 'Notes', day: '24' },
+        loadComponent: () => import('./features/notes/list/notes.page').then((m) => m.NotesPage),
+      },
+      {
+        path: 'notes/:id',
+        title: 'Note · DevMirror',
+        loadComponent: () =>
+          import('./features/notes/editor/note-editor.page').then((m) => m.NoteEditorPage),
       },
       {
         path: 'settings',
