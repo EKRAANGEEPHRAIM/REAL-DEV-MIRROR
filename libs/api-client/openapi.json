@@ -2097,6 +2097,360 @@
         "summary": "Supprimer un jalon",
         "tags": ["goals"]
       }
+    },
+    "/api/v1/notes": {
+      "get": {
+        "operationId": "NotesController_findAll",
+        "parameters": [
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "default": 1,
+              "example": 1,
+              "type": "number"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20,
+              "example": 20,
+              "type": "number"
+            }
+          },
+          {
+            "name": "q",
+            "required": false,
+            "in": "query",
+            "description": "Recherche plein texte (français) dans le titre et le contenu ; accepte \"expression exacte\", -exclu et OR. Sans tri explicite, les résultats sont classés par pertinence.",
+            "schema": {
+              "example": "refresh token",
+              "type": "string"
+            }
+          },
+          {
+            "name": "projectId",
+            "required": false,
+            "in": "query",
+            "description": "Notes d’un projet",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "tag",
+            "required": false,
+            "in": "query",
+            "description": "Nom d’un tag",
+            "schema": {
+              "example": "nestjs",
+              "type": "string"
+            }
+          },
+          {
+            "name": "pinned",
+            "required": false,
+            "in": "query",
+            "description": "true : seulement les épinglées ; false : les autres",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "sort",
+            "required": false,
+            "in": "query",
+            "description": "Tri : updatedAt, createdAt, title suivi de :asc ou :desc (les notes épinglées restent en tête)",
+            "schema": {
+              "default": "updatedAt:desc",
+              "example": "updatedAt:desc",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["data", "meta"],
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/NoteSummaryDto"
+                      }
+                    },
+                    "meta": {
+                      "$ref": "#/components/schemas/PaginationMetaDto"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Paramètres invalides",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Jeton d’accès manquant ou invalide",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Lister ses notes (épinglées en tête) : recherche plein texte, projet, tag",
+        "tags": ["notes"]
+      },
+      "post": {
+        "operationId": "NotesController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateNoteDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NoteResponseDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Données invalides, projet ou tag introuvable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Jeton d’accès manquant ou invalide",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Créer une note",
+        "tags": ["notes"]
+      }
+    },
+    "/api/v1/notes/{id}": {
+      "get": {
+        "operationId": "NotesController_findOne",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NoteResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Jeton d’accès manquant ou invalide",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Note introuvable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Détail d’une note, avec son contenu Markdown",
+        "tags": ["notes"]
+      },
+      "patch": {
+        "operationId": "NotesController_update",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateNoteDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NoteResponseDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Données invalides, projet ou tag introuvable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Jeton d’accès manquant ou invalide",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Note introuvable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Modifier, épingler ou rattacher une note (tagIds remplace la liste)",
+        "tags": ["notes"]
+      },
+      "delete": {
+        "operationId": "NotesController_remove",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          },
+          "401": {
+            "description": "Jeton d’accès manquant ou invalide",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Note introuvable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Supprimer une note",
+        "tags": ["notes"]
+      }
     }
   },
   "info": {
@@ -3161,6 +3515,232 @@
           "position": {
             "type": "number",
             "minimum": 0
+          }
+        }
+      },
+      "NoteProjectDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "clx1a2b3c0000qz8h4k9d7f2e"
+          },
+          "name": {
+            "type": "string",
+            "example": "DevMirror"
+          },
+          "color": {
+            "type": "string",
+            "nullable": true,
+            "example": "#6366f1"
+          }
+        },
+        "required": ["id", "name", "color"]
+      },
+      "NoteTagDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "clx0tag000001"
+          },
+          "name": {
+            "type": "string",
+            "example": "nestjs"
+          },
+          "color": {
+            "type": "string",
+            "nullable": true,
+            "example": "#e0234e"
+          }
+        },
+        "required": ["id", "name", "color"]
+      },
+      "NoteSummaryDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "clx0note00001"
+          },
+          "title": {
+            "type": "string",
+            "example": "Pièges du rafraîchissement JWT"
+          },
+          "excerpt": {
+            "type": "string",
+            "description": "Début du contenu sans la syntaxe Markdown (200 caractères au plus)",
+            "example": "Rotation Un refresh token ne sert qu’une fois."
+          },
+          "pinned": {
+            "type": "boolean",
+            "example": false
+          },
+          "project": {
+            "nullable": true,
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/NoteProjectDto"
+              }
+            ]
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/NoteTagDto"
+            }
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string",
+            "example": "2026-10-24T09:00:00.000Z"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string",
+            "example": "2026-10-24T09:00:00.000Z"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "excerpt",
+          "pinned",
+          "project",
+          "tags",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
+      "CreateNoteDto": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "example": "Pièges du rafraîchissement JWT",
+            "maxLength": 200
+          },
+          "content": {
+            "type": "string",
+            "description": "Contenu Markdown (non modifié : espaces et retours à la ligne conservés)",
+            "maxLength": 30000,
+            "default": "",
+            "example": "## Rotation\n\nUn refresh token ne sert **qu’une fois**."
+          },
+          "pinned": {
+            "type": "boolean",
+            "default": false
+          },
+          "projectId": {
+            "type": "string",
+            "nullable": true,
+            "description": "Projet de rattachement (un de ses projets) ; null = note libre"
+          },
+          "tagIds": {
+            "maxItems": 20,
+            "description": "Ids de ses propres tags ; en modification, remplace la liste entière",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": ["title"]
+      },
+      "NoteResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "clx0note00001"
+          },
+          "title": {
+            "type": "string",
+            "example": "Pièges du rafraîchissement JWT"
+          },
+          "excerpt": {
+            "type": "string",
+            "description": "Début du contenu sans la syntaxe Markdown (200 caractères au plus)",
+            "example": "Rotation Un refresh token ne sert qu’une fois."
+          },
+          "pinned": {
+            "type": "boolean",
+            "example": false
+          },
+          "project": {
+            "nullable": true,
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/NoteProjectDto"
+              }
+            ]
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/NoteTagDto"
+            }
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string",
+            "example": "2026-10-24T09:00:00.000Z"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string",
+            "example": "2026-10-24T09:00:00.000Z"
+          },
+          "content": {
+            "type": "string",
+            "example": "## Rotation\n\nUn refresh token ne sert **qu’une fois**."
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "excerpt",
+          "pinned",
+          "project",
+          "tags",
+          "createdAt",
+          "updatedAt",
+          "content"
+        ]
+      },
+      "UpdateNoteDto": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "example": "Pièges du rafraîchissement JWT",
+            "maxLength": 200
+          },
+          "content": {
+            "type": "string",
+            "description": "Contenu Markdown (non modifié : espaces et retours à la ligne conservés)",
+            "maxLength": 30000,
+            "default": "",
+            "example": "## Rotation\n\nUn refresh token ne sert **qu’une fois**."
+          },
+          "pinned": {
+            "type": "boolean",
+            "default": false
+          },
+          "projectId": {
+            "type": "string",
+            "nullable": true,
+            "description": "Projet de rattachement (un de ses projets) ; null = note libre"
+          },
+          "tagIds": {
+            "maxItems": 20,
+            "description": "Ids de ses propres tags ; en modification, remplace la liste entière",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
           }
         }
       }

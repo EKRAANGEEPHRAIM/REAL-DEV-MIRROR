@@ -8,6 +8,7 @@ import { AuthModule } from './modules/auth/auth.module.js';
 import { GoalsModule } from './modules/goals/goals.module.js';
 import { HealthModule } from './modules/health/health.module.js';
 import { MailModule } from './modules/mail/mail.module.js';
+import { NotesModule } from './modules/notes/notes.module.js';
 import { ProjectsModule } from './modules/projects/projects.module.js';
 import { TagsModule } from './modules/tags/tags.module.js';
 import { TasksModule } from './modules/tasks/tasks.module.js';
@@ -33,6 +34,7 @@ import { PrismaModule } from './prisma/prisma.module.js';
     TagsModule,
     TasksModule,
     GoalsModule,
+    NotesModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: ThrottlerGuard },

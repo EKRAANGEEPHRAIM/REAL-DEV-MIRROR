@@ -431,6 +431,43 @@ export interface paths {
     patch: operations['GoalsController_updateMilestone'];
     trace?: never;
   };
+  '/api/v1/notes': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Lister ses notes (épinglées en tête) : recherche plein texte, projet, tag */
+    get: operations['NotesController_findAll'];
+    put?: never;
+    /** Créer une note */
+    post: operations['NotesController_create'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/notes/{id}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Détail d’une note, avec son contenu Markdown */
+    get: operations['NotesController_findOne'];
+    put?: never;
+    post?: never;
+    /** Supprimer une note */
+    delete: operations['NotesController_remove'];
+    options?: never;
+    head?: never;
+    /** Modifier, épingler ou rattacher une note (tagIds remplace la liste) */
+    patch: operations['NotesController_update'];
+    trace?: never;
+  };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -932,6 +969,114 @@ export interface components {
       /** @example true */
       done?: boolean;
       position?: number;
+    };
+    NoteProjectDto: {
+      /** @example clx1a2b3c0000qz8h4k9d7f2e */
+      id: string;
+      /** @example DevMirror */
+      name: string;
+      /** @example #6366f1 */
+      color: string | null;
+    };
+    NoteTagDto: {
+      /** @example clx0tag000001 */
+      id: string;
+      /** @example nestjs */
+      name: string;
+      /** @example #e0234e */
+      color: string | null;
+    };
+    NoteSummaryDto: {
+      /** @example clx0note00001 */
+      id: string;
+      /** @example Pièges du rafraîchissement JWT */
+      title: string;
+      /**
+       * @description Début du contenu sans la syntaxe Markdown (200 caractères au plus)
+       * @example Rotation Un refresh token ne sert qu’une fois.
+       */
+      excerpt: string;
+      /** @example false */
+      pinned: boolean;
+      project: components['schemas']['NoteProjectDto'] | null;
+      tags: components['schemas']['NoteTagDto'][];
+      /**
+       * Format: date-time
+       * @example 2026-10-24T09:00:00.000Z
+       */
+      createdAt: string;
+      /**
+       * Format: date-time
+       * @example 2026-10-24T09:00:00.000Z
+       */
+      updatedAt: string;
+    };
+    CreateNoteDto: {
+      /** @example Pièges du rafraîchissement JWT */
+      title: string;
+      /**
+       * @description Contenu Markdown (non modifié : espaces et retours à la ligne conservés)
+       * @default
+       * @example ## Rotation
+       *
+       *     Un refresh token ne sert **qu’une fois**.
+       */
+      content?: string;
+      /** @default false */
+      pinned?: boolean;
+      /** @description Projet de rattachement (un de ses projets) ; null = note libre */
+      projectId?: string | null;
+      /** @description Ids de ses propres tags ; en modification, remplace la liste entière */
+      tagIds?: string[];
+    };
+    NoteResponseDto: {
+      /** @example clx0note00001 */
+      id: string;
+      /** @example Pièges du rafraîchissement JWT */
+      title: string;
+      /**
+       * @description Début du contenu sans la syntaxe Markdown (200 caractères au plus)
+       * @example Rotation Un refresh token ne sert qu’une fois.
+       */
+      excerpt: string;
+      /** @example false */
+      pinned: boolean;
+      project: components['schemas']['NoteProjectDto'] | null;
+      tags: components['schemas']['NoteTagDto'][];
+      /**
+       * Format: date-time
+       * @example 2026-10-24T09:00:00.000Z
+       */
+      createdAt: string;
+      /**
+       * Format: date-time
+       * @example 2026-10-24T09:00:00.000Z
+       */
+      updatedAt: string;
+      /**
+       * @example ## Rotation
+       *
+       *     Un refresh token ne sert **qu’une fois**.
+       */
+      content: string;
+    };
+    UpdateNoteDto: {
+      /** @example Pièges du rafraîchissement JWT */
+      title?: string;
+      /**
+       * @description Contenu Markdown (non modifié : espaces et retours à la ligne conservés)
+       * @default
+       * @example ## Rotation
+       *
+       *     Un refresh token ne sert **qu’une fois**.
+       */
+      content?: string;
+      /** @default false */
+      pinned?: boolean;
+      /** @description Projet de rattachement (un de ses projets) ; null = note libre */
+      projectId?: string | null;
+      /** @description Ids de ses propres tags ; en modification, remplace la liste entière */
+      tagIds?: string[];
     };
   };
   responses: never;
@@ -2443,6 +2588,228 @@ export interface operations {
         };
       };
       /** @description Jalon introuvable */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponseDto'];
+        };
+      };
+    };
+  };
+  NotesController_findAll: {
+    parameters: {
+      query?: {
+        page?: number;
+        limit?: number;
+        /** @description Recherche plein texte (français) dans le titre et le contenu ; accepte "expression exacte", -exclu et OR. Sans tri explicite, les résultats sont classés par pertinence. */
+        q?: string;
+        /** @description Notes d’un projet */
+        projectId?: string;
+        /** @description Nom d’un tag */
+        tag?: string;
+        /** @description true : seulement les épinglées ; false : les autres */
+        pinned?: boolean;
+        /** @description Tri : updatedAt, createdAt, title suivi de :asc ou :desc (les notes épinglées restent en tête) */
+        sort?: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            data: components['schemas']['NoteSummaryDto'][];
+            meta: components['schemas']['PaginationMetaDto'];
+          };
+        };
+      };
+      /** @description Paramètres invalides */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponseDto'];
+        };
+      };
+      /** @description Jeton d’accès manquant ou invalide */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponseDto'];
+        };
+      };
+    };
+  };
+  NotesController_create: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CreateNoteDto'];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['NoteResponseDto'];
+        };
+      };
+      /** @description Données invalides, projet ou tag introuvable */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponseDto'];
+        };
+      };
+      /** @description Jeton d’accès manquant ou invalide */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponseDto'];
+        };
+      };
+    };
+  };
+  NotesController_findOne: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['NoteResponseDto'];
+        };
+      };
+      /** @description Jeton d’accès manquant ou invalide */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponseDto'];
+        };
+      };
+      /** @description Note introuvable */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponseDto'];
+        };
+      };
+    };
+  };
+  NotesController_remove: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Jeton d’accès manquant ou invalide */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponseDto'];
+        };
+      };
+      /** @description Note introuvable */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponseDto'];
+        };
+      };
+    };
+  };
+  NotesController_update: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['UpdateNoteDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['NoteResponseDto'];
+        };
+      };
+      /** @description Données invalides, projet ou tag introuvable */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponseDto'];
+        };
+      };
+      /** @description Jeton d’accès manquant ou invalide */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponseDto'];
+        };
+      };
+      /** @description Note introuvable */
       404: {
         headers: {
           [name: string]: unknown;

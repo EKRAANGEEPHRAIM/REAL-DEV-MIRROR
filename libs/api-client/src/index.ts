@@ -56,6 +56,16 @@ export type GoalListQuery = NonNullable<
   operations['GoalsController_findAll']['parameters']['query']
 >;
 
+export type Note = Schemas['NoteResponseDto'];
+export type NoteSummary = Schemas['NoteSummaryDto'];
+export type NoteProject = Schemas['NoteProjectDto'];
+export type NoteTag = Schemas['NoteTagDto'];
+export type CreateNoteRequest = Schemas['CreateNoteDto'];
+export type UpdateNoteRequest = Schemas['UpdateNoteDto'];
+export type NoteListQuery = NonNullable<
+  operations['NotesController_findAll']['parameters']['query']
+>;
+
 /** Format commun des erreurs de l'API. */
 export type ApiErrorBody = Schemas['ErrorResponseDto'];
 export type PaginationMeta = Schemas['PaginationMetaDto'];
