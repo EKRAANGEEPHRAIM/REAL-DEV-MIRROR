@@ -45,23 +45,82 @@ describe('Pages des notes', () => {
     await harness.fixture.whenStable();
   }
 
-  it('liste les notes : épinglage, extrait, lien vers l’éditeur', async () => {
-    await harness.navigateByUrl('/notes');
-    backend
-      .expectOne((r) => r.url === '/api/v1/notes')
-      .flush(notePage([makeNoteSummary({ id: 'n1', pinned: true, title: 'JWT' })]));
-    harness.detectChanges();
+  const tag = (name: string, notes: number) => ({
+    id: `t-${name}`,
+    name,
+    color: null,
+    usage: { projects: 0, notes },
+  });
+  const notesRequest = () => backend.expectOne((r) => r.url === '/api/v1/notes');
 
-    expect(root().textContent).toContain('JWT');
+  async function openList(url: string, notes = notePage([])) {
+    await harness.navigateByUrl(url);
+    backend.expectOne('/api/v1/tags').flush([tag('nestjs', 2), tag('vide', 0)]);
+    const request = notesRequest();
+    request.flush(notes);
+    harness.detectChanges();
+    return request;
+  }
+
+  it('sépare les épinglées des autres notes ; extrait et lien vers l’éditeur', async () => {
+    await openList(
+      '/notes',
+      notePage([
+        makeNoteSummary({ id: 'n1', pinned: true, title: 'JWT' }),
+        makeNoteSummary({ id: 'n2', title: 'Signals' }),
+      ]),
+    );
+
+    const sections = root().querySelectorAll('section');
+    expect(sections[0].querySelector('h2')?.textContent).toContain('Épinglées');
+    expect(sections[0].textContent).toContain('JWT');
+    expect(sections[1].querySelector('h2')?.textContent).toContain('Autres notes');
+    expect(sections[1].textContent).toContain('Signals');
     expect(root().textContent).toContain('Un refresh token ne sert qu’une fois.');
-    expect(root().querySelector('[aria-label="Épinglée"]')).not.toBeNull();
     expect(root().querySelector('a[href="/notes/n1"]')).not.toBeNull();
+    // Seuls les tags portés par une note servent de filtre
+    expect(root().textContent).toContain('#nestjs');
+    expect(root().textContent).not.toContain('#vide');
+  });
+
+  it('lit recherche, tag et tri dans l’URL ; un clic sur un tag filtre', async () => {
+    const request = await openList(
+      '/notes?q=jwt&tag=nestjs',
+      notePage([
+        makeNoteSummary({ id: 'n1', tags: [{ id: 't-nestjs', name: 'nestjs', color: null }] }),
+      ]),
+    );
+    expect(request.request.params.get('q')).toBe('jwt');
+    expect(request.request.params.get('tag')).toBe('nestjs');
+    expect(request.request.params.has('sort')).toBe(false); // pertinence
+    expect(root().querySelector('#note-sort option')?.textContent?.trim()).toBe('Pertinence');
+
+    // Un second clic sur le tag actif retire le filtre
+    root()
+      .querySelector<HTMLButtonElement>('[role="group"] [aria-pressed="true"]:not(:first-child)')!
+      .click();
+    await harness.fixture.whenStable();
+    expect(TestBed.inject(Router).url).toBe('/notes?q=jwt');
+    notesRequest().flush(notePage([]));
+    harness.detectChanges();
+    expect(root().textContent).toContain('Aucune note ne correspond');
+  });
+
+  it('épingle une note depuis la liste, puis relit la page', async () => {
+    await openList('/notes', notePage([makeNoteSummary({ id: 'n1', title: 'JWT' })]));
+
+    root().querySelector<HTMLButtonElement>('[aria-label="Épingler « JWT »"]')!.click();
+    const request = backend.expectOne((r) => r.method === 'PATCH');
+    expect(request.request.body).toEqual({ pinned: true });
+    harness.detectChanges();
+    expect(root().querySelector('[aria-label="Désépingler « JWT »"]')).not.toBeNull();
+
+    request.flush(makeNote({ id: 'n1', pinned: true }));
+    notesRequest().flush(notePage([makeNoteSummary({ id: 'n1', pinned: true })]));
   });
 
   it('« Nouvelle note » crée une note puis ouvre l’éditeur', async () => {
-    await harness.navigateByUrl('/notes');
-    backend.expectOne((r) => r.url === '/api/v1/notes').flush(notePage([]));
-    harness.detectChanges();
+    await openList('/notes');
 
     button('Nouvelle note').click();
     const create = backend.expectOne((r) => r.method === 'POST');

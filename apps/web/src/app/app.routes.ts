@@ -56,8 +56,8 @@ export const routes: Routes = [
       {
         path: 'settings',
         title: 'Paramètres · DevMirror',
-        loadComponent: comingSoon,
-        data: { heading: 'Paramètres', day: '32' },
+        loadComponent: () =>
+          import('./features/settings/settings.page').then((m) => m.SettingsPage),
       },
     ],
   },

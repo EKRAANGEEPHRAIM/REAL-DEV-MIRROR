@@ -2,9 +2,10 @@ import { computed, inject } from '@angular/core';
 import type { NoteListQuery, NoteSummary, PaginationMeta } from '@devmirror/api-client';
 import { tapResponse } from '@ngrx/operators';
 import { patchState, signalStore, withComputed, withMethods, withState } from '@ngrx/signals';
-import { setAllEntities, withEntities } from '@ngrx/signals/entities';
+import { setAllEntities, updateEntity, withEntities } from '@ngrx/signals/entities';
 import { rxMethod } from '@ngrx/signals/rxjs-interop';
-import { pipe, switchMap, tap } from 'rxjs';
+import { toast } from '@spartan-ng/brain/sonner';
+import { mergeMap, pipe, switchMap, tap } from 'rxjs';
 import { apiErrorMessage } from '../../../core/http/api-error';
 import { NotesApi } from './notes.api';
 
@@ -26,6 +27,9 @@ export const NotesStore = signalStore(
     isRefreshing: computed(() => status() === 'loading' && entities().length > 0),
     isEmpty: computed(() => status() === 'loaded' && entities().length === 0),
     total: computed(() => meta()?.total ?? 0),
+    /** L'API renvoie les épinglées en tête : la page se découpe en deux sections. */
+    pinned: computed(() => entities().filter((note) => note.pinned)),
+    others: computed(() => entities().filter((note) => !note.pinned)),
   })),
   withMethods((store, api = inject(NotesApi)) => {
     let lastQuery: NoteListQuery | null = null;
@@ -49,11 +53,41 @@ export const NotesStore = signalStore(
       ),
     );
 
+    const reload = () => {
+      if (lastQuery) load(lastQuery);
+    };
+
     return {
       load,
-      reload: () => {
-        if (lastQuery) load(lastQuery);
-      },
+      reload,
+
+      /**
+       * Épingle / désépingle depuis la liste : l'icône change tout de suite, puis la page est
+       * relue pour que la note rejoigne sa place (épinglées en tête). Annulé si l'API refuse.
+       */
+      togglePin: rxMethod<NoteSummary>(
+        pipe(
+          mergeMap((note) => {
+            const pinned = !note.pinned;
+            patchState(store, updateEntity({ id: note.id, changes: { pinned } }));
+            return api.update(note.id, { pinned }).pipe(
+              tapResponse({
+                next: () => {
+                  toast.success(pinned ? 'Note épinglée' : 'Note désépinglée');
+                  reload();
+                },
+                error: (error) => {
+                  patchState(
+                    store,
+                    updateEntity({ id: note.id, changes: { pinned: note.pinned } }),
+                  );
+                  toast.error(apiErrorMessage(error));
+                },
+              }),
+            );
+          }),
+        ),
+      ),
     };
   }),
 );

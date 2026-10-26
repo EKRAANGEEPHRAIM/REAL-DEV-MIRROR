@@ -1,43 +1,53 @@
 import { ViewportScroller } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
-import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { toSignal } from '@angular/core/rxjs-interop';
+import { ActivatedRoute, Router } from '@angular/router';
+import type { Tag } from '@devmirror/api-client';
 import { NgIcon, provideIcons } from '@ng-icons/core';
 import {
   lucideLoader2,
   lucideNotebookPen,
-  lucidePin,
   lucidePlus,
   lucideRefreshCw,
+  lucideSearchX,
 } from '@ng-icons/lucide';
 import { toast } from '@spartan-ng/brain/sonner';
 import { HlmButtonImports } from '@spartan-ng/helm/button';
 import { HlmCardImports } from '@spartan-ng/helm/card';
 import { HlmSkeletonImports } from '@spartan-ng/helm/skeleton';
+import { catchError, of } from 'rxjs';
 import { apiErrorMessage } from '../../../core/http/api-error';
-import { RelativeTimePipe } from '../../../shared/format/relative-time';
+import { TagsApi } from '../../../shared/data/tags.api';
 import { FormAlert } from '../../../shared/ui-kit/form-alert';
 import { Pagination } from '../../../shared/ui-kit/pagination';
 import { pageFromUrl } from '../../projects/project-filters';
 import { NotesApi } from '../data/notes.api';
 import { NotesStore } from '../data/notes.store';
 import { UNTITLED_NOTE } from '../note-defaults';
-
-export const NOTES_PAGE_SIZE = 24;
+import {
+  filtersFromUrl,
+  filtersToUrl,
+  hasActiveFilters,
+  type NoteFilters,
+  toApiQuery,
+} from '../note-filters';
+import { NoteCard } from './note-card';
+import { NoteFiltersBar } from './note-filters-bar';
 
 @Component({
   selector: 'dm-notes-page',
   imports: [
-    RouterLink,
     NgIcon,
     HlmButtonImports,
     HlmCardImports,
     HlmSkeletonImports,
     FormAlert,
     Pagination,
-    RelativeTimePipe,
+    NoteCard,
+    NoteFiltersBar,
   ],
   providers: [
-    provideIcons({ lucideLoader2, lucideNotebookPen, lucidePin, lucidePlus, lucideRefreshCw }),
+    provideIcons({ lucideLoader2, lucideNotebookPen, lucidePlus, lucideRefreshCw, lucideSearchX }),
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -59,6 +69,15 @@ export const NOTES_PAGE_SIZE = 24;
         Nouvelle note
       </button>
     </header>
+
+    <dm-note-filters-bar
+      class="mb-6 block"
+      [value]="filters()"
+      [tags]="noteTags()"
+      [active]="filtered()"
+      (changed)="updateFilters($event)"
+      (cleared)="resetFilters()"
+    />
 
     @if (store.status() === 'error' && !store.entities().length) {
       <div class="flex max-w-xl flex-col items-start gap-3">
@@ -86,60 +105,85 @@ export const NOTES_PAGE_SIZE = 24;
       <section
         class="flex flex-col items-center gap-3 rounded-xl border border-dashed px-6 py-16 text-center"
       >
-        <ng-icon
-          name="lucideNotebookPen"
-          class="text-muted-foreground text-4xl"
-          aria-hidden="true"
-        />
-        <h2 class="text-lg font-medium">Aucune note pour l’instant</h2>
-        <p class="text-muted-foreground max-w-sm text-sm">
-          Gardez une trace de vos décisions, de vos pièges rencontrés et de vos extraits de code, en
-          Markdown.
-        </p>
-        <button hlmBtn (click)="create()">
-          <ng-icon name="lucidePlus" aria-hidden="true" />
-          Écrire une note
-        </button>
+        @if (filtered()) {
+          <ng-icon name="lucideSearchX" class="text-muted-foreground text-4xl" aria-hidden="true" />
+          <h2 class="text-lg font-medium">Aucune note ne correspond</h2>
+          <p class="text-muted-foreground max-w-sm text-sm">
+            Essayez d’autres mots : la recherche couvre les titres et le contenu des notes.
+          </p>
+          <button hlmBtn variant="outline" (click)="resetFilters()">
+            Réinitialiser les filtres
+          </button>
+        } @else {
+          <ng-icon
+            name="lucideNotebookPen"
+            class="text-muted-foreground text-4xl"
+            aria-hidden="true"
+          />
+          <h2 class="text-lg font-medium">Aucune note pour l’instant</h2>
+          <p class="text-muted-foreground max-w-sm text-sm">
+            Gardez une trace de vos décisions, de vos pièges rencontrés et de vos extraits de code,
+            en Markdown.
+          </p>
+          <button hlmBtn (click)="create()">
+            <ng-icon name="lucidePlus" aria-hidden="true" />
+            Écrire une note
+          </button>
+        }
       </section>
     } @else {
-      <ul
-        class="grid gap-4 transition-opacity sm:grid-cols-2 xl:grid-cols-3"
+      <div
+        class="flex flex-col gap-8 transition-opacity"
         [class.opacity-60]="store.isRefreshing()"
         [attr.aria-busy]="store.isRefreshing()"
       >
-        @for (note of store.entities(); track note.id) {
-          <li>
-            <article
-              hlmCard
-              class="hover:border-foreground/20 relative h-full gap-2 p-5 transition-colors"
+        @if (store.pinned().length) {
+          <section aria-labelledby="pinned-heading">
+            <h2
+              id="pinned-heading"
+              class="text-muted-foreground mb-3 text-xs font-semibold tracking-wide uppercase"
             >
-              <h2 class="flex items-start gap-2 font-medium">
-                @if (note.pinned) {
-                  <ng-icon
-                    name="lucidePin"
-                    class="text-muted-foreground mt-0.5 shrink-0"
-                    aria-label="Épinglée"
+              Épinglées
+            </h2>
+            <ul class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+              @for (note of store.pinned(); track note.id) {
+                <li>
+                  <dm-note-card
+                    [note]="note"
+                    (pinToggled)="store.togglePin($event)"
+                    (tagSelected)="updateFilters({ tag: $event })"
                   />
-                }
-                <a
-                  [routerLink]="['/notes', note.id]"
-                  class="min-w-0 wrap-break-word after:absolute after:inset-0 focus-visible:outline-none"
-                  >{{ note.title }}</a
-                >
-              </h2>
-              @if (note.excerpt) {
-                <p class="text-muted-foreground line-clamp-3 text-sm">{{ note.excerpt }}</p>
+                </li>
               }
-              <p class="text-muted-foreground mt-auto pt-2 text-xs">
-                @if (note.project) {
-                  {{ note.project.name }} ·
-                }
-                Modifiée {{ note.updatedAt | relativeTime }}
-              </p>
-            </article>
-          </li>
+            </ul>
+          </section>
         }
-      </ul>
+        @if (store.others().length) {
+          <section aria-labelledby="others-heading">
+            @if (store.pinned().length) {
+              <h2
+                id="others-heading"
+                class="text-muted-foreground mb-3 text-xs font-semibold tracking-wide uppercase"
+              >
+                Autres notes
+              </h2>
+            } @else {
+              <h2 id="others-heading" class="sr-only">Notes</h2>
+            }
+            <ul class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+              @for (note of store.others(); track note.id) {
+                <li>
+                  <dm-note-card
+                    [note]="note"
+                    (pinToggled)="store.togglePin($event)"
+                    (tagSelected)="updateFilters({ tag: $event })"
+                  />
+                </li>
+              }
+            </ul>
+          </section>
+        }
+      </div>
 
       @if (store.meta(); as meta) {
         @if (meta.totalPages > 1) {
@@ -158,6 +202,10 @@ export const NOTES_PAGE_SIZE = 24;
   `,
 })
 export class NotesPage {
+  // Paramètres d'URL liés par withComponentInputBinding (?q=…&tag=…&sort=…&page=…)
+  readonly q = input<string>();
+  readonly tag = input<string>();
+  readonly sort = input<string>();
   readonly page = input<string>();
 
   protected readonly store = inject(NotesStore);
@@ -166,10 +214,23 @@ export class NotesPage {
   private readonly route = inject(ActivatedRoute);
   private readonly scroller = inject(ViewportScroller);
 
-  private readonly query = computed(() => ({
-    page: pageFromUrl(this.page()),
-    limit: NOTES_PAGE_SIZE,
-  }));
+  protected readonly filters = computed(() =>
+    filtersFromUrl({ q: this.q(), tag: this.tag(), sort: this.sort() }),
+  );
+  protected readonly filtered = computed(() => hasActiveFilters(this.filters()));
+  private readonly query = computed(() => toApiQuery(this.filters(), pageFromUrl(this.page())));
+
+  /** Seuls les tags portés par au moins une note servent de filtre (plus le tag actif). */
+  protected readonly noteTags = computed(() =>
+    this.tags().filter((tag) => tag.usage.notes > 0 || tag.name === this.filters().tag),
+  );
+  private readonly tags = toSignal(
+    inject(TagsApi)
+      .list()
+      .pipe(catchError(() => of([] as Tag[]))),
+    { initialValue: [] as Tag[] },
+  );
+
   protected readonly creating = signal(false);
   protected readonly skeletons = [1, 2, 3];
 
@@ -189,16 +250,28 @@ export class NotesPage {
     });
   }
 
+  protected updateFilters(change: Partial<NoteFilters>): void {
+    this.navigate({ ...filtersToUrl(change), page: null });
+  }
+
+  protected resetFilters(): void {
+    void this.router.navigate([], { relativeTo: this.route, queryParams: {} });
+  }
+
   protected goToPage(page: number): void {
-    void this.router.navigate([], {
-      relativeTo: this.route,
-      queryParams: { page: page > 1 ? String(page) : null },
-      queryParamsHandling: 'merge',
-    });
+    this.navigate({ page: page > 1 ? String(page) : null });
     this.scroller.scrollToPosition([0, 0]);
   }
 
   protected reload(): void {
     this.store.load(this.query());
+  }
+
+  private navigate(queryParams: Record<string, string | null>): void {
+    void this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams,
+      queryParamsHandling: 'merge',
+    });
   }
 }
