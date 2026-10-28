@@ -1,10 +1,12 @@
 import { computed, inject } from '@angular/core';
-import type { StatsOverview } from '@devmirror/api-client';
+import type { DueTask, StatsOverview } from '@devmirror/api-client';
 import { tapResponse } from '@ngrx/operators';
 import { patchState, signalStore, withComputed, withMethods, withState } from '@ngrx/signals';
 import { rxMethod } from '@ngrx/signals/rxjs-interop';
-import { exhaustMap, pipe, tap } from 'rxjs';
+import { toast } from '@spartan-ng/brain/sonner';
+import { exhaustMap, mergeMap, pipe, tap } from 'rxjs';
 import { apiErrorMessage } from '../../../core/http/api-error';
+import { TasksApi } from '../../tasks/data/tasks.api';
 import { buildTiles } from '../dashboard-tiles';
 import { StatsApi } from './stats.api';
 
@@ -31,9 +33,9 @@ export const DashboardStore = signalStore(
     }),
     overdueTasks: computed(() => overview()?.indicators.overdueTasks ?? 0),
   })),
-  withMethods((store, api = inject(StatsApi)) => ({
+  withMethods((store, api = inject(StatsApi), tasks = inject(TasksApi)) => {
     /** exhaustMap : un double clic sur « Actualiser » ne lance pas deux requêtes. */
-    load: rxMethod<void>(
+    const load = rxMethod<void>(
       pipe(
         tap(() => patchState(store, { status: 'loading', error: null })),
         exhaustMap(() =>
@@ -46,6 +48,45 @@ export const DashboardStore = signalStore(
           ),
         ),
       ),
-    ),
-  })),
+    );
+
+    const setDueSoon = (update: (tasks: DueTask[]) => DueTask[]) => {
+      const overview = store.overview();
+      if (overview)
+        patchState(store, { overview: { ...overview, dueSoon: update(overview.dueSoon) } });
+    };
+
+    return {
+      load,
+
+      /**
+       * Termine une tâche depuis la liste « à faire sous 7 jours » : elle disparaît aussitôt,
+       * revient si l'API refuse ; sinon les chiffres sont relus (tuiles, graphiques, série).
+       */
+      completeTask: rxMethod<DueTask>(
+        pipe(
+          mergeMap((task) => {
+            const position = store.overview()?.dueSoon.findIndex((t) => t.id === task.id) ?? -1;
+            setDueSoon((list) => list.filter((t) => t.id !== task.id));
+            return tasks.update(task.id, { status: 'DONE' }).pipe(
+              tapResponse({
+                next: () => {
+                  toast.success(`« ${task.title} » terminée`);
+                  load();
+                },
+                error: (error) => {
+                  setDueSoon((list) => {
+                    const restored = [...list];
+                    restored.splice(Math.max(0, position), 0, task);
+                    return restored;
+                  });
+                  toast.error(apiErrorMessage(error));
+                },
+              }),
+            );
+          }),
+        ),
+      ),
+    };
+  }),
 );

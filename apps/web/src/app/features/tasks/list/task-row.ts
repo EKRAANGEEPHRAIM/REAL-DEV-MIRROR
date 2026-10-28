@@ -3,16 +3,8 @@ import { RouterLink } from '@angular/router';
 import type { Task } from '@devmirror/api-client';
 import { NgIcon, provideIcons } from '@ng-icons/core';
 import { lucideCalendar, lucideListChecks } from '@ng-icons/lucide';
-import { type DueTone, dueLabel } from '../task-dates';
+import { DUE_TONES, dueLabel } from '../task-dates';
 import { taskPriority } from '../task-meta';
-
-const DUE_TONES: Record<DueTone, string> = {
-  overdue: 'text-destructive font-medium',
-  today: 'text-amber-600 dark:text-amber-400 font-medium',
-  soon: 'text-foreground',
-  later: 'text-muted-foreground',
-  done: 'text-muted-foreground',
-};
 
 @Component({
   selector: 'dm-task-row',

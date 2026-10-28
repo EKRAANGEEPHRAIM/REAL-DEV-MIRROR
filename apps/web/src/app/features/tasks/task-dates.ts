@@ -66,6 +66,15 @@ export function toDateInput(iso: string | null | undefined): string {
 
 export type DueTone = 'overdue' | 'today' | 'soon' | 'later' | 'done';
 
+/** Classes de texte par teinte d'échéance (liste des tâches, tableau de bord). */
+export const DUE_TONES: Record<DueTone, string> = {
+  overdue: 'text-destructive font-medium',
+  today: 'text-amber-600 dark:text-amber-400 font-medium',
+  soon: 'text-foreground',
+  later: 'text-muted-foreground',
+  done: 'text-muted-foreground',
+};
+
 export interface DueLabel {
   label: string;
   tone: DueTone;
