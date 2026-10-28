@@ -12,6 +12,8 @@ import { formatShortDay, monthlyTotals } from './charts/chart-math';
 import { ProjectStatusChart } from './charts/project-status-chart';
 import { WeeklyTasksChart } from './charts/weekly-tasks-chart';
 import { DashboardStore } from './data/dashboard.store';
+import { DueSoonList } from './lists/due-soon-list';
+import { RecentNotesList } from './lists/recent-notes-list';
 import { DashboardTile } from './dashboard-tile';
 import { firstName, greeting, plural } from './dashboard-tiles';
 
@@ -34,6 +36,8 @@ const dateFormatter = new Intl.DateTimeFormat('fr', {
     WeeklyTasksChart,
     ProjectStatusChart,
     ActivityHeatmap,
+    DueSoonList,
+    RecentNotesList,
   ],
   providers: [provideIcons({ lucideRefreshCw, lucideTriangleAlert })],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -104,6 +108,31 @@ const dateFormatter = new Intl.DateTimeFormat('fr', {
       </section>
 
       @let data = store.overview()!;
+      <div
+        class="mt-6 grid gap-4 transition-opacity lg:grid-cols-2"
+        [class.opacity-60]="store.isRefreshing()"
+      >
+        <section hlmCard class="gap-3 p-5" aria-labelledby="due-heading">
+          <header class="flex items-baseline justify-between gap-2">
+            <h2 id="due-heading" class="font-medium">À faire sous 7 jours</h2>
+            <a routerLink="/tasks" class="text-muted-foreground text-xs hover:underline"
+              >Toutes les tâches</a
+            >
+          </header>
+          <dm-due-soon-list [tasks]="data.dueSoon" (completed)="store.completeTask($event)" />
+        </section>
+
+        <section hlmCard class="gap-3 p-5" aria-labelledby="notes-heading">
+          <header class="flex items-baseline justify-between gap-2">
+            <h2 id="notes-heading" class="font-medium">Dernières notes</h2>
+            <a routerLink="/notes" class="text-muted-foreground text-xs hover:underline"
+              >Toutes les notes</a
+            >
+          </header>
+          <dm-recent-notes-list [notes]="data.recentNotes" />
+        </section>
+      </div>
+
       <!-- Pendant une actualisation, les graphiques gardent leur rendu, atténués -->
       <div
         class="mt-6 grid gap-4 transition-opacity lg:grid-cols-3"

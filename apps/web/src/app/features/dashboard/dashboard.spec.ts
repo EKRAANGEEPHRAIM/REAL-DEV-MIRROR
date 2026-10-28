@@ -95,4 +95,71 @@ describe('Tableau de bord', () => {
     expect(store.tiles()).toHaveLength(4);
     overviewRequest().flush(makeOverview());
   });
+
+  it('une seule requête HTTP pour tout le tableau de bord (tuiles, listes, graphiques)', async () => {
+    await harness.navigateByUrl('/dashboard');
+
+    const pending = backend.match(() => true);
+    expect(pending.map((r) => r.request.url)).toEqual(['/api/v1/stats/overview']);
+    pending[0].flush(
+      makeOverview(
+        {},
+        {
+          dueSoon: [
+            {
+              id: 't1',
+              title: 'Préparer la démo',
+              dueDate: new Date(Date.now() + 86_400_000).toISOString(),
+              status: 'TODO',
+              priority: 'HIGH',
+              project: null,
+            },
+          ],
+          recentNotes: [
+            {
+              id: 'n1',
+              title: 'Pièges JWT',
+              excerpt: '',
+              pinned: false,
+              updatedAt: new Date().toISOString(),
+            },
+          ],
+        },
+      ),
+    );
+    harness.detectChanges();
+
+    expect(text()).toContain('Préparer la démo');
+    expect(text()).toContain('Pièges JWT');
+    backend.expectNone(() => true);
+  });
+
+  it('terminer une tâche : retirée aussitôt, puis chiffres relus ; remise en cas d’échec', async () => {
+    const task = {
+      id: 't1',
+      title: 'Préparer la démo',
+      dueDate: new Date(Date.now() + 86_400_000).toISOString(),
+      status: 'TODO' as const,
+      priority: 'HIGH' as const,
+      project: null,
+    };
+    await harness.navigateByUrl('/dashboard');
+    overviewRequest().flush(makeOverview({}, { dueSoon: [task] }));
+    const store = TestBed.inject(DashboardStore);
+
+    store.completeTask(task);
+    expect(store.overview()?.dueSoon).toEqual([]);
+    const update = backend.expectOne('/api/v1/tasks/t1');
+    expect(update.request.body).toEqual({ status: 'DONE' });
+    update.flush({ ...task, status: 'DONE' });
+    // Tuiles, graphiques et série changent : la vue d'ensemble est relue
+    overviewRequest().flush(makeOverview({ tasksCompletedThisWeek: 1 }));
+    expect(store.overview()?.indicators.tasksCompletedThisWeek).toBe(1);
+
+    store.completeTask(task);
+    backend
+      .expectOne('/api/v1/tasks/t1')
+      .flush({ message: 'Refusé' }, { status: 500, statusText: 'KO' });
+    expect(store.overview()?.dueSoon).toEqual([task]);
+  });
 });
