@@ -62,6 +62,7 @@ describe('AllExceptionsFilter', () => {
     ['P2025', 404, 'Ressource introuvable'],
     ['P2003', 400, 'Référence invalide : l’élément lié n’existe pas'],
     ['P1001', 503, 'Base de données indisponible, réessayez dans un instant'],
+    ['P2028', 503, 'Base de données indisponible, réessayez dans un instant'],
   ])('traduit l’erreur Prisma %s en %i', (code, expectedStatus, message) => {
     const { status: received, body } = handle(prismaError(code));
 

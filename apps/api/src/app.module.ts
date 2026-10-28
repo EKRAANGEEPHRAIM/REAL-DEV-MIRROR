@@ -11,6 +11,7 @@ import { MailModule } from './modules/mail/mail.module.js';
 import { NotesModule } from './modules/notes/notes.module.js';
 import { ProjectsModule } from './modules/projects/projects.module.js';
 import { SearchModule } from './modules/search/search.module.js';
+import { StatsModule } from './modules/stats/stats.module.js';
 import { TagsModule } from './modules/tags/tags.module.js';
 import { TasksModule } from './modules/tasks/tasks.module.js';
 import { PrismaModule } from './prisma/prisma.module.js';
@@ -37,6 +38,7 @@ import { PrismaModule } from './prisma/prisma.module.js';
     GoalsModule,
     NotesModule,
     SearchModule,
+    StatsModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: ThrottlerGuard },

@@ -78,8 +78,9 @@ export function resolve(exception: unknown): ResolvedError {
   if (exception instanceof Prisma.PrismaClientKnownRequestError) {
     const known = PRISMA_ERRORS[exception.code];
     if (known) return { status: known.status, message: known.message };
-    // P1xxx : connexion à la base (Neon en veille, réseau)
-    if (exception.code.startsWith('P1')) {
+    // P1xxx : connexion à la base (Neon en veille, réseau) ; P2028 : aucune connexion
+    // disponible à temps pour ouvrir une transaction. Passager dans les deux cas.
+    if (exception.code.startsWith('P1') || exception.code === 'P2028') {
       return { status: HttpStatus.SERVICE_UNAVAILABLE, message: DATABASE_UNAVAILABLE };
     }
   }

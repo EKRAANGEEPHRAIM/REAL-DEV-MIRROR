@@ -22,10 +22,10 @@ const goalInclude = {
 type GoalWithRelations = Prisma.GoalGetPayload<{ include: typeof goalInclude }>;
 
 /** « Atteint » : au moins un jalon, et tous faits. Traduit en filtre Prisma pour paginer juste. */
-const COMPLETED: Prisma.GoalWhereInput = {
+export const GOAL_COMPLETED: Prisma.GoalWhereInput = {
   milestones: { some: {}, every: { done: true } },
 };
-const ACTIVE: Prisma.GoalWhereInput = {
+export const GOAL_ACTIVE: Prisma.GoalWhereInput = {
   OR: [{ milestones: { none: {} } }, { milestones: { some: { done: false } } }],
 };
 
@@ -58,8 +58,8 @@ export class GoalsService {
 
   async findAll(userId: string, query: GoalQueryDto): Promise<Paginated<GoalResponseDto>> {
     const conditions: Prisma.GoalWhereInput[] = [{ userId }];
-    if (query.state === 'completed') conditions.push(COMPLETED);
-    if (query.state === 'active') conditions.push(ACTIVE);
+    if (query.state === 'completed') conditions.push(GOAL_COMPLETED);
+    if (query.state === 'active') conditions.push(GOAL_ACTIVE);
     if (query.projectId) conditions.push({ projects: { some: { id: query.projectId } } });
     if (query.q) {
       conditions.push({
