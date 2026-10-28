@@ -1,8 +1,9 @@
 import { NgTemplateOutlet } from '@angular/common';
-import { ChangeDetectionStrategy, Component } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DOCUMENT, inject } from '@angular/core';
 import { RouterLink, RouterOutlet } from '@angular/router';
 import { NgIcon, provideIcons } from '@ng-icons/core';
-import { lucideMenu, lucideScanFace } from '@ng-icons/lucide';
+import { lucideMenu, lucideScanFace, lucideSearch } from '@ng-icons/lucide';
+import { CommandPalette } from '../command-palette/command-palette';
 import { HlmButtonImports } from '@spartan-ng/helm/button';
 import { HlmSheetImports } from '@spartan-ng/helm/sheet';
 import { ThemeToggle } from '../theme/theme-toggle';
@@ -26,8 +27,9 @@ import { UserMenu } from './user-menu';
     UserMenu,
     EmailVerificationBanner,
   ],
-  providers: [provideIcons({ lucideMenu, lucideScanFace })],
+  providers: [provideIcons({ lucideMenu, lucideScanFace, lucideSearch })],
   changeDetection: ChangeDetectionStrategy.OnPush,
+  host: { '(document:keydown)': 'onKeydown($event)' },
   template: `
     <a
       href="#contenu"
@@ -83,7 +85,22 @@ import { UserMenu } from './user-menu';
 
           <span class="font-semibold md:hidden">DevMirror</span>
 
-          <div class="ms-auto flex items-center gap-1">
+          <button
+            type="button"
+            class="border-input text-muted-foreground hover:bg-muted focus-visible:ring-ring ms-auto flex h-9 items-center gap-2 rounded-md border px-3 text-sm outline-none focus-visible:ring-2 md:ms-4 md:w-72"
+            aria-keyshortcuts="Control+K Meta+K"
+            (click)="palette.open()"
+          >
+            <ng-icon name="lucideSearch" aria-hidden="true" />
+            <span class="max-md:sr-only">Rechercher…</span>
+            <kbd
+              class="bg-muted ms-auto hidden rounded border px-1.5 font-sans text-[0.7rem] md:inline"
+              aria-hidden="true"
+              >{{ shortcutLabel }}</kbd
+            >
+          </button>
+
+          <div class="flex items-center gap-1 md:ms-auto">
             <dm-theme-toggle />
             <dm-user-menu />
           </div>
@@ -108,4 +125,19 @@ import { UserMenu } from './user-menu';
 export class Shell {
   protected readonly mainNav = MAIN_NAV;
   protected readonly secondaryNav = SECONDARY_NAV;
+  protected readonly palette = inject(CommandPalette);
+  /** ⌘K sur Mac, Ctrl K ailleurs. */
+  protected readonly shortcutLabel = /Mac|iPhone|iPad/.test(
+    inject(DOCUMENT).defaultView?.navigator.platform ?? '',
+  )
+    ? '⌘K'
+    : 'Ctrl K';
+
+  /** Ctrl+K / ⌘K ouvre ou ferme la palette, où que soit le focus. */
+  protected onKeydown(event: KeyboardEvent): void {
+    if ((event.ctrlKey || event.metaKey) && !event.altKey && event.key.toLowerCase() === 'k') {
+      event.preventDefault();
+      this.palette.toggle();
+    }
+  }
 }

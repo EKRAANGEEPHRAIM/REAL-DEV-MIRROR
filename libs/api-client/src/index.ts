@@ -66,6 +66,11 @@ export type NoteListQuery = NonNullable<
   operations['NotesController_findAll']['parameters']['query']
 >;
 
+export type SearchResults = Schemas['SearchResultsDto'];
+export type ProjectHit = Schemas['ProjectHitDto'];
+export type TaskHit = Schemas['TaskHitDto'];
+export type NoteHit = Schemas['NoteHitDto'];
+
 /** Format commun des erreurs de l'API. */
 export type ApiErrorBody = Schemas['ErrorResponseDto'];
 export type PaginationMeta = Schemas['PaginationMetaDto'];

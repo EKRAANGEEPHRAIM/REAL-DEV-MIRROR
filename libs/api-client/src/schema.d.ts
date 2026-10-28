@@ -468,6 +468,23 @@ export interface paths {
     patch: operations['NotesController_update'];
     trace?: never;
   };
+  '/api/v1/search': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Recherche globale dans ses projets, tâches et notes (palette Ctrl+K) */
+    get: operations['SearchController_search'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -1077,6 +1094,49 @@ export interface components {
       projectId?: string | null;
       /** @description Ids de ses propres tags ; en modification, remplace la liste entière */
       tagIds?: string[];
+    };
+    ProjectHitDto: {
+      /** @example clx1a2b3c0000qz8h4k9d7f2e */
+      id: string;
+      /** @example DevMirror */
+      name: string;
+      /** @example #6366f1 */
+      color: string | null;
+      status: components['schemas']['ProjectStatus'];
+    };
+    SearchProjectRefDto: {
+      /** @example clx1a2b3c0000qz8h4k9d7f2e */
+      id: string;
+      /** @example DevMirror */
+      name: string;
+      /** @example #6366f1 */
+      color: string | null;
+    };
+    TaskHitDto: {
+      /** @example clx0task00001 */
+      id: string;
+      /** @example Écrire les tests du refresh JWT */
+      title: string;
+      status: components['schemas']['TaskStatus'];
+      priority: components['schemas']['Priority'];
+      project: components['schemas']['SearchProjectRefDto'] | null;
+    };
+    NoteHitDto: {
+      /** @example clx0note00001 */
+      id: string;
+      /** @example Pièges du rafraîchissement JWT */
+      title: string;
+      /** @example Un refresh token ne sert qu’une fois. */
+      excerpt: string;
+      /** @example false */
+      pinned: boolean;
+    };
+    SearchResultsDto: {
+      /** @example jwt */
+      q: string;
+      projects: components['schemas']['ProjectHitDto'][];
+      tasks: components['schemas']['TaskHitDto'][];
+      notes: components['schemas']['NoteHitDto'][];
     };
   };
   responses: never;
@@ -2811,6 +2871,48 @@ export interface operations {
       };
       /** @description Note introuvable */
       404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponseDto'];
+        };
+      };
+    };
+  };
+  SearchController_search: {
+    parameters: {
+      query: {
+        /** @description Texte recherché (2 caractères au moins) */
+        q: string;
+        /** @description Résultats au plus par catégorie */
+        limit?: number;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['SearchResultsDto'];
+        };
+      };
+      /** @description Recherche trop courte ou trop longue */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponseDto'];
+        };
+      };
+      /** @description Jeton d’accès manquant ou invalide */
+      401: {
         headers: {
           [name: string]: unknown;
         };
