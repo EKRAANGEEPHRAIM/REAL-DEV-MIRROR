@@ -7,7 +7,12 @@ import { hashRefreshToken, TokenService } from './token.service.js';
 
 describe('TokenService', () => {
   const prisma = {
-    refreshToken: { create: vi.fn(), findUnique: vi.fn(), updateMany: vi.fn() },
+    refreshToken: {
+      create: vi.fn(),
+      findUnique: vi.fn(),
+      updateMany: vi.fn(),
+      deleteMany: vi.fn(),
+    },
   };
   const config = {
     get: vi.fn(
@@ -105,6 +110,28 @@ describe('TokenService', () => {
         UnauthorizedException,
       );
       expect(prisma.refreshToken.updateMany).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('revokeAllExcept', () => {
+    it('supprime les autres sessions (pas de révocation : pas de fausse alerte de vol)', async () => {
+      await service.revokeAllExcept('user-1', 'jeton-en-cours');
+
+      expect(prisma.refreshToken.deleteMany).toHaveBeenCalledWith({
+        where: {
+          userId: 'user-1',
+          revokedAt: null,
+          tokenHash: { not: hashRefreshToken('jeton-en-cours') },
+        },
+      });
+      expect(prisma.refreshToken.updateMany).not.toHaveBeenCalled();
+    });
+
+    it('sans session en cours connue, supprime toutes les sessions actives', async () => {
+      await service.revokeAllExcept('user-1', undefined);
+      expect(prisma.refreshToken.deleteMany).toHaveBeenCalledWith({
+        where: { userId: 'user-1', revokedAt: null },
+      });
     });
   });
 });

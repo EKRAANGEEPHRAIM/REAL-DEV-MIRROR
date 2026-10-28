@@ -22,6 +22,7 @@ import { Public } from '../../common/decorators/public.decorator.js';
 import { EnvironmentVariables, NodeEnv } from '../../config/env.validation.js';
 import { AuthService, type AuthSession } from './auth.service.js';
 import { AuthResponseDto } from './dto/auth-response.dto.js';
+import { ChangePasswordDto } from './dto/change-password.dto.js';
 import { LoginDto } from './dto/login.dto.js';
 import { ForgotPasswordDto, ResetPasswordDto, VerifyEmailDto } from './dto/one-time-link.dto.js';
 import { RegisterDto } from './dto/register.dto.js';
@@ -137,6 +138,26 @@ export class AuthController {
   @ApiBadRequestResponse({ description: 'Lien invalide ou expiré, ou mot de passe trop faible' })
   resetPassword(@Body() dto: ResetPasswordDto): Promise<void> {
     return this.auth.resetPassword(dto.token, dto.password);
+  }
+
+  @Throttle(STRICT_LIMIT)
+  @Post('change-password')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Changer son mot de passe ; ferme les autres sessions, garde celle en cours',
+  })
+  @ApiNoContentResponse()
+  @ApiBadRequestResponse({
+    description: 'Mot de passe actuel incorrect, ou nouveau mot de passe trop faible ou identique',
+  })
+  @ApiUnauthorizedResponse({ description: 'Jeton d’accès manquant ou invalide' })
+  changePassword(
+    @CurrentUser() user: AuthUser,
+    @Body() dto: ChangePasswordDto,
+    @Req() req: Request,
+  ): Promise<void> {
+    return this.auth.changePassword(user.id, dto, readRefreshCookie(req));
   }
 
   @Public()

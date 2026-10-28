@@ -1,4 +1,10 @@
-import { ConflictException, Injectable, Logger, UnauthorizedException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  Injectable,
+  Logger,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { EnvironmentVariables } from '../../config/env.validation.js';
 import { AuthTokenType, Prisma, type User } from '../../generated/prisma/client.js';
@@ -6,6 +12,7 @@ import { type MailMessage, MailService } from '../mail/mail.service.js';
 import { UserResponseDto } from '../users/dto/user-response.dto.js';
 import { UsersService } from '../users/users.service.js';
 import { passwordResetEmail, verificationEmail } from './auth-mails.js';
+import type { ChangePasswordDto } from './dto/change-password.dto.js';
 import type { LoginDto } from './dto/login.dto.js';
 import type { RegisterDto } from './dto/register.dto.js';
 import { OneTimeTokenService } from './one-time-token.service.js';
@@ -14,6 +21,8 @@ import { INVALID_REFRESH_MESSAGE, type IssuedRefreshToken, TokenService } from '
 
 export const EMAIL_TAKEN_MESSAGE = 'Un compte existe déjà avec cet email';
 export const INVALID_CREDENTIALS_MESSAGE = 'Email ou mot de passe incorrect';
+export const WRONG_CURRENT_PASSWORD = 'Le mot de passe actuel est incorrect';
+export const SAME_PASSWORD = 'Le nouveau mot de passe doit être différent de l’actuel';
 
 /** Session ouverte : le contrôleur renvoie le jeton d'accès et pose le refresh token en cookie. */
 export interface AuthSession {
@@ -92,6 +101,28 @@ export class AuthService {
     const userId = await this.oneTimeTokens.consume(token, AuthTokenType.PASSWORD_RESET);
     await this.users.updatePassword(userId, await this.passwords.hash(password));
     await this.tokens.revokeAll(userId);
+  }
+
+  /**
+   * Change le mot de passe d'un utilisateur connecté et ferme ses autres sessions ; celle en
+   * cours (son refresh token) reste ouverte. 400 et non 401 sur un mauvais mot de passe : le
+   * front traite un 401 comme une session expirée.
+   */
+  async changePassword(
+    userId: string,
+    dto: ChangePasswordDto,
+    currentRefreshToken: string | undefined,
+  ): Promise<void> {
+    const user = await this.users.findById(userId);
+    if (!user) throw new UnauthorizedException(INVALID_REFRESH_MESSAGE);
+    if (!(await this.passwords.verify(dto.currentPassword, user.passwordHash))) {
+      throw new BadRequestException(WRONG_CURRENT_PASSWORD);
+    }
+    if (dto.newPassword === dto.currentPassword) {
+      throw new BadRequestException(SAME_PASSWORD);
+    }
+    await this.users.updatePassword(userId, await this.passwords.hash(dto.newPassword));
+    await this.tokens.revokeAllExcept(userId, currentRefreshToken);
   }
 
   /** Vérifie les identifiants ; le même message couvre l'email inconnu et le mauvais mot de passe. */

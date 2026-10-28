@@ -140,6 +140,23 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/v1/auth/change-password': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Changer son mot de passe ; ferme les autres sessions, garde celle en cours */
+    post: operations['AuthController_changePassword'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/v1/auth/logout': {
     parameters: {
       query?: never;
@@ -186,6 +203,25 @@ export interface paths {
     put?: never;
     post?: never;
     delete?: never;
+    options?: never;
+    head?: never;
+    /** Modifier son profil (nom, bio, liens, préférences) */
+    patch: operations['UsersController_update'];
+    trace?: never;
+  };
+  '/api/v1/users/me/avatar': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Envoyer un avatar (JPEG, PNG, WebP ou GIF, 2 Mo au plus) ; recadré en 256 × 256 */
+    post: operations['UsersController_uploadAvatar'];
+    /** Retirer son avatar */
+    delete: operations['UsersController_removeAvatar'];
     options?: never;
     head?: never;
     patch?: never;
@@ -554,6 +590,23 @@ export interface components {
        */
       password: string;
     };
+    ProfileLinksResponseDto: {
+      github: string | null;
+      linkedin: string | null;
+      website: string | null;
+    };
+    PreferencesResponseDto: {
+      /**
+       * @example system
+       * @enum {string}
+       */
+      theme: 'light' | 'dark' | 'system';
+      /**
+       * @example fr
+       * @enum {string}
+       */
+      language: 'fr' | 'en';
+    };
     UserResponseDto: {
       /** @example clx1a2b3c0000qz8h4k9d7f2e */
       id: string;
@@ -563,6 +616,10 @@ export interface components {
       name: string;
       /** @example null */
       avatarUrl: string | null;
+      /** @example Développeuse Angular et NestJS. */
+      bio: string | null;
+      links: components['schemas']['ProfileLinksResponseDto'];
+      preferences: components['schemas']['PreferencesResponseDto'];
       /** @example false */
       emailVerified: boolean;
       /**
@@ -615,6 +672,15 @@ export interface components {
        */
       password: string;
     };
+    ChangePasswordDto: {
+      /** @example AncienMotDePasse2026 */
+      currentPassword: string;
+      /**
+       * @description Au moins 8 caractères, dont une lettre et un chiffre
+       * @example MotDePasse2026
+       */
+      newPassword: string;
+    };
     ErrorResponseDto: {
       /** @example 404 */
       statusCode: number;
@@ -629,6 +695,33 @@ export interface components {
       path: string;
       /** @example 2026-10-20T09:00:00.000Z */
       timestamp: string;
+    };
+    ProfileLinksDto: {
+      /** @example https://github.com/ada */
+      github?: string | null;
+      /** @example https://www.linkedin.com/in/ada */
+      linkedin?: string | null;
+      /** @example https://ada.dev */
+      website?: string | null;
+    };
+    PreferencesDto: {
+      /**
+       * @example system
+       * @enum {string}
+       */
+      theme?: 'light' | 'dark' | 'system';
+      /**
+       * @example fr
+       * @enum {string}
+       */
+      language?: 'fr' | 'en';
+    };
+    UpdateProfileDto: {
+      /** @example Ada Lovelace */
+      name?: string;
+      bio?: string | null;
+      links?: components['schemas']['ProfileLinksDto'];
+      preferences?: components['schemas']['PreferencesDto'];
     };
     PaginationMetaDto: {
       /**
@@ -1596,6 +1689,48 @@ export interface operations {
       };
     };
   };
+  AuthController_changePassword: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['ChangePasswordDto'];
+      };
+    };
+    responses: {
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Mot de passe actuel incorrect, ou nouveau mot de passe trop faible ou identique */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Jeton d’accès manquant ou invalide */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Trop de tentatives, réessayez dans une minute */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
   AuthController_logout: {
     parameters: {
       query?: never;
@@ -1673,7 +1808,147 @@ export interface operations {
         headers: {
           [name: string]: unknown;
         };
+        content: {
+          'application/json': components['schemas']['ErrorResponseDto'];
+        };
+      };
+    };
+  };
+  UsersController_update: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['UpdateProfileDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['UserResponseDto'];
+        };
+      };
+      /** @description Données invalides */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponseDto'];
+        };
+      };
+      /** @description Jeton d’accès manquant ou invalide */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponseDto'];
+        };
+      };
+    };
+  };
+  UsersController_uploadAvatar: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'multipart/form-data': {
+          /** Format: binary */
+          avatar: string;
+        };
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['UserResponseDto'];
+        };
+      };
+      /** @description Fichier absent ou non image */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponseDto'];
+        };
+      };
+      /** @description Jeton d’accès manquant ou invalide */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponseDto'];
+        };
+      };
+      /** @description Image de plus de 2 Mo */
+      413: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponseDto'];
+        };
+      };
+      /** @description Stockage des avatars non configuré */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponseDto'];
+        };
+      };
+    };
+  };
+  UsersController_removeAvatar: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
         content?: never;
+      };
+      /** @description Jeton d’accès manquant ou invalide */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponseDto'];
+        };
+      };
+      /** @description Stockage des avatars non configuré */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponseDto'];
+        };
       };
     };
   };

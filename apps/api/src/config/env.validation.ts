@@ -82,6 +82,19 @@ export class EnvironmentVariables {
   @IsNotEmpty()
   MAIL_FROM = 'DevMirror <onboarding@resend.dev>';
 
+  /**
+   * Stockage des avatars (cloudinary://clé:secret@nom-du-cloud, page « API Keys » de
+   * Cloudinary). Absent : l'envoi d'avatar répond 503, le reste de l'API fonctionne.
+   */
+  @Transform(({ value }: { value: unknown }) =>
+    typeof value === 'string' ? value.trim().replace(/^(['"])(.*)\1$/, '$2') || undefined : value,
+  )
+  @IsOptional()
+  @Matches(/^cloudinary:\/\/[^:\s]+:[^@\s]+@[\w-]+$/, {
+    message: 'CLOUDINARY_URL doit avoir la forme cloudinary://clé:secret@nom-du-cloud',
+  })
+  CLOUDINARY_URL?: string;
+
   /** Limitation du nombre de requêtes (désactivée dans les tests e2e). */
   @Transform(toBoolean)
   @IsBoolean()
