@@ -71,6 +71,15 @@ export type ProjectHit = Schemas['ProjectHitDto'];
 export type TaskHit = Schemas['TaskHitDto'];
 export type NoteHit = Schemas['NoteHitDto'];
 
+export type StatsOverview = Schemas['StatsOverviewDto'];
+export type StatsIndicators = Schemas['StatsIndicatorsDto'];
+export type WeekCount = Schemas['WeekCountDto'];
+export type StatusCount = Schemas['StatusCountDto'];
+export type DueTask = Schemas['DueTaskDto'];
+export type RecentNote = Schemas['RecentNoteDto'];
+export type ActivityCalendar = Schemas['ActivityCalendarDto'];
+export type DayCount = Schemas['DayCountDto'];
+
 /** Format commun des erreurs de l'API. */
 export type ApiErrorBody = Schemas['ErrorResponseDto'];
 export type PaginationMeta = Schemas['PaginationMetaDto'];

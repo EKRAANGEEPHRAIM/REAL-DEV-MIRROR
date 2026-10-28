@@ -485,6 +485,40 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/v1/stats/overview': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Tableau de bord en une requête : indicateurs, tâches par semaine, projets par statut, échéances, notes récentes, activité */
+    get: operations['StatsController_overview'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/stats/activity': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Actions par jour sur 53 semaines (heatmap) */
+    get: operations['StatsController_activity'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -1137,6 +1171,139 @@ export interface components {
       projects: components['schemas']['ProjectHitDto'][];
       tasks: components['schemas']['TaskHitDto'][];
       notes: components['schemas']['NoteHitDto'][];
+    };
+    StatsIndicatorsDto: {
+      /**
+       * @description Projets « en cours »
+       * @example 3
+       */
+      activeProjects: number;
+      /**
+       * @description Tâches non terminées
+       * @example 14
+       */
+      openTasks: number;
+      /**
+       * @description Tâches terminées depuis lundi
+       * @example 5
+       */
+      tasksCompletedThisWeek: number;
+      /**
+       * @description Tâches non terminées dont l’échéance est passée
+       * @example 2
+       */
+      overdueTasks: number;
+      /** @example 2 */
+      activeGoals: number;
+      /** @example 1 */
+      completedGoals: number;
+      /** @example 12 */
+      notes: number;
+      /**
+       * @description Jours consécutifs avec activité (jusqu’à hier inclus)
+       * @example 4
+       */
+      currentStreak: number;
+      /**
+       * @description Plus longue série sur la période de la heatmap
+       * @example 9
+       */
+      longestStreak: number;
+    };
+    WeekCountDto: {
+      /**
+       * @description Lundi de la semaine (fuseau demandé)
+       * @example 2026-10-26
+       */
+      weekStart: string;
+      /** @example 5 */
+      count: number;
+    };
+    StatusCountDto: {
+      status: components['schemas']['ProjectStatus'];
+      /** @example 2 */
+      count: number;
+    };
+    StatsProjectRefDto: {
+      /** @example clx1a2b3c0000qz8h4k9d7f2e */
+      id: string;
+      /** @example DevMirror */
+      name: string;
+      /** @example #6366f1 */
+      color: string | null;
+    };
+    DueTaskDto: {
+      /** @example clx0task00001 */
+      id: string;
+      /** @example Préparer la démo */
+      title: string;
+      /**
+       * Format: date-time
+       * @example 2026-10-30T22:59:59.999Z
+       */
+      dueDate: string;
+      status: components['schemas']['TaskStatus'];
+      priority: components['schemas']['Priority'];
+      project: components['schemas']['StatsProjectRefDto'] | null;
+    };
+    RecentNoteDto: {
+      /** @example clx0note00001 */
+      id: string;
+      /** @example Pièges du rafraîchissement JWT */
+      title: string;
+      /** @example Un refresh token ne sert qu’une fois. */
+      excerpt: string;
+      /** @example false */
+      pinned: boolean;
+      /**
+       * Format: date-time
+       * @example 2026-10-27T18:00:00.000Z
+       */
+      updatedAt: string;
+    };
+    DayCountDto: {
+      /** @example 2026-10-27 */
+      date: string;
+      /** @example 3 */
+      count: number;
+    };
+    ActivityCalendarDto: {
+      /**
+       * @description Premier jour (un lundi, 53 semaines)
+       * @example 2025-10-27
+       */
+      from: string;
+      /**
+       * @description Aujourd’hui dans le fuseau demandé
+       * @example 2026-10-28
+       */
+      to: string;
+      /**
+       * @description Actions sur la période
+       * @example 87
+       */
+      total: number;
+      /** @description Jours avec au moins une action seulement, dans l’ordre chronologique */
+      days: components['schemas']['DayCountDto'][];
+    };
+    StatsOverviewDto: {
+      /** @example Europe/Paris */
+      timeZone: string;
+      /**
+       * @description Aujourd’hui dans le fuseau demandé
+       * @example 2026-10-28
+       */
+      today: string;
+      indicators: components['schemas']['StatsIndicatorsDto'];
+      /** @description 12 semaines, de la plus ancienne à la courante */
+      tasksCompletedPerWeek: components['schemas']['WeekCountDto'][];
+      /** @description Tous les statuts, même à 0 */
+      projectsByStatus: components['schemas']['StatusCountDto'][];
+      /** @description Non terminées, échéance dans les 7 prochains jours (10 au plus) */
+      dueSoon: components['schemas']['DueTaskDto'][];
+      /** @description 5 dernières notes modifiées */
+      recentNotes: components['schemas']['RecentNoteDto'][];
+      activity: components['schemas']['ActivityCalendarDto'];
     };
   };
   responses: never;
@@ -2903,6 +3070,86 @@ export interface operations {
         };
       };
       /** @description Recherche trop courte ou trop longue */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponseDto'];
+        };
+      };
+      /** @description Jeton d’accès manquant ou invalide */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponseDto'];
+        };
+      };
+    };
+  };
+  StatsController_overview: {
+    parameters: {
+      query?: {
+        /** @description Fuseau IANA de l’utilisateur : semaines et jours sont comptés dans ce fuseau */
+        tz?: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['StatsOverviewDto'];
+        };
+      };
+      /** @description Fuseau horaire inconnu */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponseDto'];
+        };
+      };
+      /** @description Jeton d’accès manquant ou invalide */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponseDto'];
+        };
+      };
+    };
+  };
+  StatsController_activity: {
+    parameters: {
+      query?: {
+        /** @description Fuseau IANA de l’utilisateur : semaines et jours sont comptés dans ce fuseau */
+        tz?: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ActivityCalendarDto'];
+        };
+      };
+      /** @description Fuseau horaire inconnu */
       400: {
         headers: {
           [name: string]: unknown;

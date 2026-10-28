@@ -2519,6 +2519,120 @@
         "summary": "Recherche globale dans ses projets, tâches et notes (palette Ctrl+K)",
         "tags": ["search"]
       }
+    },
+    "/api/v1/stats/overview": {
+      "get": {
+        "operationId": "StatsController_overview",
+        "parameters": [
+          {
+            "name": "tz",
+            "required": false,
+            "in": "query",
+            "description": "Fuseau IANA de l’utilisateur : semaines et jours sont comptés dans ce fuseau",
+            "schema": {
+              "default": "UTC",
+              "example": "Europe/Paris",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StatsOverviewDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Fuseau horaire inconnu",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Jeton d’accès manquant ou invalide",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Tableau de bord en une requête : indicateurs, tâches par semaine, projets par statut, échéances, notes récentes, activité",
+        "tags": ["stats"]
+      }
+    },
+    "/api/v1/stats/activity": {
+      "get": {
+        "operationId": "StatsController_activity",
+        "parameters": [
+          {
+            "name": "tz",
+            "required": false,
+            "in": "query",
+            "description": "Fuseau IANA de l’utilisateur : semaines et jours sont comptés dans ce fuseau",
+            "schema": {
+              "default": "UTC",
+              "example": "Europe/Paris",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ActivityCalendarDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Fuseau horaire inconnu",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Jeton d’accès manquant ou invalide",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Actions par jour sur 53 semaines (heatmap)",
+        "tags": ["stats"]
+      }
     }
   },
   "info": {
@@ -3943,6 +4057,284 @@
           }
         },
         "required": ["q", "projects", "tasks", "notes"]
+      },
+      "StatsIndicatorsDto": {
+        "type": "object",
+        "properties": {
+          "activeProjects": {
+            "type": "number",
+            "example": 3,
+            "description": "Projets « en cours »"
+          },
+          "openTasks": {
+            "type": "number",
+            "example": 14,
+            "description": "Tâches non terminées"
+          },
+          "tasksCompletedThisWeek": {
+            "type": "number",
+            "example": 5,
+            "description": "Tâches terminées depuis lundi"
+          },
+          "overdueTasks": {
+            "type": "number",
+            "example": 2,
+            "description": "Tâches non terminées dont l’échéance est passée"
+          },
+          "activeGoals": {
+            "type": "number",
+            "example": 2
+          },
+          "completedGoals": {
+            "type": "number",
+            "example": 1
+          },
+          "notes": {
+            "type": "number",
+            "example": 12
+          },
+          "currentStreak": {
+            "type": "number",
+            "example": 4,
+            "description": "Jours consécutifs avec activité (jusqu’à hier inclus)"
+          },
+          "longestStreak": {
+            "type": "number",
+            "example": 9,
+            "description": "Plus longue série sur la période de la heatmap"
+          }
+        },
+        "required": [
+          "activeProjects",
+          "openTasks",
+          "tasksCompletedThisWeek",
+          "overdueTasks",
+          "activeGoals",
+          "completedGoals",
+          "notes",
+          "currentStreak",
+          "longestStreak"
+        ]
+      },
+      "WeekCountDto": {
+        "type": "object",
+        "properties": {
+          "weekStart": {
+            "type": "string",
+            "example": "2026-10-26",
+            "description": "Lundi de la semaine (fuseau demandé)"
+          },
+          "count": {
+            "type": "number",
+            "example": 5
+          }
+        },
+        "required": ["weekStart", "count"]
+      },
+      "StatusCountDto": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ProjectStatus"
+              }
+            ]
+          },
+          "count": {
+            "type": "number",
+            "example": 2
+          }
+        },
+        "required": ["status", "count"]
+      },
+      "StatsProjectRefDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "clx1a2b3c0000qz8h4k9d7f2e"
+          },
+          "name": {
+            "type": "string",
+            "example": "DevMirror"
+          },
+          "color": {
+            "type": "string",
+            "nullable": true,
+            "example": "#6366f1"
+          }
+        },
+        "required": ["id", "name", "color"]
+      },
+      "DueTaskDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "clx0task00001"
+          },
+          "title": {
+            "type": "string",
+            "example": "Préparer la démo"
+          },
+          "dueDate": {
+            "format": "date-time",
+            "type": "string",
+            "example": "2026-10-30T22:59:59.999Z"
+          },
+          "status": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/TaskStatus"
+              }
+            ]
+          },
+          "priority": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Priority"
+              }
+            ]
+          },
+          "project": {
+            "nullable": true,
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/StatsProjectRefDto"
+              }
+            ]
+          }
+        },
+        "required": ["id", "title", "dueDate", "status", "priority", "project"]
+      },
+      "RecentNoteDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "clx0note00001"
+          },
+          "title": {
+            "type": "string",
+            "example": "Pièges du rafraîchissement JWT"
+          },
+          "excerpt": {
+            "type": "string",
+            "example": "Un refresh token ne sert qu’une fois."
+          },
+          "pinned": {
+            "type": "boolean",
+            "example": false
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string",
+            "example": "2026-10-27T18:00:00.000Z"
+          }
+        },
+        "required": ["id", "title", "excerpt", "pinned", "updatedAt"]
+      },
+      "DayCountDto": {
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string",
+            "example": "2026-10-27"
+          },
+          "count": {
+            "type": "number",
+            "example": 3
+          }
+        },
+        "required": ["date", "count"]
+      },
+      "ActivityCalendarDto": {
+        "type": "object",
+        "properties": {
+          "from": {
+            "type": "string",
+            "example": "2025-10-27",
+            "description": "Premier jour (un lundi, 53 semaines)"
+          },
+          "to": {
+            "type": "string",
+            "example": "2026-10-28",
+            "description": "Aujourd’hui dans le fuseau demandé"
+          },
+          "total": {
+            "type": "number",
+            "example": 87,
+            "description": "Actions sur la période"
+          },
+          "days": {
+            "description": "Jours avec au moins une action seulement, dans l’ordre chronologique",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DayCountDto"
+            }
+          }
+        },
+        "required": ["from", "to", "total", "days"]
+      },
+      "StatsOverviewDto": {
+        "type": "object",
+        "properties": {
+          "timeZone": {
+            "type": "string",
+            "example": "Europe/Paris"
+          },
+          "today": {
+            "type": "string",
+            "example": "2026-10-28",
+            "description": "Aujourd’hui dans le fuseau demandé"
+          },
+          "indicators": {
+            "$ref": "#/components/schemas/StatsIndicatorsDto"
+          },
+          "tasksCompletedPerWeek": {
+            "description": "12 semaines, de la plus ancienne à la courante",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WeekCountDto"
+            }
+          },
+          "projectsByStatus": {
+            "description": "Tous les statuts, même à 0",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StatusCountDto"
+            }
+          },
+          "dueSoon": {
+            "description": "Non terminées, échéance dans les 7 prochains jours (10 au plus)",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DueTaskDto"
+            }
+          },
+          "recentNotes": {
+            "description": "5 dernières notes modifiées",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RecentNoteDto"
+            }
+          },
+          "activity": {
+            "$ref": "#/components/schemas/ActivityCalendarDto"
+          }
+        },
+        "required": [
+          "timeZone",
+          "today",
+          "indicators",
+          "tasksCompletedPerWeek",
+          "projectsByStatus",
+          "dueSoon",
+          "recentNotes",
+          "activity"
+        ]
       }
     }
   }
