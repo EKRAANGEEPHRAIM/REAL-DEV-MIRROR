@@ -85,4 +85,20 @@ export class TokenService {
       data: { revokedAt: new Date() },
     });
   }
+
+  /**
+   * Ferme toutes les sessions sauf celle de ce refresh token (l'appareil en cours). Les autres
+   * jetons sont supprimés, pas marqués révoqués : un appareil déconnecté qui retente sa chance
+   * avec son ancien jeton doit recevoir un simple 401, pas déclencher la détection de vol
+   * (qui fermerait aussi la session qu'on vient de garder).
+   */
+  async revokeAllExcept(userId: string, keptToken: string | undefined): Promise<void> {
+    await this.prisma.refreshToken.deleteMany({
+      where: {
+        userId,
+        revokedAt: null,
+        ...(keptToken && { tokenHash: { not: hashRefreshToken(keptToken) } }),
+      },
+    });
+  }
 }

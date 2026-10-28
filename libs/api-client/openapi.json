@@ -248,6 +248,43 @@
         "tags": ["auth"]
       }
     },
+    "/api/v1/auth/change-password": {
+      "post": {
+        "operationId": "AuthController_changePassword",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChangePasswordDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": ""
+          },
+          "400": {
+            "description": "Mot de passe actuel incorrect, ou nouveau mot de passe trop faible ou identique"
+          },
+          "401": {
+            "description": "Jeton d’accès manquant ou invalide"
+          },
+          "429": {
+            "description": "Trop de tentatives, réessayez dans une minute"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Changer son mot de passe ; ferme les autres sessions, garde celle en cours",
+        "tags": ["auth"]
+      }
+    },
     "/api/v1/auth/logout": {
       "post": {
         "operationId": "AuthController_logout",
@@ -309,7 +346,14 @@
             }
           },
           "401": {
-            "description": "Jeton d’accès manquant ou invalide"
+            "description": "Jeton d’accès manquant ou invalide",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -318,6 +362,177 @@
           }
         ],
         "summary": "Profil de l’utilisateur connecté",
+        "tags": ["users"]
+      },
+      "patch": {
+        "operationId": "UsersController_update",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateProfileDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserResponseDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Données invalides",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Jeton d’accès manquant ou invalide",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Modifier son profil (nom, bio, liens, préférences)",
+        "tags": ["users"]
+      }
+    },
+    "/api/v1/users/me/avatar": {
+      "post": {
+        "operationId": "UsersController_uploadAvatar",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": ["avatar"],
+                "properties": {
+                  "avatar": {
+                    "type": "string",
+                    "format": "binary"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserResponseDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Fichier absent ou non image",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Jeton d’accès manquant ou invalide",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Image de plus de 2 Mo",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Stockage des avatars non configuré",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Envoyer un avatar (JPEG, PNG, WebP ou GIF, 2 Mo au plus) ; recadré en 256 × 256",
+        "tags": ["users"]
+      },
+      "delete": {
+        "operationId": "UsersController_removeAvatar",
+        "parameters": [],
+        "responses": {
+          "204": {
+            "description": ""
+          },
+          "401": {
+            "description": "Jeton d’accès manquant ou invalide",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Stockage des avatars non configuré",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Retirer son avatar",
         "tags": ["users"]
       }
     },
@@ -2706,6 +2921,40 @@
         },
         "required": ["name", "email", "password"]
       },
+      "ProfileLinksResponseDto": {
+        "type": "object",
+        "properties": {
+          "github": {
+            "type": "string",
+            "nullable": true
+          },
+          "linkedin": {
+            "type": "string",
+            "nullable": true
+          },
+          "website": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": ["github", "linkedin", "website"]
+      },
+      "PreferencesResponseDto": {
+        "type": "object",
+        "properties": {
+          "theme": {
+            "type": "string",
+            "enum": ["light", "dark", "system"],
+            "example": "system"
+          },
+          "language": {
+            "type": "string",
+            "enum": ["fr", "en"],
+            "example": "fr"
+          }
+        },
+        "required": ["theme", "language"]
+      },
       "UserResponseDto": {
         "type": "object",
         "properties": {
@@ -2726,6 +2975,17 @@
             "nullable": true,
             "example": null
           },
+          "bio": {
+            "type": "string",
+            "nullable": true,
+            "example": "Développeuse Angular et NestJS."
+          },
+          "links": {
+            "$ref": "#/components/schemas/ProfileLinksResponseDto"
+          },
+          "preferences": {
+            "$ref": "#/components/schemas/PreferencesResponseDto"
+          },
           "emailVerified": {
             "type": "boolean",
             "example": false
@@ -2736,7 +2996,17 @@
             "example": "2026-10-17T09:00:00.000Z"
           }
         },
-        "required": ["id", "email", "name", "avatarUrl", "emailVerified", "createdAt"]
+        "required": [
+          "id",
+          "email",
+          "name",
+          "avatarUrl",
+          "bio",
+          "links",
+          "preferences",
+          "emailVerified",
+          "createdAt"
+        ]
       },
       "AuthResponseDto": {
         "type": "object",
@@ -2814,6 +3084,23 @@
         },
         "required": ["token", "password"]
       },
+      "ChangePasswordDto": {
+        "type": "object",
+        "properties": {
+          "currentPassword": {
+            "type": "string",
+            "example": "AncienMotDePasse2026"
+          },
+          "newPassword": {
+            "type": "string",
+            "example": "MotDePasse2026",
+            "minLength": 8,
+            "maxLength": 72,
+            "description": "Au moins 8 caractères, dont une lettre et un chiffre"
+          }
+        },
+        "required": ["currentPassword", "newPassword"]
+      },
       "ErrorResponseDto": {
         "type": "object",
         "properties": {
@@ -2850,6 +3137,62 @@
           }
         },
         "required": ["statusCode", "message", "error", "path", "timestamp"]
+      },
+      "ProfileLinksDto": {
+        "type": "object",
+        "properties": {
+          "github": {
+            "type": "string",
+            "nullable": true,
+            "example": "https://github.com/ada"
+          },
+          "linkedin": {
+            "type": "string",
+            "nullable": true,
+            "example": "https://www.linkedin.com/in/ada"
+          },
+          "website": {
+            "type": "string",
+            "nullable": true,
+            "example": "https://ada.dev"
+          }
+        }
+      },
+      "PreferencesDto": {
+        "type": "object",
+        "properties": {
+          "theme": {
+            "type": "string",
+            "enum": ["light", "dark", "system"],
+            "example": "system"
+          },
+          "language": {
+            "type": "string",
+            "enum": ["fr", "en"],
+            "example": "fr"
+          }
+        }
+      },
+      "UpdateProfileDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "example": "Ada Lovelace",
+            "maxLength": 80
+          },
+          "bio": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 500
+          },
+          "links": {
+            "$ref": "#/components/schemas/ProfileLinksDto"
+          },
+          "preferences": {
+            "$ref": "#/components/schemas/PreferencesDto"
+          }
+        }
       },
       "PaginationMetaDto": {
         "type": "object",

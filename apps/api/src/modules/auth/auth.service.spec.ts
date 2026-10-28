@@ -4,7 +4,12 @@ import { Test } from '@nestjs/testing';
 import { AuthTokenType, Prisma, type User } from '../../generated/prisma/client.js';
 import { MailService } from '../mail/mail.service.js';
 import { UsersService } from '../users/users.service.js';
-import { AuthService, INVALID_CREDENTIALS_MESSAGE } from './auth.service.js';
+import {
+  AuthService,
+  INVALID_CREDENTIALS_MESSAGE,
+  SAME_PASSWORD,
+  WRONG_CURRENT_PASSWORD,
+} from './auth.service.js';
 import { OneTimeTokenService } from './one-time-token.service.js';
 import { PasswordService } from './password.service.js';
 import { TokenService } from './token.service.js';
@@ -44,6 +49,7 @@ describe('AuthService', () => {
     consumeRefreshToken: vi.fn(),
     revoke: vi.fn(),
     revokeAll: vi.fn(),
+    revokeAllExcept: vi.fn(),
   };
   let service: AuthService;
 
@@ -65,6 +71,48 @@ describe('AuthService', () => {
       ],
     }).compile();
     service = moduleRef.get(AuthService);
+  });
+
+  describe('changePassword', () => {
+    const dto = { currentPassword: 'Ancien2026', newPassword: 'Nouveau2026' };
+
+    it('vérifie l’actuel, enregistre le nouveau et ferme les autres sessions', async () => {
+      users.findById.mockResolvedValue(user);
+      passwords.verify.mockResolvedValue(true);
+      passwords.hash.mockResolvedValue('nouveau-hash');
+
+      await service.changePassword('user-1', dto, 'jeton-en-cours');
+
+      expect(passwords.verify).toHaveBeenCalledWith('Ancien2026', 'hash-secret');
+      expect(users.updatePassword).toHaveBeenCalledWith('user-1', 'nouveau-hash');
+      expect(tokens.revokeAllExcept).toHaveBeenCalledWith('user-1', 'jeton-en-cours');
+      expect(tokens.revokeAll).not.toHaveBeenCalled();
+    });
+
+    it('refuse un mot de passe actuel incorrect (400, pas 401) sans rien changer', async () => {
+      users.findById.mockResolvedValue(user);
+      passwords.verify.mockResolvedValue(false);
+
+      await expect(service.changePassword('user-1', dto, undefined)).rejects.toMatchObject({
+        status: 400,
+        message: WRONG_CURRENT_PASSWORD,
+      });
+      expect(users.updatePassword).not.toHaveBeenCalled();
+      expect(tokens.revokeAllExcept).not.toHaveBeenCalled();
+    });
+
+    it('refuse un nouveau mot de passe identique à l’actuel', async () => {
+      users.findById.mockResolvedValue(user);
+      passwords.verify.mockResolvedValue(true);
+
+      await expect(
+        service.changePassword(
+          'user-1',
+          { currentPassword: 'Meme2026', newPassword: 'Meme2026' },
+          undefined,
+        ),
+      ).rejects.toMatchObject({ status: 400, message: SAME_PASSWORD });
+    });
   });
 
   describe('register', () => {
@@ -94,6 +142,9 @@ describe('AuthService', () => {
           email: 'ada@devmirror.dev',
           name: 'Ada Lovelace',
           avatarUrl: null,
+          bio: null,
+          links: { github: null, linkedin: null, website: null },
+          preferences: { theme: 'system', language: 'fr' },
           emailVerified: false,
           createdAt: user.createdAt,
         },
