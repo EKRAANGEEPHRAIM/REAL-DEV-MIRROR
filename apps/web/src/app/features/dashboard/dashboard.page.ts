@@ -7,6 +7,10 @@ import { HlmCardImports } from '@spartan-ng/helm/card';
 import { HlmSkeletonImports } from '@spartan-ng/helm/skeleton';
 import { AuthStore } from '../../core/auth/auth.store';
 import { FormAlert } from '../../shared/ui-kit/form-alert';
+import { ActivityHeatmap } from './charts/activity-heatmap';
+import { formatShortDay, monthlyTotals } from './charts/chart-math';
+import { ProjectStatusChart } from './charts/project-status-chart';
+import { WeeklyTasksChart } from './charts/weekly-tasks-chart';
 import { DashboardStore } from './data/dashboard.store';
 import { DashboardTile } from './dashboard-tile';
 import { firstName, greeting, plural } from './dashboard-tiles';
@@ -27,6 +31,9 @@ const dateFormatter = new Intl.DateTimeFormat('fr', {
     HlmSkeletonImports,
     FormAlert,
     DashboardTile,
+    WeeklyTasksChart,
+    ProjectStatusChart,
+    ActivityHeatmap,
   ],
   providers: [provideIcons({ lucideRefreshCw, lucideTriangleAlert })],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -95,6 +102,80 @@ const dateFormatter = new Intl.DateTimeFormat('fr', {
           <dm-dashboard-tile [tile]="tile" />
         }
       </section>
+
+      @let data = store.overview()!;
+      <!-- Pendant une actualisation, les graphiques gardent leur rendu, atténués -->
+      <div
+        class="mt-6 grid gap-4 transition-opacity lg:grid-cols-3"
+        [class.opacity-60]="store.isRefreshing()"
+      >
+        <section hlmCard class="gap-4 p-5 lg:col-span-2" aria-labelledby="weekly-heading">
+          <header>
+            <h2 id="weekly-heading" class="font-medium">Tâches terminées par semaine</h2>
+            <p class="text-muted-foreground text-sm">12 dernières semaines</p>
+          </header>
+          <dm-weekly-tasks-chart [weeks]="data.tasksCompletedPerWeek" />
+          <details class="text-sm">
+            <summary class="text-muted-foreground cursor-pointer text-xs">Voir les données</summary>
+            <table class="mt-2 w-full text-left text-xs">
+              <thead class="text-muted-foreground">
+                <tr>
+                  <th scope="col" class="py-1 font-medium">Semaine du</th>
+                  <th scope="col" class="py-1 text-right font-medium">Tâches terminées</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (week of data.tasksCompletedPerWeek; track week.weekStart) {
+                  <tr class="border-t">
+                    <td class="py-1">{{ shortDay(week.weekStart) }}</td>
+                    <td class="py-1 text-right tabular-nums">{{ week.count }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </details>
+        </section>
+
+        <section hlmCard class="gap-4 p-5" aria-labelledby="status-heading">
+          <header>
+            <h2 id="status-heading" class="font-medium">Projets par statut</h2>
+            <p class="text-muted-foreground text-sm">Tous vos projets, archivés compris</p>
+          </header>
+          <dm-project-status-chart [statuses]="data.projectsByStatus" />
+        </section>
+
+        <section hlmCard class="gap-4 p-5 lg:col-span-3" aria-labelledby="activity-heading">
+          <header>
+            <h2 id="activity-heading" class="font-medium">Activité sur un an</h2>
+            <p class="text-muted-foreground text-sm">
+              Projets et notes créés, tâches terminées, jalons cochés —
+              {{ data.activity.total }} {{ actionsLabel() }}
+            </p>
+          </header>
+          <dm-activity-heatmap [calendar]="data.activity" />
+          <details class="text-sm">
+            <summary class="text-muted-foreground cursor-pointer text-xs">
+              Voir les totaux par mois
+            </summary>
+            <table class="mt-2 w-full max-w-sm text-left text-xs">
+              <thead class="text-muted-foreground">
+                <tr>
+                  <th scope="col" class="py-1 font-medium">Mois</th>
+                  <th scope="col" class="py-1 text-right font-medium">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (month of months(); track month.month) {
+                  <tr class="border-t">
+                    <td class="py-1 first-letter:uppercase">{{ month.month }}</td>
+                    <td class="py-1 text-right tabular-nums">{{ month.count }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </details>
+        </section>
+      </div>
     }
   `,
 })
@@ -111,6 +192,14 @@ export class DashboardPage {
     plural(this.store.overdueTasks(), 'tâche en retard', 'tâches en retard'),
   );
   protected readonly skeletons = [1, 2, 3, 4];
+  protected readonly shortDay = formatShortDay;
+  protected readonly months = computed(() => {
+    const data = this.store.overview();
+    return data ? monthlyTotals(data.activity) : [];
+  });
+  protected readonly actionsLabel = computed(() =>
+    plural(this.store.overview()?.activity.total ?? 0, 'action'),
+  );
 
   constructor() {
     this.store.load();

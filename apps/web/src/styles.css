@@ -84,6 +84,32 @@
   --sidebar-ring: oklch(0.552 0.016 285.938);
 }
 
+/*
+ * Graphiques du tableau de bord. Couleurs validées (contraste, séparation, rampe monotone)
+ * contre la surface des cartes : #ffffff en clair, #18181b en sombre. Le sombre a ses propres
+ * marches, pas une inversion automatique.
+ */
+:root {
+  --viz-series: #2a78d6;
+  --viz-grid: #e1e0d9;
+  --viz-axis: #c3c2b7;
+  --viz-heat-0: #ebeae5;
+  --viz-heat-1: #86b6ef;
+  --viz-heat-2: #5598e7;
+  --viz-heat-3: #256abf;
+  --viz-heat-4: #104281;
+}
+:root.dark {
+  --viz-series: #3987e5;
+  --viz-grid: #2c2c2a;
+  --viz-axis: #383835;
+  --viz-heat-0: #27272a;
+  --viz-heat-1: #184f95;
+  --viz-heat-2: #256abf;
+  --viz-heat-3: #5598e7;
+  --viz-heat-4: #9ec5f4;
+}
+
 /* Coloration du code des notes (highlight.js), lisible en thème clair comme sombre. */
 :root {
   --code-bg: oklch(0.975 0.003 286);
