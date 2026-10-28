@@ -64,8 +64,7 @@ describe('Statistiques (e2e)', () => {
 
     await send(ada, 'post', '/api/v1/goals', { title: 'Lancer', milestones: ['API'] });
     await send(ada, 'post', '/api/v1/notes', { title: 'Note récente', content: '**JWT**' });
-    // Une douzaine d'appels vers Neon : plus que les 30 s par défaut.
-  }, 90_000);
+  });
 
   afterAll(async () => {
     await prisma.user.deleteMany({ where: { email: { endsWith: EMAIL_DOMAIN } } });

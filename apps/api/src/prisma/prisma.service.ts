@@ -10,6 +10,9 @@ export class PrismaService extends PrismaClient implements OnModuleDestroy {
   constructor(config: ConfigService<EnvironmentVariables, true>) {
     super({
       adapter: new PrismaNeon({ connectionString: config.get('DATABASE_URL', { infer: true }) }),
+      // Par défaut, une transaction interactive abandonne après 2 s d'attente d'une connexion
+      // (P2028) : trop court quand Neon sort de veille ou que les requêtes s'accumulent.
+      transactionOptions: { maxWait: 10_000, timeout: 15_000 },
     });
   }
 
