@@ -3,8 +3,6 @@ import { authGuard, guestGuard } from './core/auth/auth.guards';
 import { Shell } from './core/layout/shell';
 import { AuthLayout } from './features/auth/auth-layout';
 
-const comingSoon = () => import('./shared/pages/coming-soon').then((m) => m.ComingSoon);
-
 // Ordre important : les deux layouts ont un chemin vide. Le shell vient en premier pour que
 // « / » y soit résolu ; un layout à chemin vide sans enfant correspondant s'afficherait vide.
 export const routes: Routes = [
@@ -17,8 +15,8 @@ export const routes: Routes = [
       {
         path: 'dashboard',
         title: 'Tableau de bord · DevMirror',
-        loadComponent: comingSoon,
-        data: { heading: 'Tableau de bord', day: '28' },
+        loadComponent: () =>
+          import('./features/dashboard/dashboard.page').then((m) => m.DashboardPage),
       },
       {
         path: 'projects',
