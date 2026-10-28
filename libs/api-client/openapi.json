@@ -2451,6 +2451,74 @@
         "summary": "Supprimer une note",
         "tags": ["notes"]
       }
+    },
+    "/api/v1/search": {
+      "get": {
+        "operationId": "SearchController_search",
+        "parameters": [
+          {
+            "name": "q",
+            "required": true,
+            "in": "query",
+            "description": "Texte recherché (2 caractères au moins)",
+            "schema": {
+              "example": "jwt",
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "description": "Résultats au plus par catégorie",
+            "schema": {
+              "minimum": 1,
+              "maximum": 20,
+              "default": 5,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SearchResultsDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Recherche trop courte ou trop longue",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Jeton d’accès manquant ou invalide",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Recherche globale dans ses projets, tâches et notes (palette Ctrl+K)",
+        "tags": ["search"]
+      }
     }
   },
   "info": {
@@ -3743,6 +3811,138 @@
             }
           }
         }
+      },
+      "ProjectHitDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "clx1a2b3c0000qz8h4k9d7f2e"
+          },
+          "name": {
+            "type": "string",
+            "example": "DevMirror"
+          },
+          "color": {
+            "type": "string",
+            "nullable": true,
+            "example": "#6366f1"
+          },
+          "status": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ProjectStatus"
+              }
+            ]
+          }
+        },
+        "required": ["id", "name", "color", "status"]
+      },
+      "SearchProjectRefDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "clx1a2b3c0000qz8h4k9d7f2e"
+          },
+          "name": {
+            "type": "string",
+            "example": "DevMirror"
+          },
+          "color": {
+            "type": "string",
+            "nullable": true,
+            "example": "#6366f1"
+          }
+        },
+        "required": ["id", "name", "color"]
+      },
+      "TaskHitDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "clx0task00001"
+          },
+          "title": {
+            "type": "string",
+            "example": "Écrire les tests du refresh JWT"
+          },
+          "status": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/TaskStatus"
+              }
+            ]
+          },
+          "priority": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Priority"
+              }
+            ]
+          },
+          "project": {
+            "nullable": true,
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SearchProjectRefDto"
+              }
+            ]
+          }
+        },
+        "required": ["id", "title", "status", "priority", "project"]
+      },
+      "NoteHitDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "clx0note00001"
+          },
+          "title": {
+            "type": "string",
+            "example": "Pièges du rafraîchissement JWT"
+          },
+          "excerpt": {
+            "type": "string",
+            "example": "Un refresh token ne sert qu’une fois."
+          },
+          "pinned": {
+            "type": "boolean",
+            "example": false
+          }
+        },
+        "required": ["id", "title", "excerpt", "pinned"]
+      },
+      "SearchResultsDto": {
+        "type": "object",
+        "properties": {
+          "q": {
+            "type": "string",
+            "example": "jwt"
+          },
+          "projects": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProjectHitDto"
+            }
+          },
+          "tasks": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TaskHitDto"
+            }
+          },
+          "notes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/NoteHitDto"
+            }
+          }
+        },
+        "required": ["q", "projects", "tasks", "notes"]
       }
     }
   }

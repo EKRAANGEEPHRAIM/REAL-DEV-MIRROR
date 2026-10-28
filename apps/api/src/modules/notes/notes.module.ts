@@ -8,5 +8,7 @@ import { NotesService } from './notes.service.js';
   imports: [ProjectsModule, TagsModule],
   controllers: [NotesController],
   providers: [NotesService],
+  // La recherche globale réutilise la recherche plein texte des notes.
+  exports: [NotesService],
 })
 export class NotesModule {}
