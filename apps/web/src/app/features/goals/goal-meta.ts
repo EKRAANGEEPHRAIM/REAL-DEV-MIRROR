@@ -50,8 +50,8 @@ export function targetLabel(goal: Goal, now: Date = new Date()): TargetLabel | n
 }
 
 export const TARGET_TONES: Record<TargetTone, string> = {
-  completed: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300',
+  completed: 'bg-emerald-500/15 text-emerald-800 dark:text-emerald-300',
   overdue: 'bg-red-500/15 text-red-700 dark:text-red-300',
-  soon: 'bg-amber-500/15 text-amber-700 dark:text-amber-300',
+  soon: 'bg-amber-500/15 text-amber-800 dark:text-amber-300',
   later: 'bg-muted text-muted-foreground',
 };

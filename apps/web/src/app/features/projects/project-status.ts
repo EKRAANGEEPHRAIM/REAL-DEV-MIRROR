@@ -18,7 +18,7 @@ export const PROJECT_STATUSES: readonly ProjectStatusOption[] = [
   {
     value: 'IN_PROGRESS',
     label: 'projects.status.IN_PROGRESS',
-    tone: 'bg-amber-500/15 text-amber-700 dark:text-amber-300',
+    tone: 'bg-amber-500/15 text-amber-800 dark:text-amber-300',
   },
   {
     value: 'PAUSED',
@@ -28,7 +28,7 @@ export const PROJECT_STATUSES: readonly ProjectStatusOption[] = [
   {
     value: 'DONE',
     label: 'projects.status.DONE',
-    tone: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300',
+    tone: 'bg-emerald-500/15 text-emerald-800 dark:text-emerald-300',
   },
   { value: 'ARCHIVED', label: 'projects.status.ARCHIVED', tone: 'bg-muted text-muted-foreground' },
 ];

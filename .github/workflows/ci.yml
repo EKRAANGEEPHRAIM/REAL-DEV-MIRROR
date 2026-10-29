@@ -40,6 +40,28 @@ jobs:
             exit 1
           }
 
+  web-e2e:
+    name: Front — responsive et accessibilité (Playwright)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Installer Chromium
+        run: pnpm --filter @devmirror/web exec playwright install --with-deps chromium
+      # API simulée dans le navigateur : aucune base ni secret nécessaire.
+      - run: pnpm --filter @devmirror/web e2e
+      - if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-results
+          path: apps/web/e2e-results
+          retention-days: 7
+
   api-e2e:
     name: Tests e2e de l'API (branche Neon test)
     runs-on: ubuntu-latest

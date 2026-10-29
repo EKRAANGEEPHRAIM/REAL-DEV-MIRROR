@@ -47,7 +47,7 @@ import { translate } from '../../../core/i18n/translate';
       }
       <div
         cdkDropListGroup
-        class="-mx-4 flex snap-x gap-4 overflow-x-auto px-4 pb-4 md:mx-0 md:grid md:grid-cols-2 md:overflow-visible md:px-0 xl:grid-cols-4"
+        class="relative -mx-4 flex snap-x gap-4 overflow-x-auto px-4 pb-4 md:mx-0 md:grid md:grid-cols-2 md:overflow-visible md:px-0 xl:grid-cols-4"
         [attr.aria-busy]="store.status() === 'loading'"
       >
         @for (column of columns; track column.value) {

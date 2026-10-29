@@ -18,9 +18,7 @@ import { debounceTime, distinctUntilChanged, Subject } from 'rxjs';
 import { PROJECT_SORTS, type ProjectFilters, type ProjectSort } from '../project-filters';
 import { PROJECT_STATUSES } from '../project-status';
 import { translate } from '../../../core/i18n/translate';
-
-const SELECT_CLASSES =
-  'border-input bg-background focus-visible:ring-ring h-9 rounded-md border px-3 text-sm outline-none focus-visible:ring-2';
+import { FILTER_SELECT_CLASSES } from '../../../shared/ui-kit/filter-classes';
 
 /** Barre de filtres : émet les changements ; la recherche est temporisée (300 ms). */
 @Component({
@@ -29,8 +27,8 @@ const SELECT_CLASSES =
   providers: [provideIcons({ lucideSearch, lucideX })],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div role="search" class="flex flex-col gap-3 md:flex-row md:flex-wrap md:items-end">
-      <div class="relative flex-1 md:min-w-64">
+    <div role="search" class="grid grid-cols-2 gap-3 md:flex md:flex-wrap md:items-end">
+      <div class="relative col-span-2 flex-1 md:min-w-64">
         <label hlmLabel for="project-search" class="sr-only">{{
           t('projects.filters.search')
         }}</label>
@@ -50,7 +48,7 @@ const SELECT_CLASSES =
         />
       </div>
 
-      <div class="flex flex-col gap-1">
+      <div class="flex min-w-0 flex-col gap-1">
         <label hlmLabel for="project-status" class="text-muted-foreground text-xs">{{
           t('projects.form.status')
         }}</label>
@@ -69,7 +67,7 @@ const SELECT_CLASSES =
       </div>
 
       @if (tags().length) {
-        <div class="flex flex-col gap-1">
+        <div class="flex min-w-0 flex-col gap-1">
           <label hlmLabel for="project-tag" class="text-muted-foreground text-xs">{{
             t('projects.filters.tag')
           }}</label>
@@ -88,7 +86,7 @@ const SELECT_CLASSES =
         </div>
       }
 
-      <div class="flex flex-col gap-1">
+      <div class="flex min-w-0 flex-col gap-1">
         <label hlmLabel for="project-sort" class="text-muted-foreground text-xs">{{
           t('common.sortBy')
         }}</label>
@@ -135,7 +133,7 @@ export class ProjectFiltersBar {
 
   protected readonly statuses = PROJECT_STATUSES;
   protected readonly sorts = PROJECT_SORTS;
-  protected readonly selectClasses = SELECT_CLASSES;
+  protected readonly selectClasses = FILTER_SELECT_CLASSES;
   /** Texte saisi, resynchronisé quand l'URL change (retour arrière, réinitialisation). */
   protected readonly search = linkedSignal(() => this.value().q);
 

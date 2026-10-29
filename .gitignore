@@ -14,6 +14,7 @@ out-tsc/
 coverage/
 playwright-report/
 test-results/
+e2e-results/
 
 # Environnement (ne jamais commiter de secrets)
 .env

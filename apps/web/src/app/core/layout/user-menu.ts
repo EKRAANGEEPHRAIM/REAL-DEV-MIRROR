@@ -22,9 +22,10 @@ import { translate } from '../i18n/translate';
       class="rounded-full"
       [hlmDropdownMenuTrigger]="menu"
       align="end"
-      [attr.aria-label]="t('layout.accountMenu', { name: store.user()?.name ?? '' })"
     >
-      <hlm-avatar size="sm">
+      <!-- Nom accessible en texte masqué : les initiales visibles ne le contredisent pas. -->
+      <span class="sr-only">{{ t('layout.accountMenu', { name: store.user()?.name ?? '' }) }}</span>
+      <hlm-avatar size="sm" aria-hidden="true">
         @if (store.user()?.avatarUrl; as url) {
           <img hlmAvatarImage [src]="url" alt="" />
         }

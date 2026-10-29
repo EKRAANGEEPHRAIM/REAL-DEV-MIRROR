@@ -16,9 +16,7 @@ import { HlmLabelImports } from '@spartan-ng/helm/label';
 import { debounceTime, distinctUntilChanged, Subject } from 'rxjs';
 import { GOAL_SORTS, GOAL_STATES, type GoalFilters, type GoalSort } from '../goal-filters';
 import { translate } from '../../../core/i18n/translate';
-
-const SELECT_CLASSES =
-  'border-input bg-background focus-visible:ring-ring h-9 rounded-md border px-3 text-sm outline-none focus-visible:ring-2';
+import { FILTER_SELECT_CLASSES } from '../../../shared/ui-kit/filter-classes';
 
 /** Onglets d'état, recherche temporisée (300 ms) et tri ; émet les changements. */
 @Component({
@@ -66,7 +64,7 @@ const SELECT_CLASSES =
         />
       </div>
 
-      <div class="flex flex-col gap-1">
+      <div class="flex min-w-0 flex-col gap-1">
         <label hlmLabel for="goal-sort" class="text-muted-foreground text-xs">{{
           t('common.sortBy')
         }}</label>
@@ -97,7 +95,7 @@ export class GoalFiltersBar {
 
   protected readonly states = GOAL_STATES;
   protected readonly sorts = GOAL_SORTS;
-  protected readonly selectClasses = SELECT_CLASSES;
+  protected readonly selectClasses = FILTER_SELECT_CLASSES;
   /** Texte saisi, resynchronisé quand l'URL change (retour arrière, réinitialisation). */
   protected readonly search = linkedSignal(() => this.value().q);
 
