@@ -34,6 +34,7 @@ import {
 } from '../task-filters';
 import { TaskFiltersBar } from './task-filters-bar';
 import { TaskRow } from './task-row';
+import { translate } from '../../../core/i18n/translate';
 
 @Component({
   selector: 'dm-tasks-page',
@@ -61,13 +62,17 @@ import { TaskRow } from './task-row';
   template: `
     <header class="mb-6 flex flex-wrap items-center justify-between gap-3">
       <h1 class="text-2xl font-semibold tracking-tight">
-        Tâches
+        {{ t('titles.tasks') }}
         @if (count() !== null) {
           <span class="text-muted-foreground ms-1 text-base font-normal">({{ count() }})</span>
         }
       </h1>
       <div class="flex items-center gap-2">
-        <div class="bg-muted flex rounded-lg p-0.5" role="group" aria-label="Affichage">
+        <div
+          class="bg-muted flex rounded-lg p-0.5"
+          role="group"
+          [attr.aria-label]="t('tasks.view.label')"
+        >
           <button
             hlmBtn
             size="sm"
@@ -76,7 +81,7 @@ import { TaskRow } from './task-row';
             (click)="setView(null)"
           >
             <ng-icon name="lucideList" aria-hidden="true" />
-            Liste
+            {{ t('tasks.view.list') }}
           </button>
           <button
             hlmBtn
@@ -86,12 +91,12 @@ import { TaskRow } from './task-row';
             (click)="setView('board')"
           >
             <ng-icon name="lucideColumns3" aria-hidden="true" />
-            Kanban
+            {{ t('tasks.view.board') }}
           </button>
         </div>
         <button hlmBtn (click)="create()">
           <ng-icon name="lucidePlus" aria-hidden="true" />
-          Nouvelle tâche
+          {{ t('tasks.new') }}
         </button>
       </div>
     </header>
@@ -113,11 +118,11 @@ import { TaskRow } from './task-row';
         <dm-form-alert>{{ store.error() }}</dm-form-alert>
         <button hlmBtn variant="outline" (click)="store.reload()">
           <ng-icon name="lucideRefreshCw" aria-hidden="true" />
-          Réessayer
+          {{ t('common.retry') }}
         </button>
       </div>
     } @else if (store.isInitialLoading()) {
-      <div class="flex flex-col gap-2" aria-busy="true" aria-label="Chargement des tâches">
+      <div class="flex flex-col gap-2" aria-busy="true" [attr.aria-label]="t('tasks.loading')">
         @for (i of skeletons; track i) {
           <hlm-skeleton class="h-14 w-full rounded-lg" />
         }
@@ -128,9 +133,10 @@ import { TaskRow } from './task-row';
       >
         @if (filtered()) {
           <ng-icon name="lucideSearchX" class="text-muted-foreground text-4xl" aria-hidden="true" />
-          <h2 class="text-lg font-medium">Aucune tâche ne correspond</h2>
+          <h2 class="text-lg font-medium">{{ t('tasks.empty.filteredTitle') }}</h2>
+          <p class="text-muted-foreground max-w-sm text-sm">{{ t('tasks.empty.filteredText') }}</p>
           <button hlmBtn variant="outline" (click)="resetFilters()">
-            Réinitialiser les filtres
+            {{ t('common.resetFilters') }}
           </button>
         } @else {
           <ng-icon
@@ -138,13 +144,13 @@ import { TaskRow } from './task-row';
             class="text-muted-foreground text-4xl"
             aria-hidden="true"
           />
-          <h2 class="text-lg font-medium">Aucune tâche pour l’instant</h2>
+          <h2 class="text-lg font-medium">{{ t('tasks.empty.title') }}</h2>
           <p class="text-muted-foreground max-w-sm text-sm">
-            Notez ce qu’il reste à faire, avec une échéance et une priorité.
+            {{ t('tasks.empty.text') }}
           </p>
           <button hlmBtn (click)="create()">
             <ng-icon name="lucidePlus" aria-hidden="true" />
-            Créer une tâche
+            {{ t('tasks.empty.cta') }}
           </button>
         }
       </section>
@@ -172,8 +178,7 @@ import { TaskRow } from './task-row';
             [page]="meta.page"
             [totalPages]="meta.totalPages"
             [total]="meta.total"
-            itemLabel="tâche"
-            itemsLabel="tâches"
+            unit="tasks.count"
             (pageChange)="goToPage($event)"
           />
         }
@@ -182,6 +187,7 @@ import { TaskRow } from './task-row';
   `,
 })
 export class TasksPage {
+  protected readonly t = translate;
   readonly view = input<string>();
   readonly project = input<string>();
   readonly status = input<string>();
@@ -248,7 +254,7 @@ export class TasksPage {
   protected create(status?: TaskStatus): void {
     this.dialogs.open(undefined, { status }).subscribe((result) => {
       if (result?.type !== 'saved') return;
-      toast.success('Tâche créée');
+      toast.success(translate('tasks.toast.created'));
       this.refresh();
     });
   }
@@ -258,8 +264,8 @@ export class TasksPage {
   }
 
   private applyResult(result: TaskDialogResult | undefined): void {
-    if (result?.type === 'saved') toast.success('Tâche enregistrée');
-    if (result?.type === 'deleted') toast.success('Tâche supprimée');
+    if (result?.type === 'saved') toast.success(translate('tasks.toast.saved'));
+    if (result?.type === 'deleted') toast.success(translate('tasks.toast.deleted'));
 
     if (this.board()) {
       // Le statut ou la position ont pu changer : on recharge le tableau.

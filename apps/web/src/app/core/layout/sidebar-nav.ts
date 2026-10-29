@@ -9,6 +9,7 @@ import {
   lucideSquareCheckBig,
   lucideTarget,
 } from '@ng-icons/lucide';
+import { translate } from '../i18n/translate';
 import { NavItem } from './navigation';
 
 @Component({
@@ -38,7 +39,7 @@ import { NavItem } from './navigation';
           (click)="navigated.emit()"
         >
           <ng-icon [name]="item.icon" class="text-base" aria-hidden="true" />
-          {{ item.label }}
+          {{ t(item.label) }}
         </a>
       }
     </nav>
@@ -46,7 +47,9 @@ import { NavItem } from './navigation';
 })
 export class SidebarNav {
   readonly items = input.required<readonly NavItem[]>();
-  readonly label = input('Navigation');
+  /** Nom accessible de la zone de navigation, déjà traduit. */
+  readonly label = input.required<string>();
+  protected readonly t = translate;
   /** Émis après un clic sur un lien, pour fermer le menu mobile. */
   readonly navigated = output<void>();
 }

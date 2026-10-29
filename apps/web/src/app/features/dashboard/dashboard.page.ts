@@ -15,13 +15,9 @@ import { DashboardStore } from './data/dashboard.store';
 import { DueSoonList } from './lists/due-soon-list';
 import { RecentNotesList } from './lists/recent-notes-list';
 import { DashboardTile } from './dashboard-tile';
-import { firstName, greeting, plural } from './dashboard-tiles';
-
-const dateFormatter = new Intl.DateTimeFormat('fr', {
-  weekday: 'long',
-  day: 'numeric',
-  month: 'long',
-});
+import { firstName, greeting } from './dashboard-tiles';
+import { formatDate } from '../../core/i18n/format';
+import { translate } from '../../core/i18n/translate';
 
 @Component({
   selector: 'dm-dashboard-page',
@@ -45,7 +41,7 @@ const dateFormatter = new Intl.DateTimeFormat('fr', {
     <header class="mb-6 flex flex-wrap items-end justify-between gap-3">
       <div>
         <h1 class="text-2xl font-semibold tracking-tight">{{ title() }}</h1>
-        <p class="text-muted-foreground mt-1 text-sm first-letter:uppercase">{{ today }}</p>
+        <p class="text-muted-foreground mt-1 text-sm first-letter:uppercase">{{ today() }}</p>
       </div>
       <button
         hlmBtn
@@ -59,7 +55,7 @@ const dateFormatter = new Intl.DateTimeFormat('fr', {
           [class]="store.isRefreshing() ? 'motion-safe:animate-spin' : ''"
           aria-hidden="true"
         />
-        Actualiser
+        {{ t('common.refresh') }}
       </button>
     </header>
 
@@ -68,14 +64,14 @@ const dateFormatter = new Intl.DateTimeFormat('fr', {
         <dm-form-alert>{{ store.error() }}</dm-form-alert>
         <button hlmBtn variant="outline" (click)="store.load()">
           <ng-icon name="lucideRefreshCw" aria-hidden="true" />
-          Réessayer
+          {{ t('common.retry') }}
         </button>
       </div>
     } @else if (store.isInitialLoading()) {
       <div
         class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4"
         aria-busy="true"
-        aria-label="Chargement du tableau de bord"
+        [attr.aria-label]="t('dashboard.loading')"
       >
         @for (i of skeletons; track i) {
           <div hlmCard class="gap-3 p-5">
@@ -86,6 +82,12 @@ const dateFormatter = new Intl.DateTimeFormat('fr', {
         }
       </div>
     } @else if (store.overview()) {
+      @if (store.status() === 'error') {
+        <!-- Actualisation ratée : les derniers chiffres restent affichés, mais on le signale. -->
+        <dm-form-alert class="mb-4">{{
+          t('dashboard.refreshFailed', { reason: store.error() ?? '' })
+        }}</dm-form-alert>
+      }
       @if (store.overdueTasks(); as overdue) {
         <a
           routerLink="/tasks"
@@ -93,11 +95,11 @@ const dateFormatter = new Intl.DateTimeFormat('fr', {
           class="mb-4 flex items-center gap-2 rounded-lg border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-800 hover:bg-amber-500/15 dark:text-amber-200"
         >
           <ng-icon name="lucideTriangleAlert" class="shrink-0" aria-hidden="true" />
-          {{ overdue }} {{ overdueLabel() }} — voir la liste
+          {{ t('dashboard.overdue', { count: overdue }) }}
         </a>
       }
       <section
-        aria-label="Indicateurs"
+        [attr.aria-label]="t('dashboard.indicators')"
         class="grid gap-4 transition-opacity sm:grid-cols-2 xl:grid-cols-4"
         [class.opacity-60]="store.isRefreshing()"
         [attr.aria-busy]="store.isRefreshing()"
@@ -114,20 +116,20 @@ const dateFormatter = new Intl.DateTimeFormat('fr', {
       >
         <section hlmCard class="gap-3 p-5" aria-labelledby="due-heading">
           <header class="flex items-baseline justify-between gap-2">
-            <h2 id="due-heading" class="font-medium">À faire sous 7 jours</h2>
-            <a routerLink="/tasks" class="text-muted-foreground text-xs hover:underline"
-              >Toutes les tâches</a
-            >
+            <h2 id="due-heading" class="font-medium">{{ t('dashboard.dueSoon.title') }}</h2>
+            <a routerLink="/tasks" class="text-muted-foreground text-xs hover:underline">{{
+              t('dashboard.dueSoon.all')
+            }}</a>
           </header>
           <dm-due-soon-list [tasks]="data.dueSoon" (completed)="store.completeTask($event)" />
         </section>
 
         <section hlmCard class="gap-3 p-5" aria-labelledby="notes-heading">
           <header class="flex items-baseline justify-between gap-2">
-            <h2 id="notes-heading" class="font-medium">Dernières notes</h2>
-            <a routerLink="/notes" class="text-muted-foreground text-xs hover:underline"
-              >Toutes les notes</a
-            >
+            <h2 id="notes-heading" class="font-medium">{{ t('dashboard.recentNotes.title') }}</h2>
+            <a routerLink="/notes" class="text-muted-foreground text-xs hover:underline">{{
+              t('dashboard.recentNotes.all')
+            }}</a>
           </header>
           <dm-recent-notes-list [notes]="data.recentNotes" />
         </section>
@@ -140,17 +142,21 @@ const dateFormatter = new Intl.DateTimeFormat('fr', {
       >
         <section hlmCard class="gap-4 p-5 lg:col-span-2" aria-labelledby="weekly-heading">
           <header>
-            <h2 id="weekly-heading" class="font-medium">Tâches terminées par semaine</h2>
-            <p class="text-muted-foreground text-sm">12 dernières semaines</p>
+            <h2 id="weekly-heading" class="font-medium">{{ t('dashboard.weekly.title') }}</h2>
+            <p class="text-muted-foreground text-sm">{{ t('dashboard.weekly.subtitle') }}</p>
           </header>
           <dm-weekly-tasks-chart [weeks]="data.tasksCompletedPerWeek" />
           <details class="text-sm">
-            <summary class="text-muted-foreground cursor-pointer text-xs">Voir les données</summary>
+            <summary class="text-muted-foreground cursor-pointer text-xs">
+              {{ t('common.seeData') }}
+            </summary>
             <table class="mt-2 w-full text-left text-xs">
               <thead class="text-muted-foreground">
                 <tr>
-                  <th scope="col" class="py-1 font-medium">Semaine du</th>
-                  <th scope="col" class="py-1 text-right font-medium">Tâches terminées</th>
+                  <th scope="col" class="py-1 font-medium">{{ t('dashboard.weekly.weekOf') }}</th>
+                  <th scope="col" class="py-1 text-right font-medium">
+                    {{ t('dashboard.weekly.completed') }}
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -167,30 +173,31 @@ const dateFormatter = new Intl.DateTimeFormat('fr', {
 
         <section hlmCard class="gap-4 p-5" aria-labelledby="status-heading">
           <header>
-            <h2 id="status-heading" class="font-medium">Projets par statut</h2>
-            <p class="text-muted-foreground text-sm">Tous vos projets, archivés compris</p>
+            <h2 id="status-heading" class="font-medium">{{ t('dashboard.status.title') }}</h2>
+            <p class="text-muted-foreground text-sm">{{ t('dashboard.status.subtitle') }}</p>
           </header>
           <dm-project-status-chart [statuses]="data.projectsByStatus" />
         </section>
 
         <section hlmCard class="gap-4 p-5 lg:col-span-3" aria-labelledby="activity-heading">
           <header>
-            <h2 id="activity-heading" class="font-medium">Activité sur un an</h2>
+            <h2 id="activity-heading" class="font-medium">{{ t('dashboard.activity.title') }}</h2>
             <p class="text-muted-foreground text-sm">
-              Projets et notes créés, tâches terminées, jalons cochés —
-              {{ data.activity.total }} {{ actionsLabel() }}
+              {{ t('dashboard.activity.subtitle', { count: data.activity.total }) }}
             </p>
           </header>
           <dm-activity-heatmap [calendar]="data.activity" />
           <details class="text-sm">
             <summary class="text-muted-foreground cursor-pointer text-xs">
-              Voir les totaux par mois
+              {{ t('dashboard.activity.byMonth') }}
             </summary>
             <table class="mt-2 w-full max-w-sm text-left text-xs">
               <thead class="text-muted-foreground">
                 <tr>
-                  <th scope="col" class="py-1 font-medium">Mois</th>
-                  <th scope="col" class="py-1 text-right font-medium">Actions</th>
+                  <th scope="col" class="py-1 font-medium">{{ t('dashboard.activity.month') }}</th>
+                  <th scope="col" class="py-1 text-right font-medium">
+                    {{ t('dashboard.activity.actions') }}
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -209,6 +216,7 @@ const dateFormatter = new Intl.DateTimeFormat('fr', {
   `,
 })
 export class DashboardPage {
+  protected readonly t = translate;
   protected readonly store = inject(DashboardStore);
   private readonly auth = inject(AuthStore);
 
@@ -216,9 +224,9 @@ export class DashboardPage {
     const name = firstName(this.auth.user()?.name);
     return name ? `${greeting()}, ${name}` : greeting();
   });
-  protected readonly today = dateFormatter.format(new Date());
-  protected readonly overdueLabel = computed(() =>
-    plural(this.store.overdueTasks(), 'tâche en retard', 'tâches en retard'),
+  /** « mercredi 28 octobre » / « Wednesday 28 October », dans la langue courante. */
+  protected readonly today = computed(() =>
+    formatDate(new Date(), { weekday: 'long', day: 'numeric', month: 'long' }),
   );
   protected readonly skeletons = [1, 2, 3, 4];
   protected readonly shortDay = formatShortDay;
@@ -226,9 +234,6 @@ export class DashboardPage {
     const data = this.store.overview();
     return data ? monthlyTotals(data.activity) : [];
   });
-  protected readonly actionsLabel = computed(() =>
-    plural(this.store.overview()?.activity.total ?? 0, 'action'),
-  );
 
   constructor() {
     this.store.load();

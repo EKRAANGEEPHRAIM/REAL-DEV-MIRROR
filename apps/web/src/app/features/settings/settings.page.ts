@@ -4,6 +4,7 @@ import { PreferencesSettings } from './preferences/preferences-settings';
 import { ProfileSettings } from './profile/profile-settings';
 import { PasswordSettings } from './security/password-settings';
 import { TagsSettings } from './tags/tags-settings';
+import { translate } from '../../core/i18n/translate';
 
 /** Paramètres du compte : profil, sécurité, préférences, tags, données. */
 @Component({
@@ -12,8 +13,8 @@ import { TagsSettings } from './tags/tags-settings';
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <header class="mb-6">
-      <h1 class="text-2xl font-semibold tracking-tight">Paramètres</h1>
-      <p class="text-muted-foreground mt-1 text-sm">Votre profil, votre compte et vos données.</p>
+      <h1 class="text-2xl font-semibold tracking-tight">{{ t('titles.settings') }}</h1>
+      <p class="text-muted-foreground mt-1 text-sm">{{ t('settings.subtitle') }}</p>
     </header>
     <div class="flex max-w-3xl flex-col gap-6">
       <dm-profile-settings />
@@ -24,4 +25,6 @@ import { TagsSettings } from './tags/tags-settings';
     </div>
   `,
 })
-export class SettingsPage {}
+export class SettingsPage {
+  protected readonly t = translate;
+}

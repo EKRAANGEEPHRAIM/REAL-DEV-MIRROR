@@ -33,17 +33,19 @@ import { toast } from '@spartan-ng/brain/sonner';
 import { HlmDialogImports } from '@spartan-ng/helm/dialog';
 import { catchError, debounceTime, distinctUntilChanged, map, of, switchMap, tap } from 'rxjs';
 import { NotesApi } from '../../features/notes/data/notes.api';
-import { UNTITLED_NOTE } from '../../features/notes/note-defaults';
+import { untitledNote } from '../../features/notes/note-defaults';
 import { ProjectDialogs } from '../../features/projects/form/project-dialogs';
 import { apiErrorMessage } from '../http/api-error';
 import { ThemeStore } from '../theme/theme.store';
 import {
+  groupLabel,
   buildPalette,
   MIN_SEARCH_LENGTH,
   type PaletteCommand,
   type PaletteItem,
 } from './palette-items';
 import { SearchApi } from './search.api';
+import { translate } from '../i18n/translate';
 
 /** Délai sans frappe avant d'interroger l'API. */
 export const SEARCH_DEBOUNCE = 200;
@@ -75,13 +77,13 @@ export const SEARCH_DEBOUNCE = 200;
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <h2 hlmDialogTitle class="sr-only">Rechercher ou lancer une action</h2>
+    <h2 hlmDialogTitle class="sr-only">{{ t('palette.title') }}</h2>
     <div class="flex items-center gap-2 border-b px-4">
       <ng-icon name="lucideSearch" class="text-muted-foreground shrink-0" aria-hidden="true" />
       <input
         id="palette-input"
         class="placeholder:text-muted-foreground h-12 min-w-0 flex-1 bg-transparent text-sm outline-none"
-        placeholder="Rechercher un projet, une tâche, une note… ou une action"
+        [placeholder]="t('palette.placeholder')"
         role="combobox"
         aria-expanded="true"
         aria-controls="palette-list"
@@ -97,7 +99,7 @@ export const SEARCH_DEBOUNCE = 200;
         <ng-icon
           name="lucideLoader2"
           class="text-muted-foreground motion-safe:animate-spin"
-          aria-label="Recherche en cours"
+          [attr.aria-label]="t('palette.searching')"
         />
       }
     </div>
@@ -105,7 +107,7 @@ export const SEARCH_DEBOUNCE = 200;
     <div
       id="palette-list"
       role="listbox"
-      aria-label="Résultats et actions"
+      [attr.aria-label]="t('palette.results')"
       class="max-h-[min(60vh,28rem)] overflow-y-auto p-2"
     >
       @for (section of palette().sections; track section.group) {
@@ -114,7 +116,7 @@ export const SEARCH_DEBOUNCE = 200;
             [id]="'palette-group-' + $index"
             class="text-muted-foreground px-2 pt-2 pb-1 text-xs font-medium"
           >
-            {{ section.group }}
+            {{ groupLabel(section.group) }}
           </p>
           @for (entry of section.items; track entry.item.id) {
             <!-- Le focus reste dans le champ (aria-activedescendant) ; tabindex -1 : jamais dans l'ordre Tab -->
@@ -164,15 +166,15 @@ export const SEARCH_DEBOUNCE = 200;
       } @empty {
         <p class="text-muted-foreground px-2 py-8 text-center text-sm" role="status">
           @if (loading()) {
-            Recherche…
+            {{ t('palette.searchingShort') }}
           } @else {
-            Aucun résultat pour « {{ query().trim() }} ».
+            {{ t('palette.noResult', { query: query().trim() }) }}
           }
         </p>
       }
       @if (failed()) {
         <p class="text-destructive px-2 py-2 text-xs" role="status">
-          La recherche n’a pas abouti ; les actions restent disponibles.
+          {{ t('palette.failed') }}
         </p>
       }
     </div>
@@ -181,13 +183,20 @@ export const SEARCH_DEBOUNCE = 200;
       class="text-muted-foreground flex flex-wrap gap-x-4 gap-y-1 border-t px-4 py-2 text-xs"
       aria-hidden="true"
     >
-      <span><kbd class="font-sans">↑</kbd> <kbd class="font-sans">↓</kbd> naviguer</span>
-      <span><kbd class="font-sans">↵</kbd> ouvrir</span>
-      <span><kbd class="font-sans">Échap</kbd> fermer</span>
+      <span
+        ><kbd class="font-sans">↑</kbd> <kbd class="font-sans">↓</kbd>
+        {{ t('palette.keys.navigate') }}</span
+      >
+      <span><kbd class="font-sans">↵</kbd> {{ t('palette.keys.open') }}</span>
+      <span
+        ><kbd class="font-sans">{{ t('palette.keys.escape') }}</kbd>
+        {{ t('palette.keys.close') }}</span
+      >
     </footer>
   `,
 })
 export class CommandPaletteDialog {
+  protected readonly t = translate;
   private readonly ref = inject<BrnDialogRef<void>>(DialogRef);
   private readonly router = inject(Router);
   private readonly document = inject(DOCUMENT);
@@ -196,6 +205,7 @@ export class CommandPaletteDialog {
   private readonly projectDialogs = inject(ProjectDialogs);
   private readonly searchApi = inject(SearchApi);
 
+  protected readonly groupLabel = groupLabel;
   protected readonly query = signal('');
   private readonly results = signal<SearchResults | null>(null);
   protected readonly loading = signal(false);
@@ -270,14 +280,14 @@ export class CommandPaletteDialog {
         this.theme.setMode(this.theme.isDark() ? 'light' : 'dark');
         break;
       case 'new-note':
-        this.notes.create({ title: UNTITLED_NOTE }).subscribe({
+        this.notes.create({ title: untitledNote() }).subscribe({
           next: (note) => void this.router.navigate(['/notes', note.id]),
           error: (error: unknown) => toast.error(apiErrorMessage(error)),
         });
         break;
       case 'new-project':
         this.projectDialogs.open().subscribe((project) => {
-          toast.success(`Projet « ${project.name} » créé`);
+          toast.success(translate('projects.toast.created', { name: project.name }));
           void this.router.navigate(['/projects', project.id]);
         });
         break;

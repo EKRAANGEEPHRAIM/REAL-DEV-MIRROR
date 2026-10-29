@@ -17,6 +17,7 @@ import { HlmInputImports } from '@spartan-ng/helm/input';
 import { HlmLabelImports } from '@spartan-ng/helm/label';
 import { debounceTime, distinctUntilChanged, Subject } from 'rxjs';
 import { defaultSortLabel, NOTE_SORTS, type NoteFilters, type NoteSort } from '../note-filters';
+import { translate } from '../../../core/i18n/translate';
 
 const SELECT_CLASSES =
   'border-input bg-background focus-visible:ring-ring h-9 rounded-md border px-3 text-sm outline-none focus-visible:ring-2';
@@ -31,7 +32,7 @@ const SELECT_CLASSES =
     <div role="search" class="flex flex-col gap-3">
       <div class="flex flex-col gap-3 md:flex-row md:items-end">
         <div class="relative flex-1">
-          <label hlmLabel for="note-search" class="sr-only">Rechercher dans les notes</label>
+          <label hlmLabel for="note-search" class="sr-only">{{ t('notes.filters.search') }}</label>
           <ng-icon
             name="lucideSearch"
             class="text-muted-foreground pointer-events-none absolute top-1/2 left-3 -translate-y-1/2"
@@ -42,13 +43,15 @@ const SELECT_CLASSES =
             id="note-search"
             type="search"
             class="w-full ps-9"
-            placeholder="Rechercher dans les titres et le contenu…"
+            [placeholder]="t('notes.filters.searchPlaceholder')"
             [value]="search()"
             (input)="onSearch($any($event.target).value)"
           />
         </div>
         <div class="flex flex-col gap-1">
-          <label hlmLabel for="note-sort" class="text-muted-foreground text-xs">Trier par</label>
+          <label hlmLabel for="note-sort" class="text-muted-foreground text-xs">{{
+            t('common.sortBy')
+          }}</label>
           <select
             id="note-sort"
             [class]="selectClasses"
@@ -57,7 +60,7 @@ const SELECT_CLASSES =
             <option value="" [selected]="!value().sort">{{ defaultLabel() }}</option>
             @for (sort of sorts(); track sort.value) {
               <option [value]="sort.value" [selected]="value().sort === sort.value">
-                {{ sort.label }}
+                {{ t(sort.label) }}
               </option>
             }
           </select>
@@ -65,13 +68,17 @@ const SELECT_CLASSES =
         @if (active()) {
           <button hlmBtn variant="ghost" size="sm" class="h-9" (click)="cleared.emit()">
             <ng-icon name="lucideX" aria-hidden="true" />
-            Réinitialiser
+            {{ t('common.reset') }}
           </button>
         }
       </div>
 
       @if (tags().length) {
-        <div class="flex flex-wrap items-center gap-1.5" role="group" aria-label="Filtrer par tag">
+        <div
+          class="flex flex-wrap items-center gap-1.5"
+          role="group"
+          [attr.aria-label]="t('notes.filters.byTag')"
+        >
           <button
             type="button"
             class="rounded-full border px-2.5 py-0.5 text-xs font-medium"
@@ -80,7 +87,7 @@ const SELECT_CLASSES =
             [attr.aria-pressed]="!value().tag"
             (click)="changed.emit({ tag: '' })"
           >
-            Tous les tags
+            {{ t('notes.filters.allTags') }}
           </button>
           @for (tag of tags(); track tag.id) {
             <button
@@ -108,6 +115,7 @@ const SELECT_CLASSES =
   `,
 })
 export class NoteFiltersBar {
+  protected readonly t = translate;
   readonly value = input.required<NoteFilters>();
   /** Tags utilisés par au moins une note. */
   readonly tags = input<readonly Tag[]>([]);

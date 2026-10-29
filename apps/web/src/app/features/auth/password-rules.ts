@@ -4,11 +4,11 @@ import type { AbstractControl, ValidationErrors, ValidatorFn } from '@angular/fo
 export const PASSWORD_RULES = [
   {
     id: 'length',
-    label: 'Entre 8 et 72 caractères',
+    label: 'auth.rules.length',
     test: (v: string) => v.length >= 8 && v.length <= 72,
   },
-  { id: 'letter', label: 'Au moins une lettre', test: (v: string) => /\p{L}/u.test(v) },
-  { id: 'digit', label: 'Au moins un chiffre', test: (v: string) => /\d/.test(v) },
+  { id: 'letter', label: 'auth.rules.letter', test: (v: string) => /\p{L}/u.test(v) },
+  { id: 'digit', label: 'auth.rules.digit', test: (v: string) => /\d/.test(v) },
 ] as const;
 
 export const passwordValidator: ValidatorFn = (

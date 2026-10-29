@@ -5,6 +5,7 @@ import { NgIcon, provideIcons } from '@ng-icons/core';
 import { lucideCalendar, lucideCalendarCheck } from '@ng-icons/lucide';
 import { DUE_TONES, dueLabel } from '../../tasks/task-dates';
 import { taskPriority } from '../../tasks/task-meta';
+import { translate } from '../../../core/i18n/translate';
 
 /** Tâches non terminées dont l'échéance tombe dans les 7 prochains jours, la plus proche d'abord. */
 @Component({
@@ -21,7 +22,7 @@ import { taskPriority } from '../../tasks/task-meta';
             <input
               type="checkbox"
               class="accent-primary mt-0.5 size-4 shrink-0"
-              [attr.aria-label]="'Terminer « ' + row.task.title + ' »'"
+              [attr.aria-label]="t('tasks.row.complete', { title: row.task.title })"
               (change)="completed.emit(row.task)"
             />
             <div class="min-w-0 flex-1">
@@ -37,7 +38,7 @@ import { taskPriority } from '../../tasks/task-meta';
                   {{ row.due }}
                 </span>
                 <span class="rounded-full px-1.5 py-0.5 font-medium" [class]="row.priority.tone">
-                  {{ row.priority.label }}
+                  {{ t(row.priority.label) }}
                 </span>
                 @if (row.task.project; as project) {
                   <span class="flex min-w-0 items-center gap-1">
@@ -61,12 +62,13 @@ import { taskPriority } from '../../tasks/task-meta';
           class="text-muted-foreground text-3xl"
           aria-hidden="true"
         />
-        <p class="text-muted-foreground text-sm">Rien d’urgent : aucune échéance cette semaine.</p>
+        <p class="text-muted-foreground text-sm">{{ t('dashboard.dueSoon.empty') }}</p>
       </div>
     }
   `,
 })
 export class DueSoonList {
+  protected readonly t = translate;
   readonly tasks = input.required<readonly DueTask[]>();
   readonly completed = output<DueTask>();
 

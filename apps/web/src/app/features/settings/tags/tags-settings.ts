@@ -19,22 +19,19 @@ import { ConfirmService } from '../../../shared/ui-kit/confirm-dialog';
 import { FormAlert } from '../../../shared/ui-kit/form-alert';
 import { TagColorPicker } from './tag-color-picker';
 import { TagsStore } from './tags.store';
+import { translate } from '../../../core/i18n/translate';
 
 /** Même normalisation que l'API : espaces superflus retirés, minuscules. */
 export function normalizeTagName(value: string): string {
   return value.trim().replace(/\s+/g, ' ').toLowerCase();
 }
 
-function plural(count: number, singular: string, pluralForm: string): string {
-  return `${count} ${count > 1 ? pluralForm : singular}`;
-}
-
 /** « 2 projets · 1 note », « Inutilisé ». */
 export function tagUsageLabel(tag: Tag): string {
   const parts = [];
-  if (tag.usage.projects) parts.push(plural(tag.usage.projects, 'projet', 'projets'));
-  if (tag.usage.notes) parts.push(plural(tag.usage.notes, 'note', 'notes'));
-  return parts.length ? parts.join(' · ') : 'Inutilisé';
+  if (tag.usage.projects) parts.push(translate('projects.count', { count: tag.usage.projects }));
+  if (tag.usage.notes) parts.push(translate('notes.count', { count: tag.usage.notes }));
+  return parts.length ? parts.join(' · ') : translate('settings.tags.unused');
 }
 
 interface Editing {
@@ -64,31 +61,31 @@ interface Editing {
     <section aria-labelledby="tags-heading" class="rounded-xl border p-5">
       <h2 id="tags-heading" class="flex items-center gap-2 text-lg font-semibold">
         <ng-icon name="lucideTags" aria-hidden="true" />
-        Tags
+        {{ t('projects.form.tags') }}
       </h2>
       <p class="text-muted-foreground mt-1 text-sm">
-        Partagés par vos projets et vos notes. Les noms sont enregistrés en minuscules.
+        {{ t('settings.tags.subtitle') }}
       </p>
 
       <form class="mt-4 flex flex-col gap-3" (submit)="$event.preventDefault(); create()">
         <div class="flex flex-col gap-2 sm:flex-row">
-          <label hlmLabel for="new-tag" class="sr-only">Nom du nouveau tag</label>
+          <label hlmLabel for="new-tag" class="sr-only">{{ t('settings.tags.newName') }}</label>
           <input
             hlmInput
             id="new-tag"
             class="flex-1"
-            placeholder="Nouveau tag, par ex. angular"
+            [placeholder]="t('settings.tags.newPlaceholder')"
             maxlength="30"
             [value]="newName()"
             (input)="newName.set($any($event.target).value)"
           />
           <button hlmBtn type="submit" [disabled]="!newName().trim() || creating()">
             <ng-icon name="lucidePlus" aria-hidden="true" />
-            Ajouter
+            {{ t('common.add') }}
           </button>
         </div>
         <dm-tag-color-picker
-          label="Couleur du nouveau tag"
+          [label]="t('settings.tags.newColor')"
           [value]="newColor()"
           (changed)="newColor.set($event)"
         />
@@ -104,22 +101,22 @@ interface Editing {
               <dm-form-alert>{{ store.error() }}</dm-form-alert>
               <button hlmBtn variant="outline" size="sm" (click)="store.load()">
                 <ng-icon name="lucideRefreshCw" aria-hidden="true" />
-                Réessayer
+                {{ t('common.retry') }}
               </button>
             </div>
           }
           @case ('loaded') {
             @if (store.sorted().length) {
-              <ul class="divide-y rounded-md border" aria-label="Vos tags">
+              <ul class="divide-y rounded-md border" [attr.aria-label]="t('settings.tags.list')">
                 @for (tag of store.sorted(); track tag.id) {
                   <li class="flex flex-col gap-3 px-3 py-2.5">
                     @if (editing()?.id === tag.id) {
                       @let edit = editing()!;
                       <form class="flex flex-col gap-3" (submit)="$event.preventDefault(); save()">
                         <div class="flex flex-col gap-2 sm:flex-row">
-                          <label hlmLabel [for]="'tag-name-' + tag.id" class="sr-only"
-                            >Nom du tag</label
-                          >
+                          <label hlmLabel [for]="'tag-name-' + tag.id" class="sr-only">{{
+                            t('settings.tags.name')
+                          }}</label>
                           <input
                             hlmInput
                             class="flex-1"
@@ -131,7 +128,7 @@ interface Editing {
                           />
                           <div class="flex gap-2">
                             <button hlmBtn type="submit" size="sm" [disabled]="!edit.name.trim()">
-                              Enregistrer
+                              {{ t('common.save') }}
                             </button>
                             <button
                               hlmBtn
@@ -140,12 +137,12 @@ interface Editing {
                               size="sm"
                               (click)="cancelEdit()"
                             >
-                              Annuler
+                              {{ t('common.cancel') }}
                             </button>
                           </div>
                         </div>
                         <dm-tag-color-picker
-                          [label]="'Couleur de ' + tag.name"
+                          [label]="t('settings.tags.colorOf', { name: tag.name })"
                           [value]="edit.color"
                           (changed)="setEditColor($event)"
                         />
@@ -168,7 +165,7 @@ interface Editing {
                           hlmBtn
                           variant="ghost"
                           size="icon-sm"
-                          [attr.aria-label]="'Modifier le tag ' + tag.name"
+                          [attr.aria-label]="t('settings.tags.edit', { name: tag.name })"
                           (click)="startEdit(tag)"
                         >
                           <ng-icon name="lucidePencil" aria-hidden="true" />
@@ -178,7 +175,7 @@ interface Editing {
                           variant="ghost"
                           size="icon-sm"
                           class="text-destructive"
-                          [attr.aria-label]="'Supprimer le tag ' + tag.name"
+                          [attr.aria-label]="t('settings.tags.delete', { name: tag.name })"
                           (click)="remove(tag)"
                         >
                           <ng-icon name="lucideTrash2" aria-hidden="true" />
@@ -192,12 +189,16 @@ interface Editing {
               <p
                 class="text-muted-foreground rounded-md border border-dashed p-6 text-center text-sm"
               >
-                Aucun tag pour l’instant. Créez-en pour classer vos projets et vos notes.
+                {{ t('settings.tags.empty') }}
               </p>
             }
           }
           @default {
-            <div class="flex flex-col gap-2" aria-busy="true" aria-label="Chargement des tags">
+            <div
+              class="flex flex-col gap-2"
+              aria-busy="true"
+              [attr.aria-label]="t('settings.tags.loading')"
+            >
               @for (i of [1, 2, 3]; track i) {
                 <hlm-skeleton class="h-10 w-full" />
               }
@@ -209,6 +210,7 @@ interface Editing {
   `,
 })
 export class TagsSettings {
+  protected readonly t = translate;
   protected readonly store = inject(TagsStore);
   private readonly confirm = inject(ConfirmService);
 
@@ -238,7 +240,7 @@ export class TagsSettings {
         this.creating.set(false);
         this.newName.set('');
         this.newColor.set(null);
-        toast.success(`Tag « ${tag.name} » créé`);
+        toast.success(translate('settings.tags.created', { name: tag.name }));
       },
       error: (error: unknown) => {
         this.creating.set(false);
@@ -273,7 +275,7 @@ export class TagsSettings {
     this.store.update(edit.id, { name, color: edit.color }).subscribe({
       next: () => {
         this.editing.set(null);
-        toast.success('Tag enregistré');
+        toast.success(translate('settings.tags.saved'));
       },
       error: (error: unknown) => this.editError.set(apiErrorMessage(error)),
     });
@@ -283,11 +285,11 @@ export class TagsSettings {
     const used = tag.usage.projects + tag.usage.notes > 0;
     this.confirm
       .confirm({
-        title: `Supprimer le tag « ${tag.name} » ?`,
+        title: translate('settings.tags.deleteTitle', { name: tag.name }),
         description: used
-          ? `Il sera retiré de ${tagUsageLabel(tag)}, qui ne seront pas supprimés.`
-          : 'Ce tag n’est utilisé nulle part.',
-        confirmLabel: 'Supprimer',
+          ? translate('settings.tags.deleteUsed', { usage: tagUsageLabel(tag) })
+          : translate('settings.tags.deleteUnused'),
+        confirmLabel: translate('common.delete'),
         destructive: true,
       })
       .pipe(
@@ -295,7 +297,7 @@ export class TagsSettings {
         switchMap(() => this.store.remove(tag.id)),
       )
       .subscribe({
-        next: () => toast.success(`Tag « ${tag.name} » supprimé`),
+        next: () => toast.success(translate('settings.tags.deleted', { name: tag.name })),
         error: (error: unknown) => toast.error(apiErrorMessage(error)),
       });
   }

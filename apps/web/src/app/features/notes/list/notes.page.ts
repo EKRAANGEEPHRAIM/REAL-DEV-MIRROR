@@ -23,7 +23,7 @@ import { Pagination } from '../../../shared/ui-kit/pagination';
 import { pageFromUrl } from '../../projects/project-filters';
 import { NotesApi } from '../data/notes.api';
 import { NotesStore } from '../data/notes.store';
-import { UNTITLED_NOTE } from '../note-defaults';
+import { untitledNote } from '../note-defaults';
 import {
   filtersFromUrl,
   filtersToUrl,
@@ -33,6 +33,7 @@ import {
 } from '../note-filters';
 import { NoteCard } from './note-card';
 import { NoteFiltersBar } from './note-filters-bar';
+import { translate } from '../../../core/i18n/translate';
 
 @Component({
   selector: 'dm-notes-page',
@@ -53,7 +54,7 @@ import { NoteFiltersBar } from './note-filters-bar';
   template: `
     <header class="mb-6 flex flex-wrap items-baseline justify-between gap-2">
       <h1 class="text-2xl font-semibold tracking-tight">
-        Notes
+        {{ t('titles.notes') }}
         @if (store.status() === 'loaded') {
           <span class="text-muted-foreground ms-1 text-base font-normal"
             >({{ store.total() }})</span
@@ -66,7 +67,7 @@ import { NoteFiltersBar } from './note-filters-bar';
         } @else {
           <ng-icon name="lucidePlus" aria-hidden="true" />
         }
-        Nouvelle note
+        {{ t('notes.new') }}
       </button>
     </header>
 
@@ -84,14 +85,14 @@ import { NoteFiltersBar } from './note-filters-bar';
         <dm-form-alert>{{ store.error() }}</dm-form-alert>
         <button hlmBtn variant="outline" (click)="reload()">
           <ng-icon name="lucideRefreshCw" aria-hidden="true" />
-          Réessayer
+          {{ t('common.retry') }}
         </button>
       </div>
     } @else if (store.isInitialLoading()) {
       <div
         class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3"
         aria-busy="true"
-        aria-label="Chargement des notes"
+        [attr.aria-label]="t('notes.loading')"
       >
         @for (i of skeletons; track i) {
           <div hlmCard class="gap-3 p-5">
@@ -107,12 +108,12 @@ import { NoteFiltersBar } from './note-filters-bar';
       >
         @if (filtered()) {
           <ng-icon name="lucideSearchX" class="text-muted-foreground text-4xl" aria-hidden="true" />
-          <h2 class="text-lg font-medium">Aucune note ne correspond</h2>
+          <h2 class="text-lg font-medium">{{ t('notes.empty.filteredTitle') }}</h2>
           <p class="text-muted-foreground max-w-sm text-sm">
-            Essayez d’autres mots : la recherche couvre les titres et le contenu des notes.
+            {{ t('notes.empty.filteredText') }}
           </p>
           <button hlmBtn variant="outline" (click)="resetFilters()">
-            Réinitialiser les filtres
+            {{ t('common.resetFilters') }}
           </button>
         } @else {
           <ng-icon
@@ -120,14 +121,13 @@ import { NoteFiltersBar } from './note-filters-bar';
             class="text-muted-foreground text-4xl"
             aria-hidden="true"
           />
-          <h2 class="text-lg font-medium">Aucune note pour l’instant</h2>
+          <h2 class="text-lg font-medium">{{ t('notes.empty.title') }}</h2>
           <p class="text-muted-foreground max-w-sm text-sm">
-            Gardez une trace de vos décisions, de vos pièges rencontrés et de vos extraits de code,
-            en Markdown.
+            {{ t('notes.empty.text') }}
           </p>
           <button hlmBtn (click)="create()">
             <ng-icon name="lucidePlus" aria-hidden="true" />
-            Écrire une note
+            {{ t('notes.empty.cta') }}
           </button>
         }
       </section>
@@ -143,7 +143,7 @@ import { NoteFiltersBar } from './note-filters-bar';
               id="pinned-heading"
               class="text-muted-foreground mb-3 text-xs font-semibold tracking-wide uppercase"
             >
-              Épinglées
+              {{ t('notes.list.pinned') }}
             </h2>
             <ul class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
               @for (note of store.pinned(); track note.id) {
@@ -165,10 +165,10 @@ import { NoteFiltersBar } from './note-filters-bar';
                 id="others-heading"
                 class="text-muted-foreground mb-3 text-xs font-semibold tracking-wide uppercase"
               >
-                Autres notes
+                {{ t('notes.list.others') }}
               </h2>
             } @else {
-              <h2 id="others-heading" class="sr-only">Notes</h2>
+              <h2 id="others-heading" class="sr-only">{{ t('titles.notes') }}</h2>
             }
             <ul class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
               @for (note of store.others(); track note.id) {
@@ -192,8 +192,7 @@ import { NoteFiltersBar } from './note-filters-bar';
             [page]="meta.page"
             [totalPages]="meta.totalPages"
             [total]="meta.total"
-            itemLabel="note"
-            itemsLabel="notes"
+            unit="notes.count"
             (pageChange)="goToPage($event)"
           />
         }
@@ -202,6 +201,7 @@ import { NoteFiltersBar } from './note-filters-bar';
   `,
 })
 export class NotesPage {
+  protected readonly t = translate;
   // Paramètres d'URL liés par withComponentInputBinding (?q=…&tag=…&sort=…&page=…)
   readonly q = input<string>();
   readonly tag = input<string>();
@@ -241,7 +241,7 @@ export class NotesPage {
   /** Crée une note vide puis ouvre l'éditeur, où tout s'enregistre au fil de la frappe. */
   protected create(): void {
     this.creating.set(true);
-    this.api.create({ title: UNTITLED_NOTE }).subscribe({
+    this.api.create({ title: untitledNote() }).subscribe({
       next: (note) => void this.router.navigate(['/notes', note.id]),
       error: (error: unknown) => {
         this.creating.set(false);

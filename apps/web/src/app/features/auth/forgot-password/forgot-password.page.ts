@@ -10,6 +10,7 @@ import { HlmLabelImports } from '@spartan-ng/helm/label';
 import { AuthApi } from '../../../core/auth/auth.api';
 import { apiErrorMessage } from '../../../core/http/api-error';
 import { FormAlert } from '../../../shared/ui-kit/form-alert';
+import { translate } from '../../../core/i18n/translate';
 
 @Component({
   selector: 'dm-forgot-password-page',
@@ -30,21 +31,22 @@ import { FormAlert } from '../../../shared/ui-kit/form-alert';
       @if (sentTo(); as email) {
         <div hlmCardHeader>
           <ng-icon name="lucideMailCheck" class="text-primary mb-2 text-3xl" aria-hidden="true" />
-          <h1 hlmCardTitle class="text-xl">Vérifiez votre boîte mail</h1>
+          <h1 hlmCardTitle class="text-xl">{{ t('auth.forgot.sentTitle') }}</h1>
           <p hlmCardDescription>
-            Si un compte existe pour <strong class="text-foreground">{{ email }}</strong
-            >, un lien de réinitialisation vient d’être envoyé. Il est valable 1 heure ; pensez à
-            regarder vos spams.
+            {{ t('auth.forgot.sentBefore') }} <strong class="text-foreground">{{ email }}</strong
+            >{{ t('auth.forgot.sentAfter') }}
           </p>
         </div>
         <div hlmCardFooter class="justify-center">
-          <a hlmBtn variant="outline" routerLink="/login" class="w-full">Retour à la connexion</a>
+          <a hlmBtn variant="outline" routerLink="/login" class="w-full">{{
+            t('auth.backToLogin')
+          }}</a>
         </div>
       } @else {
         <div hlmCardHeader>
-          <h1 hlmCardTitle class="text-xl">Mot de passe oublié</h1>
+          <h1 hlmCardTitle class="text-xl">{{ t('auth.forgot.title') }}</h1>
           <p hlmCardDescription>
-            Saisissez votre email : nous vous enverrons un lien pour en choisir un nouveau.
+            {{ t('auth.forgot.subtitle') }}
           </p>
         </div>
 
@@ -60,7 +62,7 @@ import { FormAlert } from '../../../shared/ui-kit/form-alert';
           }
 
           <div class="flex flex-col gap-2">
-            <label hlmLabel for="email">Email</label>
+            <label hlmLabel for="email">{{ t('auth.email') }}</label>
             <input
               hlmInput
               id="email"
@@ -72,7 +74,7 @@ import { FormAlert } from '../../../shared/ui-kit/form-alert';
             />
             @if (showError()) {
               <p id="email-error" class="text-destructive text-sm">
-                Saisissez une adresse email valide.
+                {{ t('auth.errors.email') }}
               </p>
             }
           </div>
@@ -80,23 +82,24 @@ import { FormAlert } from '../../../shared/ui-kit/form-alert';
           <button hlmBtn type="submit" class="w-full" [disabled]="sending()">
             @if (sending()) {
               <ng-icon name="lucideLoader2" class="motion-safe:animate-spin" aria-hidden="true" />
-              Envoi…
+              {{ t('common.sending') }}
             } @else {
-              Envoyer le lien
+              {{ t('auth.forgot.submit') }}
             }
           </button>
         </form>
 
         <p hlmCardFooter class="text-muted-foreground justify-center text-sm">
-          <a routerLink="/login" class="text-foreground font-medium hover:underline"
-            >Retour à la connexion</a
-          >
+          <a routerLink="/login" class="text-foreground font-medium hover:underline">{{
+            t('auth.backToLogin')
+          }}</a>
         </p>
       }
     </section>
   `,
 })
 export class ForgotPasswordPage {
+  protected readonly t = translate;
   private readonly api = inject(AuthApi);
 
   protected readonly form = inject(NonNullableFormBuilder).group({

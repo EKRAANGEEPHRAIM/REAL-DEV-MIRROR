@@ -16,6 +16,7 @@ import { injectExposedSideProvider, injectExposesStateProvider } from '@spartan-
 import { HlmButton } from '@spartan-ng/helm/button';
 
 import { classes } from '@spartan-ng/helm/utils';
+import { translate } from '../../../../../core/i18n/translate';
 import { HlmSheetClose } from './hlm-sheet-close';
 
 @Component({
@@ -33,13 +34,14 @@ import { HlmSheetClose } from './hlm-sheet-close';
 
     @if (showCloseButton()) {
       <button hlmBtn variant="ghost" size="icon-sm" class="absolute end-4 top-4" hlmSheetClose>
-        <span class="sr-only">Close</span>
+        <span class="sr-only">{{ t('common.close') }}</span>
         <ng-icon name="lucideX" />
       </button>
     }
   `,
 })
 export class HlmSheetContent {
+  protected readonly t = translate;
   private readonly _stateProvider = injectExposesStateProvider({ host: true });
   protected readonly _sideProvider = injectExposedSideProvider({ host: true });
   public readonly state = this._stateProvider.state ?? signal('closed');

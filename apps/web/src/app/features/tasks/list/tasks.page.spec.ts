@@ -95,12 +95,12 @@ describe('TasksPage', () => {
     const headings = Array.from(element.querySelectorAll('section h2')).map((h) =>
       h.textContent?.replace(/\s+/g, ' ').trim(),
     );
-    // Les compteurs sont annoncés aux lecteurs d'écran : « À faire, 1 tâche(s) »
+    // Les compteurs sont annoncés aux lecteurs d'écran : « À faire, 1 tâche »
     expect(headings).toEqual([
-      'À faire, 1 tâche(s)',
-      'En cours, 0 tâche(s)',
-      'En revue, 1 tâche(s)',
-      'Terminée, 0 tâche(s)',
+      'À faire, 1 tâche',
+      'En cours, 0 tâche',
+      'En revue, 1 tâche',
+      'Terminée, 0 tâche',
     ]);
     expect(element.querySelector('#task-filter-status')).toBeNull();
   });

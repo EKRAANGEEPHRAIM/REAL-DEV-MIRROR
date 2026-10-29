@@ -7,11 +7,11 @@ export const TASKS_PAGE_SIZE = 25;
 export const NO_PROJECT = 'none';
 
 export const TASK_SORTS = [
-  { value: 'dueDate:asc', label: 'Échéance' },
-  { value: 'priority:desc', label: 'Priorité' },
-  { value: 'createdAt:desc', label: 'Récemment créées' },
-  { value: 'updatedAt:desc', label: 'Récemment modifiées' },
-  { value: 'title:asc', label: 'Titre (A → Z)' },
+  { value: 'dueDate:asc', label: 'tasks.sort.due' },
+  { value: 'priority:desc', label: 'tasks.sort.priority' },
+  { value: 'createdAt:desc', label: 'tasks.sort.created' },
+  { value: 'updatedAt:desc', label: 'tasks.sort.updated' },
+  { value: 'title:asc', label: 'tasks.sort.title' },
 ] as const;
 
 export type TaskSort = (typeof TASK_SORTS)[number]['value'];

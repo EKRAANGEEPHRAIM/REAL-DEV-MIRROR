@@ -1,4 +1,3 @@
-import { DatePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { NgIcon, provideIcons } from '@ng-icons/core';
@@ -7,6 +6,7 @@ import {
   lucideExternalLink,
   lucideGithub,
   lucidePencil,
+  lucideRefreshCw,
   lucideSearchX,
   lucideTrash2,
 } from '@ng-icons/lucide';
@@ -17,6 +17,7 @@ import { HlmCardImports } from '@spartan-ng/helm/card';
 import { HlmSkeletonImports } from '@spartan-ng/helm/skeleton';
 import { filter, switchMap } from 'rxjs';
 import { apiErrorMessage } from '../../../core/http/api-error';
+import { formatDate } from '../../../core/i18n/format';
 import { RelativeTimePipe } from '../../../shared/format/relative-time';
 import { ConfirmService } from '../../../shared/ui-kit/confirm-dialog';
 import { FormAlert } from '../../../shared/ui-kit/form-alert';
@@ -25,11 +26,11 @@ import { ProjectsApi } from '../data/projects.api';
 import { ProjectDialogs } from '../form/project-dialogs';
 import { projectStatus } from '../project-status';
 import { ProjectTasks, type ProjectTasksView } from './project-tasks';
+import { translate } from '../../../core/i18n/translate';
 
 @Component({
   selector: 'dm-project-detail-page',
   imports: [
-    DatePipe,
     RouterLink,
     NgIcon,
     HlmBadgeImports,
@@ -47,6 +48,7 @@ import { ProjectTasks, type ProjectTasksView } from './project-tasks';
       lucideExternalLink,
       lucideGithub,
       lucidePencil,
+      lucideRefreshCw,
       lucideSearchX,
       lucideTrash2,
     }),
@@ -55,12 +57,16 @@ import { ProjectTasks, type ProjectTasksView } from './project-tasks';
   template: `
     <a hlmBtn variant="ghost" size="sm" routerLink="/projects" class="-ms-2 mb-4">
       <ng-icon name="lucideArrowLeft" aria-hidden="true" />
-      Projets
+      {{ t('titles.projects') }}
     </a>
 
     @switch (store.status()) {
       @case ('loading') {
-        <div class="flex flex-col gap-4" aria-busy="true" aria-label="Chargement du projet">
+        <div
+          class="flex flex-col gap-4"
+          aria-busy="true"
+          [attr.aria-label]="t('projects.detail.loading')"
+        >
           <hlm-skeleton class="h-8 w-1/2" />
           <hlm-skeleton class="h-4 w-3/4" />
           <hlm-skeleton class="h-40 w-full" />
@@ -71,13 +77,19 @@ import { ProjectTasks, type ProjectTasksView } from './project-tasks';
           class="flex flex-col items-center gap-3 rounded-xl border border-dashed px-6 py-16 text-center"
         >
           <ng-icon name="lucideSearchX" class="text-muted-foreground text-4xl" aria-hidden="true" />
-          <h1 class="text-lg font-medium">Projet introuvable</h1>
-          <p class="text-muted-foreground text-sm">Il a peut-être été supprimé.</p>
-          <a hlmBtn variant="outline" routerLink="/projects">Retour aux projets</a>
+          <h1 class="text-lg font-medium">{{ t('projects.detail.notFound') }}</h1>
+          <p class="text-muted-foreground text-sm">{{ t('projects.detail.notFoundHint') }}</p>
+          <a hlmBtn variant="outline" routerLink="/projects">{{ t('projects.detail.back') }}</a>
         </section>
       }
       @case ('error') {
-        <dm-form-alert class="max-w-xl">{{ store.error() }}</dm-form-alert>
+        <div class="flex max-w-xl flex-col items-start gap-3">
+          <dm-form-alert>{{ store.error() }}</dm-form-alert>
+          <button hlmBtn variant="outline" (click)="store.load(id())">
+            <ng-icon name="lucideRefreshCw" aria-hidden="true" />
+            {{ t('common.retry') }}
+          </button>
+        </div>
       }
       @case ('loaded') {
         @if (store.project(); as project) {
@@ -93,7 +105,7 @@ import { ProjectTasks, type ProjectTasksView } from './project-tasks';
                   {{ project.name }}
                 </h1>
                 <span class="rounded-full px-2 py-0.5 text-xs font-medium" [class]="status().tone">
-                  {{ status().label }}
+                  {{ t(status().label) }}
                 </span>
               </div>
               @if (project.description) {
@@ -105,11 +117,11 @@ import { ProjectTasks, type ProjectTasksView } from './project-tasks';
             <div class="flex shrink-0 gap-2">
               <button hlmBtn variant="outline" (click)="edit()">
                 <ng-icon name="lucidePencil" aria-hidden="true" />
-                Modifier
+                {{ t('common.edit') }}
               </button>
               <button hlmBtn variant="outline" class="text-destructive" (click)="remove()">
                 <ng-icon name="lucideTrash2" aria-hidden="true" />
-                Supprimer
+                {{ t('common.delete') }}
               </button>
             </div>
           </header>
@@ -126,12 +138,12 @@ import { ProjectTasks, type ProjectTasksView } from './project-tasks';
 
             <aside hlmCard aria-labelledby="info-title">
               <div hlmCardHeader>
-                <h2 hlmCardTitle id="info-title">Informations</h2>
+                <h2 hlmCardTitle id="info-title">{{ t('projects.detail.info') }}</h2>
               </div>
               <dl hlmCardContent class="flex flex-col gap-4 text-sm">
                 @if (project.repoUrl || project.demoUrl) {
                   <div class="flex flex-col gap-1">
-                    <dt class="text-muted-foreground">Liens</dt>
+                    <dt class="text-muted-foreground">{{ t('projects.detail.links') }}</dt>
                     <dd class="flex flex-col gap-1">
                       @if (project.repoUrl) {
                         <a
@@ -141,8 +153,8 @@ import { ProjectTasks, type ProjectTasksView } from './project-tasks';
                           class="flex items-center gap-1.5 hover:underline"
                         >
                           <ng-icon name="lucideGithub" aria-hidden="true" />
-                          Dépôt
-                          <span class="sr-only">(nouvel onglet)</span>
+                          {{ t('projects.detail.repo') }}
+                          <span class="sr-only">{{ t('common.newTab') }}</span>
                         </a>
                       }
                       @if (project.demoUrl) {
@@ -153,8 +165,8 @@ import { ProjectTasks, type ProjectTasksView } from './project-tasks';
                           class="flex items-center gap-1.5 hover:underline"
                         >
                           <ng-icon name="lucideExternalLink" aria-hidden="true" />
-                          Démo
-                          <span class="sr-only">(nouvel onglet)</span>
+                          {{ t('projects.detail.demo') }}
+                          <span class="sr-only">{{ t('common.newTab') }}</span>
                         </a>
                       }
                     </dd>
@@ -162,7 +174,7 @@ import { ProjectTasks, type ProjectTasksView } from './project-tasks';
                 }
                 @if (project.techStack.length) {
                   <div class="flex flex-col gap-1.5">
-                    <dt class="text-muted-foreground">Technologies</dt>
+                    <dt class="text-muted-foreground">{{ t('projects.form.techStack') }}</dt>
                     <dd class="flex flex-wrap gap-1.5">
                       @for (tech of project.techStack; track tech) {
                         <span hlmBadge variant="secondary">{{ tech }}</span>
@@ -172,7 +184,7 @@ import { ProjectTasks, type ProjectTasksView } from './project-tasks';
                 }
                 @if (project.tags.length) {
                   <div class="flex flex-col gap-1.5">
-                    <dt class="text-muted-foreground">Tags</dt>
+                    <dt class="text-muted-foreground">{{ t('projects.form.tags') }}</dt>
                     <dd class="flex flex-wrap gap-1.5">
                       @for (tag of project.tags; track tag.id) {
                         <a
@@ -187,11 +199,11 @@ import { ProjectTasks, type ProjectTasksView } from './project-tasks';
                   </div>
                 }
                 <div class="flex flex-col gap-1">
-                  <dt class="text-muted-foreground">Créé le</dt>
-                  <dd>{{ project.createdAt | date: 'longDate' }}</dd>
+                  <dt class="text-muted-foreground">{{ t('projects.detail.createdAt') }}</dt>
+                  <dd>{{ longDate(project.createdAt) }}</dd>
                 </div>
                 <div class="flex flex-col gap-1">
-                  <dt class="text-muted-foreground">Dernière modification</dt>
+                  <dt class="text-muted-foreground">{{ t('projects.detail.updatedAt') }}</dt>
                   <dd>{{ project.updatedAt | relativeTime }}</dd>
                 </div>
               </dl>
@@ -203,6 +215,7 @@ import { ProjectTasks, type ProjectTasksView } from './project-tasks';
   `,
 })
 export class ProjectDetailPage {
+  protected readonly t = translate;
   /** Paramètre de route :id (withComponentInputBinding). */
   readonly id = input.required<string>();
   /** Affichage des tâches (?view=board), partageable comme sur la page des tâches. */
@@ -214,6 +227,10 @@ export class ProjectDetailPage {
   private readonly confirm = inject(ConfirmService);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
+
+  protected longDate(value: string): string {
+    return formatDate(value, { dateStyle: 'long' });
+  }
 
   protected readonly status = computed(() => {
     const project = this.store.project();
@@ -240,7 +257,7 @@ export class ProjectDetailPage {
     if (!project) return;
     this.dialogs.open(project).subscribe((saved) => {
       this.store.setProject(saved);
-      toast.success('Projet enregistré');
+      toast.success(translate('projects.toast.saved'));
     });
   }
 
@@ -249,10 +266,9 @@ export class ProjectDetailPage {
     if (!project) return;
     this.confirm
       .confirm({
-        title: `Supprimer « ${project.name} » ?`,
-        description:
-          'Le projet et toutes ses tâches seront supprimés définitivement. Ses notes sont conservées.',
-        confirmLabel: 'Supprimer',
+        title: translate('projects.delete.title', { name: project.name }),
+        description: translate('projects.delete.description'),
+        confirmLabel: translate('common.delete'),
         destructive: true,
       })
       .pipe(
@@ -261,7 +277,7 @@ export class ProjectDetailPage {
       )
       .subscribe({
         next: () => {
-          toast.success('Projet supprimé');
+          toast.success(translate('projects.toast.deleted'));
           void this.router.navigateByUrl('/projects');
         },
         error: (error: unknown) => toast.error(apiErrorMessage(error)),

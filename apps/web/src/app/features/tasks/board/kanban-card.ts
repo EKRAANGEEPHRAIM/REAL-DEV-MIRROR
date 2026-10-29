@@ -4,16 +4,9 @@ import { NgIcon, provideIcons } from '@ng-icons/core';
 import { lucideCalendar, lucideEllipsisVertical, lucideListChecks } from '@ng-icons/lucide';
 import { HlmButtonImports } from '@spartan-ng/helm/button';
 import { HlmDropdownMenuImports } from '@spartan-ng/helm/dropdown-menu';
-import { type DueTone, dueLabel } from '../task-dates';
+import { translate } from '../../../core/i18n/translate';
+import { DUE_TONES, dueLabel } from '../task-dates';
 import { TASK_STATUSES, taskPriority } from '../task-meta';
-
-const DUE_TONES: Record<DueTone, string> = {
-  overdue: 'text-destructive font-medium',
-  today: 'text-amber-600 dark:text-amber-400 font-medium',
-  soon: 'text-foreground',
-  later: 'text-muted-foreground',
-  done: 'text-muted-foreground',
-};
 
 /** Carte du Kanban : ouvre la tâche au clic ; le menu offre une alternative au glisser-déposer. */
 @Component({
@@ -23,7 +16,7 @@ const DUE_TONES: Record<DueTone, string> = {
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'block' },
   template: `
-    @let t = task();
+    @let item = task();
     <article
       class="bg-card hover:border-foreground/20 flex flex-col gap-2 rounded-lg border p-3 shadow-xs transition-colors"
       [class.border-destructive/40]="due()?.tone === 'overdue'"
@@ -32,11 +25,11 @@ const DUE_TONES: Record<DueTone, string> = {
         <button
           type="button"
           class="text-left text-sm font-medium hover:underline focus-visible:underline focus-visible:outline-none"
-          [class.line-through]="t.status === 'DONE'"
-          [class.text-muted-foreground]="t.status === 'DONE'"
-          (click)="opened.emit(t)"
+          [class.line-through]="item.status === 'DONE'"
+          [class.text-muted-foreground]="item.status === 'DONE'"
+          (click)="opened.emit(item)"
         >
-          {{ t.title }}
+          {{ item.title }}
         </button>
         <button
           type="button"
@@ -46,7 +39,7 @@ const DUE_TONES: Record<DueTone, string> = {
           class="-me-1 -mt-1 shrink-0"
           [hlmDropdownMenuTrigger]="menu"
           align="end"
-          [attr.aria-label]="'Déplacer « ' + t.title + ' »'"
+          [attr.aria-label]="t('tasks.board.moveTask', { title: item.title })"
         >
           <ng-icon name="lucideEllipsisVertical" aria-hidden="true" />
         </button>
@@ -54,7 +47,7 @@ const DUE_TONES: Record<DueTone, string> = {
 
       <div class="text-muted-foreground flex flex-wrap items-center gap-x-2.5 gap-y-1 text-xs">
         <span class="rounded-full px-1.5 py-0.5 font-medium" [class]="priority().tone">{{
-          priority().label
+          t(priority().label)
         }}</span>
         @if (due(); as d) {
           <span class="flex items-center gap-1" [class]="dueTone()">
@@ -62,15 +55,15 @@ const DUE_TONES: Record<DueTone, string> = {
             {{ d.label }}
           </span>
         }
-        @if (t.subtasks.length) {
+        @if (item.subtasks.length) {
           <span class="flex items-center gap-1">
             <ng-icon name="lucideListChecks" aria-hidden="true" />
-            {{ subtasksDone() }}/{{ t.subtasks.length }}
+            {{ subtasksDone() }}/{{ item.subtasks.length }}
           </span>
         }
       </div>
 
-      @if (showProject() && t.project; as project) {
+      @if (showProject() && item.project; as project) {
         <span class="text-muted-foreground flex items-center gap-1.5 text-xs">
           <span
             class="size-2 rounded-full"
@@ -84,10 +77,10 @@ const DUE_TONES: Record<DueTone, string> = {
 
     <ng-template #menu>
       <hlm-dropdown-menu class="w-44">
-        <div hlmDropdownMenuLabel>Déplacer vers</div>
+        <div hlmDropdownMenuLabel>{{ t('tasks.board.moveTo') }}</div>
         @for (status of targets(); track status.value) {
           <button hlmDropdownMenuItem (triggered)="moved.emit(status.value)">
-            {{ status.label }}
+            {{ t(status.label) }}
           </button>
         }
       </hlm-dropdown-menu>
@@ -100,6 +93,7 @@ export class KanbanCard {
   readonly showProject = input(true);
   readonly opened = output<Task>();
   readonly moved = output<TaskStatus>();
+  protected readonly t = translate;
 
   protected readonly priority = computed(() => taskPriority(this.task().priority));
   protected readonly due = computed(() => {

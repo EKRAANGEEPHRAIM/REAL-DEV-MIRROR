@@ -6,6 +6,7 @@ import { lucidePin, lucidePinOff } from '@ng-icons/lucide';
 import { HlmButtonImports } from '@spartan-ng/helm/button';
 import { HlmCardImports } from '@spartan-ng/helm/card';
 import { RelativeTimePipe } from '../../../shared/format/relative-time';
+import { translate } from '../../../core/i18n/translate';
 
 @Component({
   selector: 'dm-note-card',
@@ -36,7 +37,9 @@ import { RelativeTimePipe } from '../../../shared/format/relative-time';
           class="relative z-10 -me-2 -mt-1 shrink-0"
           [class.text-amber-600]="n.pinned"
           [attr.aria-pressed]="n.pinned"
-          [attr.aria-label]="(n.pinned ? 'Désépingler « ' : 'Épingler « ') + n.title + ' »'"
+          [attr.aria-label]="
+            t(n.pinned ? 'notes.card.unpin' : 'notes.card.pin', { title: n.title })
+          "
           (click)="pinToggled.emit(n)"
         >
           <ng-icon [name]="n.pinned ? 'lucidePinOff' : 'lucidePin'" aria-hidden="true" />
@@ -54,7 +57,7 @@ import { RelativeTimePipe } from '../../../shared/format/relative-time';
               type="button"
               class="hover:bg-muted rounded-full border px-2 py-0.5 text-xs"
               [style.border-color]="tag.color"
-              [attr.aria-label]="'Filtrer par le tag ' + tag.name"
+              [attr.aria-label]="t('notes.card.filterTag', { tag: tag.name })"
               (click)="tagSelected.emit(tag.name)"
             >
               #{{ tag.name }}
@@ -67,12 +70,13 @@ import { RelativeTimePipe } from '../../../shared/format/relative-time';
         @if (n.project) {
           {{ n.project.name }} ·
         }
-        Modifiée {{ n.updatedAt | relativeTime }}
+        {{ t('notes.card.updated', { when: (n.updatedAt | relativeTime) }) }}
       </p>
     </article>
   `,
 })
 export class NoteCard {
+  protected readonly t = translate;
   readonly note = input.required<NoteSummary>();
   readonly pinToggled = output<NoteSummary>();
   readonly tagSelected = output<string>();

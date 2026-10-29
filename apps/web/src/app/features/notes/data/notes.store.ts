@@ -7,6 +7,7 @@ import { rxMethod } from '@ngrx/signals/rxjs-interop';
 import { toast } from '@spartan-ng/brain/sonner';
 import { mergeMap, pipe, switchMap, tap } from 'rxjs';
 import { apiErrorMessage } from '../../../core/http/api-error';
+import { translate } from '../../../core/i18n/translate';
 import { NotesApi } from './notes.api';
 
 type LoadStatus = 'idle' | 'loading' | 'loaded' | 'error';
@@ -73,7 +74,7 @@ export const NotesStore = signalStore(
             return api.update(note.id, { pinned }).pipe(
               tapResponse({
                 next: () => {
-                  toast.success(pinned ? 'Note épinglée' : 'Note désépinglée');
+                  toast.success(translate(pinned ? 'notes.toast.pinned' : 'notes.toast.unpinned'));
                   reload();
                 },
                 error: (error) => {

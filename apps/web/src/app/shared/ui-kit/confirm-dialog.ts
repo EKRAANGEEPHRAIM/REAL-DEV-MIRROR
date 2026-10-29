@@ -3,6 +3,7 @@ import { BrnDialogRef, injectBrnDialogContext } from '@spartan-ng/brain/dialog';
 import { HlmButtonImports } from '@spartan-ng/helm/button';
 import { HlmDialogImports, HlmDialogService } from '@spartan-ng/helm/dialog';
 import { map, type Observable } from 'rxjs';
+import { translate } from '../../core/i18n/translate';
 
 export interface ConfirmOptions {
   title: string;
@@ -22,13 +23,13 @@ export interface ConfirmOptions {
       <p hlmDialogDescription>{{ options.description }}</p>
     </hlm-dialog-header>
     <hlm-dialog-footer class="mt-4">
-      <button hlmBtn variant="outline" (click)="ref.close(false)">Annuler</button>
+      <button hlmBtn variant="outline" (click)="ref.close(false)">{{ t('common.cancel') }}</button>
       <button
         hlmBtn
         [variant]="options.destructive ? 'destructive' : 'default'"
         (click)="ref.close(true)"
       >
-        {{ options.confirmLabel ?? 'Confirmer' }}
+        {{ options.confirmLabel ?? t('common.confirm') }}
       </button>
     </hlm-dialog-footer>
   `,
@@ -36,6 +37,7 @@ export interface ConfirmOptions {
 export class ConfirmDialog {
   protected readonly ref = inject<BrnDialogRef<boolean>>(BrnDialogRef);
   protected readonly options = injectBrnDialogContext<ConfirmOptions>();
+  protected readonly t = translate;
 }
 
 /** `confirm({ … })` émet true si l'utilisateur confirme, false s'il annule ou ferme. */

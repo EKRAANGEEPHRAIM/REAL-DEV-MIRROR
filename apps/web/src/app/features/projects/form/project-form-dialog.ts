@@ -17,6 +17,7 @@ import { FormAlert } from '../../../shared/ui-kit/form-alert';
 import { ProjectsApi } from '../data/projects.api';
 import { PROJECT_STATUSES } from '../project-status';
 import { PROJECT_COLORS, parseTechStack, toFormValue, toRequest } from './project-form.model';
+import { translate } from '../../../core/i18n/translate';
 
 export interface ProjectFormContext {
   /** Projet à modifier ; absent pour une création. */
@@ -44,8 +45,10 @@ const FIELD_CLASSES =
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <hlm-dialog-header>
-      <h2 hlmDialogTitle>{{ editing ? 'Modifier le projet' : 'Nouveau projet' }}</h2>
-      <p hlmDialogDescription>Les champs marqués * sont obligatoires.</p>
+      <h2 hlmDialogTitle>
+        {{ editing ? t('projects.form.editTitle') : t('projects.form.newTitle') }}
+      </h2>
+      <p hlmDialogDescription>{{ t('common.required') }}</p>
     </hlm-dialog-header>
 
     <form
@@ -59,7 +62,7 @@ const FIELD_CLASSES =
       }
 
       <div class="flex flex-col gap-2">
-        <label hlmLabel for="project-name">Nom *</label>
+        <label hlmLabel for="project-name">{{ t('projects.form.name') }} *</label>
         <input
           hlmInput
           id="project-name"
@@ -70,13 +73,13 @@ const FIELD_CLASSES =
         />
         @if (invalid('name')) {
           <p id="project-name-error" class="text-destructive text-sm">
-            Le nom est obligatoire (120 caractères max).
+            {{ t('projects.form.nameError') }}
           </p>
         }
       </div>
 
       <div class="flex flex-col gap-2">
-        <label hlmLabel for="project-description">Description</label>
+        <label hlmLabel for="project-description">{{ t('projects.form.description') }}</label>
         <textarea
           id="project-description"
           rows="3"
@@ -88,16 +91,16 @@ const FIELD_CLASSES =
 
       <div class="grid gap-4 sm:grid-cols-2">
         <div class="flex flex-col gap-2">
-          <label hlmLabel for="project-status">Statut</label>
+          <label hlmLabel for="project-status">{{ t('projects.form.status') }}</label>
           <select id="project-status" formControlName="status" [class]="fieldClasses">
             @for (status of statuses; track status.value) {
-              <option [value]="status.value">{{ status.label }}</option>
+              <option [value]="status.value">{{ t(status.label) }}</option>
             }
           </select>
         </div>
 
         <fieldset class="flex flex-col gap-2">
-          <legend class="mb-2 text-sm font-medium">Couleur</legend>
+          <legend class="mb-2 text-sm font-medium">{{ t('projects.form.color') }}</legend>
           <div class="flex flex-wrap gap-2">
             @for (color of colors; track color) {
               <button
@@ -106,7 +109,7 @@ const FIELD_CLASSES =
                 [class.ring-2]="form.controls.color.value === color"
                 [class.ring-foreground]="form.controls.color.value === color"
                 [style.background-color]="color"
-                [attr.aria-label]="'Couleur ' + color"
+                [attr.aria-label]="t('projects.form.colorOption', { color })"
                 [attr.aria-pressed]="form.controls.color.value === color"
                 (click)="form.controls.color.setValue(color)"
               >
@@ -120,7 +123,7 @@ const FIELD_CLASSES =
       </div>
 
       <div class="flex flex-col gap-2">
-        <label hlmLabel for="project-stack">Technologies</label>
+        <label hlmLabel for="project-stack">{{ t('projects.form.techStack') }}</label>
         <input
           hlmInput
           id="project-stack"
@@ -129,7 +132,7 @@ const FIELD_CLASSES =
           aria-describedby="project-stack-hint"
         />
         <p id="project-stack-hint" class="text-muted-foreground text-xs">
-          Séparées par des virgules.
+          {{ t('projects.form.techStackHint') }}
         </p>
         @if (techPreview().length) {
           <div class="flex flex-wrap gap-1.5" aria-hidden="true">
@@ -142,7 +145,7 @@ const FIELD_CLASSES =
 
       <div class="grid gap-4 sm:grid-cols-2">
         <div class="flex flex-col gap-2">
-          <label hlmLabel for="project-repo">Lien du dépôt</label>
+          <label hlmLabel for="project-repo">{{ t('projects.form.repoUrl') }}</label>
           <input
             hlmInput
             id="project-repo"
@@ -152,11 +155,11 @@ const FIELD_CLASSES =
             [attr.aria-invalid]="invalid('repoUrl')"
           />
           @if (invalid('repoUrl')) {
-            <p class="text-destructive text-sm">Adresse http(s) attendue.</p>
+            <p class="text-destructive text-sm">{{ t('common.urlInvalid') }}</p>
           }
         </div>
         <div class="flex flex-col gap-2">
-          <label hlmLabel for="project-demo">Lien de démo</label>
+          <label hlmLabel for="project-demo">{{ t('projects.form.demoUrl') }}</label>
           <input
             hlmInput
             id="project-demo"
@@ -166,14 +169,14 @@ const FIELD_CLASSES =
             [attr.aria-invalid]="invalid('demoUrl')"
           />
           @if (invalid('demoUrl')) {
-            <p class="text-destructive text-sm">Adresse http(s) attendue.</p>
+            <p class="text-destructive text-sm">{{ t('common.urlInvalid') }}</p>
           }
         </div>
       </div>
 
       @if (tags().length) {
         <fieldset class="flex flex-col gap-2">
-          <legend class="mb-2 text-sm font-medium">Tags</legend>
+          <legend class="mb-2 text-sm font-medium">{{ t('projects.form.tags') }}</legend>
           <div class="flex flex-wrap gap-x-4 gap-y-2">
             @for (tag of tags(); track tag.id) {
               <label class="flex items-center gap-2 text-sm">
@@ -191,18 +194,21 @@ const FIELD_CLASSES =
       }
 
       <hlm-dialog-footer class="bg-background sticky bottom-0 pt-2">
-        <button hlmBtn type="button" variant="outline" (click)="ref.close()">Annuler</button>
+        <button hlmBtn type="button" variant="outline" (click)="ref.close()">
+          {{ t('common.cancel') }}
+        </button>
         <button hlmBtn type="submit" [disabled]="saving()">
           @if (saving()) {
             <ng-icon name="lucideLoader2" class="motion-safe:animate-spin" aria-hidden="true" />
           }
-          {{ editing ? 'Enregistrer' : 'Créer le projet' }}
+          {{ editing ? t('common.save') : t('projects.form.create') }}
         </button>
       </hlm-dialog-footer>
     </form>
   `,
 })
 export class ProjectFormDialog {
+  protected readonly t = translate;
   protected readonly ref = inject<BrnDialogRef<Project>>(BrnDialogRef);
   private readonly api = inject(ProjectsApi);
   private readonly context = injectBrnDialogContext<ProjectFormContext>();

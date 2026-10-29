@@ -15,6 +15,7 @@ import { FormAlert } from '../../../shared/ui-kit/form-alert';
 import { BOARD_LIMIT, KanbanStore } from '../data/kanban.store';
 import { TASK_STATUSES } from '../task-meta';
 import { KanbanCard } from './kanban-card';
+import { translate } from '../../../core/i18n/translate';
 
 /** Tableau Kanban à quatre colonnes ; les données viennent du KanbanStore. */
 @Component({
@@ -34,12 +35,14 @@ import { KanbanCard } from './kanban-card';
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (store.status() === 'error') {
-      <dm-form-alert class="max-w-xl">{{ store.error() }}</dm-form-alert>
+      <div class="flex max-w-xl flex-col items-start gap-3">
+        <dm-form-alert>{{ store.error() }}</dm-form-alert>
+        <button hlmBtn variant="outline" (click)="store.reload()">{{ t('common.retry') }}</button>
+      </div>
     } @else {
       @if (store.truncated()) {
         <p class="text-muted-foreground mb-3 text-sm" role="status">
-          Seules les {{ limit }} premières tâches sont affichées : affinez les filtres pour voir les
-          autres.
+          {{ t('tasks.board.truncated', { limit }) }}
         </p>
       }
       <div
@@ -58,18 +61,22 @@ import { KanbanCard } from './kanban-card';
                 class="flex items-center gap-2 text-sm font-semibold"
               >
                 <span class="rounded-full px-2 py-0.5 text-xs" [class]="column.tone">{{
-                  column.label
+                  t(column.label)
                 }}</span>
                 <span class="text-muted-foreground font-normal"
                   ><span class="sr-only">, </span>{{ store.columns()[column.value].length
-                  }}<span class="sr-only"> tâche(s)</span></span
+                  }}<span class="sr-only">
+                    {{
+                      t('tasks.board.countSuffix', { count: store.columns()[column.value].length })
+                    }}</span
+                  ></span
                 >
               </h2>
               <button
                 hlmBtn
                 variant="ghost"
                 size="icon-sm"
-                [attr.aria-label]="'Nouvelle tâche « ' + column.label + ' »'"
+                [attr.aria-label]="t('tasks.board.newIn', { column: t(column.label) })"
                 (click)="created.emit(column.value)"
               >
                 <ng-icon name="lucidePlus" aria-hidden="true" />
@@ -104,7 +111,7 @@ import { KanbanCard } from './kanban-card';
               } @empty {
                 @if (store.status() === 'loaded') {
                   <p class="text-muted-foreground py-6 text-center text-xs">
-                    Déposez une tâche ici
+                    {{ t('tasks.board.dropHere') }}
                   </p>
                 }
               }
@@ -116,6 +123,7 @@ import { KanbanCard } from './kanban-card';
   `,
 })
 export class KanbanBoard {
+  protected readonly t = translate;
   protected readonly store = inject(KanbanStore);
   protected readonly columns = TASK_STATUSES;
   protected readonly limit = BOARD_LIMIT;

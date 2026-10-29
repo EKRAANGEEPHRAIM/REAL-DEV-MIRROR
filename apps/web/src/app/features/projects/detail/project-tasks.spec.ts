@@ -53,7 +53,7 @@ describe('ProjectTasks', () => {
     );
     await fixture.whenStable();
 
-    expect(progressText(element)).toBe('1 terminée(s) sur 4 · 25 %');
+    expect(progressText(element)).toBe('1 terminée sur 4 · 25 %');
     expect(element.querySelector('[role="progressbar"]')?.getAttribute('aria-valuenow')).toBe('25');
   });
 
@@ -67,7 +67,7 @@ describe('ProjectTasks', () => {
       .dispatchEvent(new Event('change'));
     await fixture.whenStable();
 
-    expect(progressText(element)).toBe('1 terminée(s) sur 2 · 50 %');
+    expect(progressText(element)).toBe('1 terminée sur 2 · 50 %');
     backend.expectOne('/api/v1/tasks/a').flush(makeTask({ id: 'a', status: 'DONE' }));
   });
 

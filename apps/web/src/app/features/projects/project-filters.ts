@@ -4,10 +4,10 @@ import { isProjectStatus } from './project-status';
 export const PROJECTS_PAGE_SIZE = 12;
 
 export const PROJECT_SORTS = [
-  { value: 'updatedAt:desc', label: 'Récemment modifiés' },
-  { value: 'createdAt:desc', label: 'Récemment créés' },
-  { value: 'name:asc', label: 'Nom (A → Z)' },
-  { value: 'status:asc', label: 'Statut' },
+  { value: 'updatedAt:desc', label: 'projects.sort.updated' },
+  { value: 'createdAt:desc', label: 'projects.sort.created' },
+  { value: 'name:asc', label: 'projects.sort.name' },
+  { value: 'status:asc', label: 'projects.sort.status' },
 ] as const;
 
 export type ProjectSort = (typeof PROJECT_SORTS)[number]['value'];

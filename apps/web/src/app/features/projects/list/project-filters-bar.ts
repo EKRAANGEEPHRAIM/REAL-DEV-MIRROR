@@ -17,6 +17,7 @@ import { HlmLabelImports } from '@spartan-ng/helm/label';
 import { debounceTime, distinctUntilChanged, Subject } from 'rxjs';
 import { PROJECT_SORTS, type ProjectFilters, type ProjectSort } from '../project-filters';
 import { PROJECT_STATUSES } from '../project-status';
+import { translate } from '../../../core/i18n/translate';
 
 const SELECT_CLASSES =
   'border-input bg-background focus-visible:ring-ring h-9 rounded-md border px-3 text-sm outline-none focus-visible:ring-2';
@@ -30,7 +31,9 @@ const SELECT_CLASSES =
   template: `
     <div role="search" class="flex flex-col gap-3 md:flex-row md:flex-wrap md:items-end">
       <div class="relative flex-1 md:min-w-64">
-        <label hlmLabel for="project-search" class="sr-only">Rechercher un projet</label>
+        <label hlmLabel for="project-search" class="sr-only">{{
+          t('projects.filters.search')
+        }}</label>
         <ng-icon
           name="lucideSearch"
           class="text-muted-foreground pointer-events-none absolute top-1/2 left-3 -translate-y-1/2"
@@ -41,23 +44,25 @@ const SELECT_CLASSES =
           id="project-search"
           type="search"
           class="w-full ps-9"
-          placeholder="Rechercher un projet…"
+          [placeholder]="t('projects.filters.searchPlaceholder')"
           [value]="search()"
           (input)="onSearch($any($event.target).value)"
         />
       </div>
 
       <div class="flex flex-col gap-1">
-        <label hlmLabel for="project-status" class="text-muted-foreground text-xs">Statut</label>
+        <label hlmLabel for="project-status" class="text-muted-foreground text-xs">{{
+          t('projects.form.status')
+        }}</label>
         <select
           id="project-status"
           [class]="selectClasses"
           (change)="onStatus($any($event.target).value)"
         >
-          <option value="" [selected]="!value().status">Tous</option>
+          <option value="" [selected]="!value().status">{{ t('common.all') }}</option>
           @for (status of statuses; track status.value) {
             <option [value]="status.value" [selected]="value().status === status.value">
-              {{ status.label }}
+              {{ t(status.label) }}
             </option>
           }
         </select>
@@ -65,13 +70,15 @@ const SELECT_CLASSES =
 
       @if (tags().length) {
         <div class="flex flex-col gap-1">
-          <label hlmLabel for="project-tag" class="text-muted-foreground text-xs">Tag</label>
+          <label hlmLabel for="project-tag" class="text-muted-foreground text-xs">{{
+            t('projects.filters.tag')
+          }}</label>
           <select
             id="project-tag"
             [class]="selectClasses"
             (change)="changed.emit({ tag: $any($event.target).value })"
           >
-            <option value="" [selected]="!value().tag">Tous</option>
+            <option value="" [selected]="!value().tag">{{ t('common.all') }}</option>
             @for (tag of tags(); track tag.id) {
               <option [value]="tag.name" [selected]="value().tag === tag.name">
                 {{ tag.name }}
@@ -82,7 +89,9 @@ const SELECT_CLASSES =
       }
 
       <div class="flex flex-col gap-1">
-        <label hlmLabel for="project-sort" class="text-muted-foreground text-xs">Trier par</label>
+        <label hlmLabel for="project-sort" class="text-muted-foreground text-xs">{{
+          t('common.sortBy')
+        }}</label>
         <select
           id="project-sort"
           [class]="selectClasses"
@@ -90,7 +99,7 @@ const SELECT_CLASSES =
         >
           @for (sort of sorts; track sort.value) {
             <option [value]="sort.value" [selected]="value().sort === sort.value">
-              {{ sort.label }}
+              {{ t(sort.label) }}
             </option>
           }
         </select>
@@ -104,19 +113,20 @@ const SELECT_CLASSES =
           [disabled]="!!value().status"
           (change)="changed.emit({ archived: $any($event.target).checked })"
         />
-        Inclure les archivés
+        {{ t('projects.filters.archived') }}
       </label>
 
       @if (active()) {
         <button hlmBtn variant="ghost" size="sm" class="h-9" (click)="cleared.emit()">
           <ng-icon name="lucideX" aria-hidden="true" />
-          Réinitialiser
+          {{ t('common.reset') }}
         </button>
       }
     </div>
   `,
 })
 export class ProjectFiltersBar {
+  protected readonly t = translate;
   readonly value = input.required<ProjectFilters>();
   readonly tags = input<readonly Tag[]>([]);
   readonly active = input(false);

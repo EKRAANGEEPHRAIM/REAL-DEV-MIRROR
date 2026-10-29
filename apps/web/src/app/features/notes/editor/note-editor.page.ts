@@ -47,15 +47,16 @@ import { FormAlert } from '../../../shared/ui-kit/form-alert';
 import { ProjectsApi } from '../../projects/data/projects.api';
 import { NoteEditorStore } from '../data/note-editor.store';
 import { NotesApi } from '../data/notes.api';
-import { UNTITLED_NOTE } from '../note-defaults';
+import { UNTITLED_TITLES } from '../note-defaults';
 import { applyFormat, FORMAT_ACTIONS, type MarkdownFormat } from './markdown-format';
+import { type TranslationKey, translate } from '../../../core/i18n/translate';
 
 export type EditorView = 'write' | 'preview' | 'split';
 
-const VIEWS: readonly { value: EditorView; label: string; icon: string }[] = [
-  { value: 'write', label: 'Écrire', icon: 'lucidePencilLine' },
-  { value: 'split', label: 'Côte à côte', icon: 'lucideColumns2' },
-  { value: 'preview', label: 'Aperçu', icon: 'lucideEye' },
+const VIEWS: readonly { value: EditorView; label: TranslationKey; icon: string }[] = [
+  { value: 'write', label: 'notes.editor.views.write', icon: 'lucidePencilLine' },
+  { value: 'split', label: 'notes.editor.views.split', icon: 'lucideColumns2' },
+  { value: 'preview', label: 'notes.editor.views.preview', icon: 'lucideEye' },
 ];
 
 const SELECT_CLASSES =
@@ -101,12 +102,16 @@ const SELECT_CLASSES =
   template: `
     <a hlmBtn variant="ghost" size="sm" routerLink="/notes" class="-ms-2 mb-4">
       <ng-icon name="lucideArrowLeft" aria-hidden="true" />
-      Notes
+      {{ t('titles.notes') }}
     </a>
 
     @switch (store.status()) {
       @case ('loading') {
-        <div class="flex flex-col gap-4" aria-busy="true" aria-label="Chargement de la note">
+        <div
+          class="flex flex-col gap-4"
+          aria-busy="true"
+          [attr.aria-label]="t('notes.editor.loading')"
+        >
           <hlm-skeleton class="h-9 w-1/2" />
           <hlm-skeleton class="h-8 w-full" />
           <hlm-skeleton class="h-96 w-full" />
@@ -117,13 +122,18 @@ const SELECT_CLASSES =
           class="flex flex-col items-center gap-3 rounded-xl border border-dashed px-6 py-16 text-center"
         >
           <ng-icon name="lucideSearchX" class="text-muted-foreground text-4xl" aria-hidden="true" />
-          <h1 class="text-lg font-medium">Note introuvable</h1>
-          <p class="text-muted-foreground text-sm">Elle a peut-être été supprimée.</p>
-          <a hlmBtn variant="outline" routerLink="/notes">Retour aux notes</a>
+          <h1 class="text-lg font-medium">{{ t('notes.editor.notFound') }}</h1>
+          <p class="text-muted-foreground text-sm">{{ t('notes.editor.notFoundHint') }}</p>
+          <a hlmBtn variant="outline" routerLink="/notes">{{ t('notes.editor.back') }}</a>
         </section>
       }
       @case ('error') {
-        <dm-form-alert class="max-w-xl">{{ store.error() }}</dm-form-alert>
+        <div class="flex max-w-xl flex-col items-start gap-3">
+          <dm-form-alert>{{ store.error() }}</dm-form-alert>
+          <button hlmBtn variant="outline" (click)="store.load(id())">
+            {{ t('common.retry') }}
+          </button>
+        </div>
       }
       @default {
         @let note = store.note()!;
@@ -137,29 +147,29 @@ const SELECT_CLASSES =
                     class="motion-safe:animate-spin"
                     aria-hidden="true"
                   />
-                  Enregistrement…
+                  {{ t('notes.editor.saving') }}
                 }
                 @case ('pending') {
                   {{
                     store.titleInvalid()
-                      ? 'Donnez un titre à la note pour l’enregistrer'
-                      : 'Modifications en attente…'
+                      ? t('notes.editor.titleRequired')
+                      : t('notes.editor.pending')
                   }}
                 }
                 @case ('error') {
                   <ng-icon name="lucideCloudAlert" class="text-destructive" aria-hidden="true" />
-                  <span class="text-destructive">Échec de l’enregistrement</span>
+                  <span class="text-destructive">{{ t('notes.editor.saveFailed') }}</span>
                   <button
                     type="button"
                     class="underline underline-offset-2"
                     (click)="store.saveNow()"
                   >
-                    Réessayer
+                    {{ t('common.retry') }}
                   </button>
                 }
                 @default {
                   <ng-icon name="lucideCheck" aria-hidden="true" />
-                  Enregistré {{ store.savedAt() | relativeTime }}
+                  {{ t('notes.editor.saved', { when: (store.savedAt() | relativeTime) }) }}
                 }
               }
             </p>
@@ -172,21 +182,21 @@ const SELECT_CLASSES =
                 (click)="store.updateMeta({ pinned: !note.pinned })"
               >
                 <ng-icon [name]="note.pinned ? 'lucidePinOff' : 'lucidePin'" aria-hidden="true" />
-                {{ note.pinned ? 'Désépingler' : 'Épingler' }}
+                {{ note.pinned ? t('notes.editor.unpin') : t('notes.editor.pin') }}
               </button>
               <button hlmBtn variant="ghost" size="sm" class="text-destructive" (click)="remove()">
                 <ng-icon name="lucideTrash2" aria-hidden="true" />
-                Supprimer
+                {{ t('common.delete') }}
               </button>
             </div>
           </div>
 
-          <label for="note-title" class="sr-only">Titre de la note</label>
+          <label for="note-title" class="sr-only">{{ t('notes.editor.titleLabel') }}</label>
           <input
             #titleInput
             id="note-title"
             class="placeholder:text-muted-foreground w-full bg-transparent text-2xl font-semibold tracking-tight outline-none"
-            placeholder="Titre de la note"
+            [placeholder]="t('notes.editor.titleLabel')"
             maxlength="200"
             [value]="store.title()"
             [attr.aria-invalid]="store.titleInvalid()"
@@ -195,13 +205,15 @@ const SELECT_CLASSES =
           />
 
           <div class="flex flex-wrap items-center gap-2 text-sm">
-            <label for="note-project" class="text-muted-foreground">Projet</label>
+            <label for="note-project" class="text-muted-foreground">{{
+              t('tasks.filters.project')
+            }}</label>
             <select
               id="note-project"
               [class]="selectClasses"
               (change)="store.updateMeta({ projectId: $any($event.target).value || null })"
             >
-              <option value="" [selected]="!note.project">Aucun</option>
+              <option value="" [selected]="!note.project">{{ t('common.none') }}</option>
               @for (project of projects(); track project.id) {
                 <option [value]="project.id" [selected]="note.project?.id === project.id">
                   {{ project.name }}
@@ -209,7 +221,9 @@ const SELECT_CLASSES =
               }
             </select>
             @if (tags().length) {
-              <span class="text-muted-foreground ms-2" id="note-tags-label">Tags</span>
+              <span class="text-muted-foreground ms-2" id="note-tags-label">{{
+                t('projects.form.tags')
+              }}</span>
               <div class="flex flex-wrap gap-1" role="group" aria-labelledby="note-tags-label">
                 @for (tag of tags(); track tag.id) {
                   <button
@@ -228,7 +242,11 @@ const SELECT_CLASSES =
           </div>
 
           <div class="flex flex-wrap items-center justify-between gap-2 border-y py-1.5">
-            <div class="flex flex-wrap gap-0.5" role="toolbar" aria-label="Mise en forme">
+            <div
+              class="flex flex-wrap gap-0.5"
+              role="toolbar"
+              [attr.aria-label]="t('notes.editor.toolbar')"
+            >
               @for (action of formatActions; track action.format) {
                 <button
                   type="button"
@@ -236,9 +254,11 @@ const SELECT_CLASSES =
                   variant="ghost"
                   size="icon-sm"
                   [disabled]="view() === 'preview'"
-                  [attr.aria-label]="action.label"
+                  [attr.aria-label]="t(action.label)"
                   [title]="
-                    action.shortcut ? action.label + ' (' + action.shortcut + ')' : action.label
+                    action.shortcut
+                      ? t(action.label) + ' (' + action.shortcut + ')'
+                      : t(action.label)
                   "
                   (click)="format(action.format)"
                 >
@@ -246,7 +266,11 @@ const SELECT_CLASSES =
                 </button>
               }
             </div>
-            <div class="bg-muted inline-flex rounded-md p-0.5" role="group" aria-label="Affichage">
+            <div
+              class="bg-muted inline-flex rounded-md p-0.5"
+              role="group"
+              [attr.aria-label]="t('notes.editor.display')"
+            >
               @for (option of views; track option.value) {
                 <button
                   type="button"
@@ -258,7 +282,7 @@ const SELECT_CLASSES =
                   (click)="view.set(option.value)"
                 >
                   <ng-icon [name]="option.icon" aria-hidden="true" />
-                  <span class="max-sm:sr-only">{{ option.label }}</span>
+                  <span class="max-sm:sr-only">{{ t(option.label) }}</span>
                 </button>
               }
             </div>
@@ -267,12 +291,14 @@ const SELECT_CLASSES =
           <div [class]="view() === 'split' ? 'grid gap-4 lg:grid-cols-2' : 'grid gap-4'">
             @if (view() !== 'preview') {
               <div>
-                <label for="note-content" class="sr-only">Contenu (Markdown)</label>
+                <label for="note-content" class="sr-only">{{
+                  t('notes.editor.contentLabel')
+                }}</label>
                 <textarea
                   #editor
                   id="note-content"
                   class="bg-muted/30 focus-visible:ring-ring min-h-[60vh] w-full resize-y rounded-md border p-4 font-mono text-sm leading-relaxed outline-none focus-visible:ring-2"
-                  placeholder="Écrivez en Markdown : # titre, **gras**, \`code\`, listes, blocs \`\`\`ts…"
+                  [placeholder]="t('notes.editor.contentPlaceholder')"
                   spellcheck="true"
                   [value]="store.content()"
                   (input)="store.edit({ content: $any($event.target).value })"
@@ -283,12 +309,12 @@ const SELECT_CLASSES =
             @if (view() !== 'write') {
               <article
                 class="prose prose-sm dark:prose-invert prose-pre:p-0 max-w-none min-w-0 rounded-md border p-4 sm:prose-base"
-                aria-label="Aperçu"
+                [attr.aria-label]="t('notes.editor.views.preview')"
               >
                 @if (store.content().trim()) {
                   <div [innerHTML]="store.content() | markdown"></div>
                 } @else {
-                  <p class="text-muted-foreground italic">Rien à afficher pour l’instant.</p>
+                  <p class="text-muted-foreground italic">{{ t('notes.editor.emptyPreview') }}</p>
                 }
               </article>
             }
@@ -299,6 +325,7 @@ const SELECT_CLASSES =
   `,
 })
 export class NoteEditorPage {
+  protected readonly t = translate;
   /** Paramètre de route :id, lié par withComponentInputBinding. */
   readonly id = input.required<string>();
 
@@ -344,7 +371,7 @@ export class NoteEditorPage {
       const input = this.titleInput()?.nativeElement;
       if (focused || !note || !input) return;
       focused = true;
-      if (note.title === UNTITLED_NOTE && !note.content) input.select();
+      if (UNTITLED_TITLES.includes(note.title) && !note.content) input.select();
     });
   }
 
@@ -391,9 +418,9 @@ export class NoteEditorPage {
     if (!note) return;
     this.confirm
       .confirm({
-        title: `Supprimer « ${this.store.title() || note.title} » ?`,
-        description: 'La note sera supprimée définitivement.',
-        confirmLabel: 'Supprimer',
+        title: translate('common.deleteTitle', { name: this.store.title() || note.title }),
+        description: translate('notes.delete.description'),
+        confirmLabel: translate('common.delete'),
         destructive: true,
       })
       .pipe(
@@ -403,7 +430,7 @@ export class NoteEditorPage {
       .subscribe({
         next: () => {
           this.store.discard();
-          toast.success('Note supprimée');
+          toast.success(translate('notes.toast.deleted'));
           void this.router.navigate(['/notes']);
         },
         error: (error: unknown) => toast.error(apiErrorMessage(error)),

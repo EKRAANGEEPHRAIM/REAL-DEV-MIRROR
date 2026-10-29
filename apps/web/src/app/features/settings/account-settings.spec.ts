@@ -134,7 +134,7 @@ describe('Paramètres du compte', () => {
       await fixture.whenStable();
 
       backend.expectNone(() => true);
-      expect(element.textContent).toContain('ne correspondent pas');
+      expect(element.textContent).toContain('sont différents');
     });
 
     it('envoie le changement et affiche l’erreur de l’API', async () => {

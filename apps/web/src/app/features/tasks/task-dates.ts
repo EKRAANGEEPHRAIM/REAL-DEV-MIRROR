@@ -1,12 +1,15 @@
+import { formatDate } from '../../core/i18n/format';
+import { type TranslationKey, translate } from '../../core/i18n/translate';
+
 /** Échéances : toutes les bornes sont calculées dans le fuseau du navigateur. */
 
 export type DueFilter = 'overdue' | 'today' | 'week' | 'none';
 
-export const DUE_FILTERS: readonly { value: DueFilter; label: string }[] = [
-  { value: 'overdue', label: 'En retard' },
-  { value: 'today', label: 'Aujourd’hui' },
-  { value: 'week', label: '7 prochains jours' },
-  { value: 'none', label: 'Sans échéance' },
+export const DUE_FILTERS: readonly { value: DueFilter; label: TranslationKey }[] = [
+  { value: 'overdue', label: 'tasks.due.overdue' },
+  { value: 'today', label: 'tasks.due.today' },
+  { value: 'week', label: 'tasks.due.week' },
+  { value: 'none', label: 'tasks.due.none' },
 ];
 
 export function isDueFilter(value: unknown): value is DueFilter {
@@ -80,18 +83,16 @@ export interface DueLabel {
   tone: DueTone;
 }
 
-const dayFormatter = new Intl.DateTimeFormat('fr', { day: 'numeric', month: 'short' });
-
 /** « En retard · 12 oct. », « Aujourd’hui », « Demain », « 30 oct. »… */
 export function dueLabel(iso: string, done: boolean, now: Date = new Date()): DueLabel {
   const due = new Date(iso);
   const days = Math.round((startOfDay(due).getTime() - startOfDay(now).getTime()) / 86_400_000);
-  const date = dayFormatter.format(due);
+  const date = formatDate(due, { day: 'numeric', month: 'short' });
 
   if (done) return { label: date, tone: 'done' };
-  if (due < now) return { label: `En retard · ${date}`, tone: 'overdue' };
-  if (days === 0) return { label: 'Aujourd’hui', tone: 'today' };
-  if (days === 1) return { label: 'Demain', tone: 'soon' };
+  if (due < now) return { label: translate('tasks.due.overdueOn', { date }), tone: 'overdue' };
+  if (days === 0) return { label: translate('tasks.due.today'), tone: 'today' };
+  if (days === 1) return { label: translate('tasks.due.tomorrow'), tone: 'soon' };
   if (days <= 7) return { label: date, tone: 'soon' };
   return { label: date, tone: 'later' };
 }

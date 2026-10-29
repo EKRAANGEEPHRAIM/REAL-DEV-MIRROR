@@ -12,6 +12,7 @@ import { AuthStore } from '../../../core/auth/auth.store';
 import { FormAlert } from '../../../shared/ui-kit/form-alert';
 import { PasswordChecklist } from '../password-checklist';
 import { passwordValidator } from '../password-rules';
+import { translate } from '../../../core/i18n/translate';
 
 type Field = 'name' | 'email' | 'password';
 
@@ -33,8 +34,8 @@ type Field = 'name' | 'email' | 'password';
   template: `
     <section hlmCard>
       <div hlmCardHeader>
-        <h1 hlmCardTitle class="text-xl">Créer un compte</h1>
-        <p hlmCardDescription>Centralisez vos projets et suivez votre progression.</p>
+        <h1 hlmCardTitle class="text-xl">{{ t('auth.register.title') }}</h1>
+        <p hlmCardDescription>{{ t('auth.register.subtitle') }}</p>
       </div>
 
       <form
@@ -49,7 +50,7 @@ type Field = 'name' | 'email' | 'password';
         }
 
         <div class="flex flex-col gap-2">
-          <label hlmLabel for="name">Nom</label>
+          <label hlmLabel for="name">{{ t('auth.name') }}</label>
           <input
             hlmInput
             id="name"
@@ -59,12 +60,12 @@ type Field = 'name' | 'email' | 'password';
             aria-describedby="name-error"
           />
           @if (showError('name')) {
-            <p id="name-error" class="text-destructive text-sm">Entre 2 et 80 caractères.</p>
+            <p id="name-error" class="text-destructive text-sm">{{ t('auth.errors.name') }}</p>
           }
         </div>
 
         <div class="flex flex-col gap-2">
-          <label hlmLabel for="email">Email</label>
+          <label hlmLabel for="email">{{ t('auth.email') }}</label>
           <input
             hlmInput
             id="email"
@@ -76,13 +77,13 @@ type Field = 'name' | 'email' | 'password';
           />
           @if (showError('email')) {
             <p id="email-error" class="text-destructive text-sm">
-              Saisissez une adresse email valide.
+              {{ t('auth.errors.email') }}
             </p>
           }
         </div>
 
         <div class="flex flex-col gap-2">
-          <label hlmLabel for="password">Mot de passe</label>
+          <label hlmLabel for="password">{{ t('auth.password') }}</label>
           <input
             hlmInput
             id="password"
@@ -98,23 +99,24 @@ type Field = 'name' | 'email' | 'password';
         <button hlmBtn type="submit" class="mt-2 w-full" [disabled]="store.pending()">
           @if (store.pending()) {
             <ng-icon name="lucideLoader2" class="motion-safe:animate-spin" aria-hidden="true" />
-            Création du compte…
+            {{ t('auth.register.pending') }}
           } @else {
-            Créer mon compte
+            {{ t('auth.register.submit') }}
           }
         </button>
       </form>
 
       <p hlmCardFooter class="text-muted-foreground justify-center text-sm">
-        Déjà inscrit ?
-        <a routerLink="/login" class="text-foreground ms-1 font-medium hover:underline"
-          >Se connecter</a
-        >
+        {{ t('auth.register.hasAccount') }}
+        <a routerLink="/login" class="text-foreground ms-1 font-medium hover:underline">{{
+          t('auth.login.submit')
+        }}</a>
       </p>
     </section>
   `,
 })
 export class RegisterPage implements OnInit {
+  protected readonly t = translate;
   protected readonly store = inject(AuthStore);
   readonly returnUrl = input<string | undefined>();
 

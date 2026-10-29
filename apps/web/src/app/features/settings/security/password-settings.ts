@@ -13,6 +13,7 @@ import { apiErrorMessage } from '../../../core/http/api-error';
 import { FormAlert } from '../../../shared/ui-kit/form-alert';
 import { PasswordChecklist } from '../../auth/password-checklist';
 import { passwordsMatchValidator, passwordValidator } from '../../auth/password-rules';
+import { translate } from '../../../core/i18n/translate';
 
 @Component({
   selector: 'dm-password-settings',
@@ -31,10 +32,10 @@ import { passwordsMatchValidator, passwordValidator } from '../../auth/password-
     <section aria-labelledby="password-heading" class="rounded-xl border p-5">
       <h2 id="password-heading" class="flex items-center gap-2 text-lg font-semibold">
         <ng-icon name="lucideKeyRound" aria-hidden="true" />
-        Mot de passe
+        {{ t('auth.password') }}
       </h2>
       <p class="text-muted-foreground mt-1 text-sm">
-        Vos autres appareils seront déconnectés ; celui-ci reste connecté.
+        {{ t('settings.password.hint') }}
       </p>
 
       <form
@@ -47,7 +48,7 @@ import { passwordsMatchValidator, passwordValidator } from '../../auth/password-
           <dm-form-alert>{{ message }}</dm-form-alert>
         }
         <div class="flex flex-col gap-2">
-          <label hlmLabel for="current-password">Mot de passe actuel</label>
+          <label hlmLabel for="current-password">{{ t('settings.password.current') }}</label>
           <input
             hlmInput
             id="current-password"
@@ -57,7 +58,7 @@ import { passwordsMatchValidator, passwordValidator } from '../../auth/password-
           />
         </div>
         <div class="flex flex-col gap-2">
-          <label hlmLabel for="new-password">Nouveau mot de passe</label>
+          <label hlmLabel for="new-password">{{ t('auth.reset.password') }}</label>
           <input
             hlmInput
             id="new-password"
@@ -69,7 +70,7 @@ import { passwordsMatchValidator, passwordValidator } from '../../auth/password-
           <dm-password-checklist [password]="newPassword()" listId="new-password-rules" />
         </div>
         <div class="flex flex-col gap-2">
-          <label hlmLabel for="confirm-password">Confirmer le nouveau mot de passe</label>
+          <label hlmLabel for="confirm-password">{{ t('settings.password.confirm') }}</label>
           <input
             hlmInput
             id="confirm-password"
@@ -79,7 +80,7 @@ import { passwordsMatchValidator, passwordValidator } from '../../auth/password-
             [attr.aria-invalid]="mismatch()"
           />
           @if (mismatch()) {
-            <p class="text-destructive text-sm">Les deux mots de passe ne correspondent pas.</p>
+            <p class="text-destructive text-sm">{{ t('auth.errors.mismatch') }}</p>
           }
         </div>
         <div>
@@ -87,7 +88,7 @@ import { passwordsMatchValidator, passwordValidator } from '../../auth/password-
             @if (saving()) {
               <ng-icon name="lucideLoader2" class="motion-safe:animate-spin" aria-hidden="true" />
             }
-            Changer le mot de passe
+            {{ t('settings.password.submit') }}
           </button>
         </div>
       </form>
@@ -95,6 +96,7 @@ import { passwordsMatchValidator, passwordValidator } from '../../auth/password-
   `,
 })
 export class PasswordSettings {
+  protected readonly t = translate;
   private readonly api = inject(AccountApi);
 
   protected readonly form = inject(NonNullableFormBuilder).group(
@@ -122,8 +124,8 @@ export class PasswordSettings {
       this.form.markAllAsTouched();
       this.error.set(
         this.form.controls.current.invalid
-          ? 'Saisissez votre mot de passe actuel.'
-          : 'Le nouveau mot de passe ne respecte pas les règles ou ne correspond pas à la confirmation.',
+          ? translate('settings.password.currentRequired')
+          : translate('settings.password.invalid'),
       );
       return;
     }
@@ -134,7 +136,7 @@ export class PasswordSettings {
       next: () => {
         this.saving.set(false);
         this.form.reset();
-        toast.success('Mot de passe modifié ; vos autres sessions ont été fermées.');
+        toast.success(translate('settings.password.done'));
       },
       error: (error: unknown) => {
         this.saving.set(false);

@@ -4,6 +4,7 @@ import type { RecentNote } from '@devmirror/api-client';
 import { NgIcon, provideIcons } from '@ng-icons/core';
 import { lucideNotebookPen, lucidePin } from '@ng-icons/lucide';
 import { RelativeTimePipe } from '../../../shared/format/relative-time';
+import { translate } from '../../../core/i18n/translate';
 
 /** Les dernières notes modifiées, pour reprendre là où on s'était arrêté. */
 @Component({
@@ -26,7 +27,7 @@ import { RelativeTimePipe } from '../../../shared/format/relative-time';
                   <ng-icon
                     name="lucidePin"
                     class="text-muted-foreground shrink-0"
-                    aria-label="Épinglée"
+                    [attr.aria-label]="t('dashboard.recentNotes.pinned')"
                   />
                 }
                 <span class="truncate">{{ note.title }}</span>
@@ -48,12 +49,15 @@ import { RelativeTimePipe } from '../../../shared/format/relative-time';
           class="text-muted-foreground text-3xl"
           aria-hidden="true"
         />
-        <p class="text-muted-foreground text-sm">Aucune note pour l’instant.</p>
-        <a routerLink="/notes" class="text-sm underline underline-offset-2">Écrire une note</a>
+        <p class="text-muted-foreground text-sm">{{ t('dashboard.recentNotes.empty') }}</p>
+        <a routerLink="/notes" class="text-sm underline underline-offset-2">{{
+          t('notes.empty.cta')
+        }}</a>
       </div>
     }
   `,
 })
 export class RecentNotesList {
+  protected readonly t = translate;
   readonly notes = input.required<readonly RecentNote[]>();
 }

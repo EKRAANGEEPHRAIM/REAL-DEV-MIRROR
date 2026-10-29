@@ -5,6 +5,7 @@ import { HlmBadgeImports } from '@spartan-ng/helm/badge';
 import { HlmCardImports } from '@spartan-ng/helm/card';
 import { RelativeTimePipe } from '../../../shared/format/relative-time';
 import { projectStatus } from '../project-status';
+import { translate } from '../../../core/i18n/translate';
 
 const MAX_TECHS = 4;
 
@@ -36,7 +37,7 @@ const MAX_TECHS = 4;
             class="shrink-0 rounded-full px-2 py-0.5 text-xs font-medium"
             [class]="status().tone"
           >
-            {{ status().label }}
+            {{ t(status().label) }}
           </span>
         </div>
         @if (p.description) {
@@ -65,9 +66,9 @@ const MAX_TECHS = 4;
           <div class="text-muted-foreground flex justify-between text-xs">
             <span>
               @if (p.progress.total) {
-                {{ p.progress.done }}/{{ p.progress.total }} tâches
+                {{ t('projects.card.tasks', { done: p.progress.done, count: p.progress.total }) }}
               } @else {
-                Aucune tâche
+                {{ t('projects.card.noTasks') }}
               }
             </span>
             <span>{{ p.progress.percent }} %</span>
@@ -78,7 +79,7 @@ const MAX_TECHS = 4;
             [attr.aria-valuenow]="p.progress.percent"
             aria-valuemin="0"
             aria-valuemax="100"
-            [attr.aria-label]="'Progression de ' + p.name"
+            [attr.aria-label]="t('common.progressOf', { name: p.name })"
           >
             <div
               class="bg-primary h-full rounded-full transition-all"
@@ -89,12 +90,13 @@ const MAX_TECHS = 4;
       </div>
 
       <p hlmCardFooter class="text-muted-foreground mt-auto text-xs">
-        Modifié {{ p.updatedAt | relativeTime }}
+        {{ t('projects.card.updated', { when: (p.updatedAt | relativeTime) }) }}
       </p>
     </article>
   `,
 })
 export class ProjectCard {
+  protected readonly t = translate;
   readonly project = input.required<Project>();
   protected readonly status = computed(() => projectStatus(this.project().status));
   protected readonly techs = computed(() => this.project().techStack.slice(0, MAX_TECHS));
