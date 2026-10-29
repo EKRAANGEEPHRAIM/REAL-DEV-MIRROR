@@ -19,9 +19,7 @@ import { DUE_FILTERS } from '../task-dates';
 import { NO_PROJECT, TASK_SORTS, type TaskFilters } from '../task-filters';
 import { TASK_PRIORITIES, TASK_STATUSES } from '../task-meta';
 import { translate } from '../../../core/i18n/translate';
-
-const SELECT_CLASSES =
-  'border-input bg-background focus-visible:ring-ring h-9 rounded-md border px-3 text-sm outline-none focus-visible:ring-2';
+import { FILTER_SELECT_CLASSES } from '../../../shared/ui-kit/filter-classes';
 
 /** Filtres de la liste des tâches ; une valeur vide (« Tous ») est émise comme null. */
 @Component({
@@ -30,8 +28,8 @@ const SELECT_CLASSES =
   providers: [provideIcons({ lucideSearch, lucideX })],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div role="search" class="flex flex-col gap-3 md:flex-row md:flex-wrap md:items-end">
-      <div class="relative flex-1 md:min-w-56">
+    <div role="search" class="grid grid-cols-2 gap-3 md:flex md:flex-wrap md:items-end">
+      <div class="relative col-span-2 flex-1 md:min-w-56">
         <label hlmLabel for="task-search" class="sr-only">{{ t('tasks.filters.search') }}</label>
         <ng-icon
           name="lucideSearch"
@@ -49,7 +47,7 @@ const SELECT_CLASSES =
         />
       </div>
 
-      <div class="flex flex-col gap-1">
+      <div class="flex min-w-0 flex-col gap-1">
         <label hlmLabel for="task-filter-due" class="text-muted-foreground text-xs">{{
           t('tasks.filters.due')
         }}</label>
@@ -67,7 +65,7 @@ const SELECT_CLASSES =
         </select>
       </div>
 
-      <div class="flex flex-col gap-1">
+      <div class="flex min-w-0 flex-col gap-1">
         <label hlmLabel for="task-filter-project" class="text-muted-foreground text-xs">{{
           t('tasks.filters.project')
         }}</label>
@@ -90,7 +88,7 @@ const SELECT_CLASSES =
 
       <!-- Sur le Kanban, les colonnes tiennent lieu de statut et d'ordre. -->
       @if (!board()) {
-        <div class="flex flex-col gap-1">
+        <div class="flex min-w-0 flex-col gap-1">
           <label hlmLabel for="task-filter-status" class="text-muted-foreground text-xs">{{
             t('projects.form.status')
           }}</label>
@@ -109,7 +107,7 @@ const SELECT_CLASSES =
         </div>
       }
 
-      <div class="flex flex-col gap-1">
+      <div class="flex min-w-0 flex-col gap-1">
         <label hlmLabel for="task-filter-priority" class="text-muted-foreground text-xs">{{
           t('tasks.form.priority')
         }}</label>
@@ -130,7 +128,7 @@ const SELECT_CLASSES =
       </div>
 
       @if (!board()) {
-        <div class="flex flex-col gap-1">
+        <div class="flex min-w-0 flex-col gap-1">
           <label hlmLabel for="task-filter-sort" class="text-muted-foreground text-xs">{{
             t('common.sortBy')
           }}</label>
@@ -172,7 +170,7 @@ export class TaskFiltersBar {
   protected readonly priorities = TASK_PRIORITIES;
   protected readonly sorts = TASK_SORTS;
   protected readonly noProject = NO_PROJECT;
-  protected readonly selectClasses = SELECT_CLASSES;
+  protected readonly selectClasses = FILTER_SELECT_CLASSES;
   protected readonly search = linkedSignal(() => this.value().q);
 
   private readonly searchInput = new Subject<string>();

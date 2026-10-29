@@ -47,6 +47,7 @@ function describe(cell: HeatCell): string {
       #scroller
       class="focus-visible:ring-ring overflow-x-auto rounded-md pb-1 outline-none focus-visible:ring-2"
       tabindex="0"
+      role="group"
       [attr.aria-label]="summary()"
       aria-describedby="heatmap-help"
       (keydown)="onKeydown($event)"

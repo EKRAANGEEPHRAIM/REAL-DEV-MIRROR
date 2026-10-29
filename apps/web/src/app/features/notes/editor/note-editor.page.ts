@@ -60,7 +60,7 @@ const VIEWS: readonly { value: EditorView; label: TranslationKey; icon: string }
 ];
 
 const SELECT_CLASSES =
-  'border-input bg-background focus-visible:ring-ring h-8 rounded-md border px-2 text-sm outline-none focus-visible:ring-2';
+  'border-input bg-background focus-visible:ring-ring h-8 max-w-full min-w-0 rounded-md border px-2 text-sm outline-none focus-visible:ring-2 sm:max-w-64';
 
 @Component({
   selector: 'dm-note-editor-page',

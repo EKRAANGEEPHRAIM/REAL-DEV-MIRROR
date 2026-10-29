@@ -35,9 +35,9 @@ import { translate } from '../../../core/i18n/translate';
               @if (note.excerpt) {
                 <span class="text-muted-foreground line-clamp-1 text-xs">{{ note.excerpt }}</span>
               }
-              <span class="text-muted-foreground text-xs"
-                >Modifiée {{ note.updatedAt | relativeTime }}</span
-              >
+              <span class="text-muted-foreground text-xs">{{
+                t('notes.card.updated', { when: (note.updatedAt | relativeTime) })
+              }}</span>
             </a>
           </li>
         }

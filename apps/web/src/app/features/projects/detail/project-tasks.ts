@@ -39,7 +39,7 @@ export type ProjectTasksView = 'list' | 'board';
       <div hlmCardHeader class="gap-3">
         <div class="flex flex-wrap items-center justify-between gap-2">
           <h2 hlmCardTitle id="tasks-title">{{ t('titles.tasks') }}</h2>
-          <div class="flex items-center gap-2">
+          <div class="flex flex-wrap items-center gap-2">
             <div
               class="bg-muted flex rounded-lg p-0.5"
               role="group"

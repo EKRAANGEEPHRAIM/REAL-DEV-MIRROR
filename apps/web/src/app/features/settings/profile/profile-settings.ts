@@ -130,7 +130,7 @@ const FIELD_CLASSES =
             [class]="fieldClasses"
           ></textarea>
         </div>
-        <div class="grid gap-4 sm:grid-cols-3">
+        <div class="grid gap-4 lg:grid-cols-3">
           @for (link of links; track link.key) {
             <div class="flex flex-col gap-2">
               <label hlmLabel [for]="'profile-' + link.key">{{ t(link.label) }}</label>

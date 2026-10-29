@@ -20,10 +20,11 @@ import { setLanguage, translate } from './translate';
           [class.text-muted-foreground]="language() !== option.value"
           [attr.aria-pressed]="language() === option.value"
           [attr.lang]="option.value"
-          [attr.aria-label]="option.name"
           (click)="select(option.value)"
         >
-          {{ option.short }}
+          <!-- « FR » à l'écran, « Français » pour les lecteurs d'écran, sans aria-label contradictoire. -->
+          <span aria-hidden="true">{{ option.short }}</span>
+          <span class="sr-only">{{ option.name }}</span>
         </button>
       }
     </div>

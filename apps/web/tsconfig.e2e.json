@@ -1,0 +1,10 @@
+/* Tests Playwright (e2e/) : vérifiés à part, hors du build Angular et des tests Vitest. */
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "strict": true,
+    "types": ["node"]
+  },
+  "include": ["e2e/**/*.ts", "playwright.config.ts"]
+}

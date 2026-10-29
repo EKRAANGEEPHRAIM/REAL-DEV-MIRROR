@@ -13,7 +13,7 @@ import type { DashboardTile as Tile } from './dashboard-tiles';
 
 const TONES = {
   default: 'text-muted-foreground',
-  positive: 'text-emerald-600 dark:text-emerald-400',
+  positive: 'text-emerald-700 dark:text-emerald-400',
   warning: 'text-amber-600 dark:text-amber-400',
 } as const;
 
@@ -57,7 +57,7 @@ const TONES = {
         </h2>
         <ng-icon
           [name]="t.icon"
-          class="text-lg"
+          class="shrink-0 text-lg"
           [class.text-orange-500]="t.id === 'streak' && t.value > 0"
           aria-hidden="true"
         />

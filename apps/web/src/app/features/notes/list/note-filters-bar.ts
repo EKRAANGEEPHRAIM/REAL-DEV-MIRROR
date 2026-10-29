@@ -18,9 +18,7 @@ import { HlmLabelImports } from '@spartan-ng/helm/label';
 import { debounceTime, distinctUntilChanged, Subject } from 'rxjs';
 import { defaultSortLabel, NOTE_SORTS, type NoteFilters, type NoteSort } from '../note-filters';
 import { translate } from '../../../core/i18n/translate';
-
-const SELECT_CLASSES =
-  'border-input bg-background focus-visible:ring-ring h-9 rounded-md border px-3 text-sm outline-none focus-visible:ring-2';
+import { FILTER_SELECT_CLASSES } from '../../../shared/ui-kit/filter-classes';
 
 /** Recherche plein texte temporisée (300 ms), tri, et puces de tags pour filtrer. */
 @Component({
@@ -48,7 +46,7 @@ const SELECT_CLASSES =
             (input)="onSearch($any($event.target).value)"
           />
         </div>
-        <div class="flex flex-col gap-1">
+        <div class="flex min-w-0 flex-col gap-1">
           <label hlmLabel for="note-sort" class="text-muted-foreground text-xs">{{
             t('common.sortBy')
           }}</label>
@@ -123,7 +121,7 @@ export class NoteFiltersBar {
   readonly changed = output<Partial<NoteFilters>>();
   readonly cleared = output<void>();
 
-  protected readonly selectClasses = SELECT_CLASSES;
+  protected readonly selectClasses = FILTER_SELECT_CLASSES;
   protected readonly defaultLabel = computed(() => defaultSortLabel(this.value()));
   /** Sans recherche, « Récemment modifiées » est déjà l'ordre par défaut. */
   protected readonly sorts = computed(() =>

@@ -17,7 +17,7 @@ export const TASK_STATUSES: readonly Option<TaskStatus>[] = [
   {
     value: 'IN_PROGRESS',
     label: 'tasks.status.IN_PROGRESS',
-    tone: 'bg-amber-500/15 text-amber-700 dark:text-amber-300',
+    tone: 'bg-amber-500/15 text-amber-800 dark:text-amber-300',
   },
   {
     value: 'IN_REVIEW',
@@ -27,7 +27,7 @@ export const TASK_STATUSES: readonly Option<TaskStatus>[] = [
   {
     value: 'DONE',
     label: 'tasks.status.DONE',
-    tone: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300',
+    tone: 'bg-emerald-500/15 text-emerald-800 dark:text-emerald-300',
   },
 ];
 
@@ -41,7 +41,7 @@ export const TASK_PRIORITIES: readonly Option<TaskPriority>[] = [
   {
     value: 'HIGH',
     label: 'tasks.priority.HIGH',
-    tone: 'bg-orange-500/15 text-orange-700 dark:text-orange-300',
+    tone: 'bg-orange-500/15 text-orange-800 dark:text-orange-300',
   },
   {
     value: 'MEDIUM',

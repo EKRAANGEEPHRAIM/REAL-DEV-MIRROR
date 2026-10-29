@@ -67,7 +67,7 @@ import { translate } from '../../../core/i18n/translate';
           <span class="text-muted-foreground ms-1 text-base font-normal">({{ count() }})</span>
         }
       </h1>
-      <div class="flex items-center gap-2">
+      <div class="flex flex-wrap items-center gap-2">
         <div
           class="bg-muted flex rounded-lg p-0.5"
           role="group"
