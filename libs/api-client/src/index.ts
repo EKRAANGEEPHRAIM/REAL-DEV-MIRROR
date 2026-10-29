@@ -11,6 +11,7 @@ export type ProfileLinks = Schemas['ProfileLinksResponseDto'];
 export type UserPreferences = Schemas['PreferencesResponseDto'];
 export type UpdateProfileRequest = Schemas['UpdateProfileDto'];
 export type ChangePasswordRequest = Schemas['ChangePasswordDto'];
+export type DeleteAccountRequest = Schemas['DeleteAccountDto'];
 export type AuthResponse = Schemas['AuthResponseDto'];
 export type LoginRequest = Schemas['LoginDto'];
 export type RegisterRequest = Schemas['RegisterDto'];

@@ -24,6 +24,9 @@ import { AuthStore } from '../auth/auth.store';
       [attr.aria-label]="'Menu du compte de ' + (store.user()?.name ?? '')"
     >
       <hlm-avatar size="sm">
+        @if (store.user()?.avatarUrl; as url) {
+          <img hlmAvatarImage [src]="url" alt="" />
+        }
         <span hlmAvatarFallback>{{ store.initials() }}</span>
       </hlm-avatar>
     </button>

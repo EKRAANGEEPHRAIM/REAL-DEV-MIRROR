@@ -202,11 +202,29 @@ export interface paths {
     get: operations['UsersController_me'];
     put?: never;
     post?: never;
-    delete?: never;
+    /** Supprimer définitivement son compte et toutes ses données (confirmation par mot de passe) */
+    delete: operations['AccountController_delete'];
     options?: never;
     head?: never;
     /** Modifier son profil (nom, bio, liens, préférences) */
     patch: operations['UsersController_update'];
+    trace?: never;
+  };
+  '/api/v1/users/me/export': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Exporter toutes ses données en JSON (profil, projets, tâches, objectifs, notes, tags, activité) */
+    get: operations['UsersController_export'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
     trace?: never;
   };
   '/api/v1/users/me/avatar': {
@@ -680,6 +698,13 @@ export interface components {
        * @example MotDePasse2026
        */
       newPassword: string;
+    };
+    DeleteAccountDto: {
+      /**
+       * @description Mot de passe actuel, pour confirmer
+       * @example MotDePasse2026
+       */
+      password: string;
     };
     ErrorResponseDto: {
       /** @example 404 */
@@ -1814,6 +1839,53 @@ export interface operations {
       };
     };
   };
+  AccountController_delete: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['DeleteAccountDto'];
+      };
+    };
+    responses: {
+      /** @description Compte supprimé ; cookie de session effacé */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Mot de passe incorrect */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponseDto'];
+        };
+      };
+      /** @description Jeton d’accès manquant ou invalide */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponseDto'];
+        };
+      };
+      /** @description Trop de tentatives, réessayez dans une minute */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
   UsersController_update: {
     parameters: {
       query?: never;
@@ -1842,6 +1914,35 @@ export interface operations {
         };
         content: {
           'application/json': components['schemas']['ErrorResponseDto'];
+        };
+      };
+      /** @description Jeton d’accès manquant ou invalide */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponseDto'];
+        };
+      };
+    };
+  };
+  UsersController_export: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Fichier devmirror-export-AAAA-MM-JJ.json (Content-Disposition: attachment) */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': Record<string, never>;
         };
       };
       /** @description Jeton d’accès manquant ou invalide */

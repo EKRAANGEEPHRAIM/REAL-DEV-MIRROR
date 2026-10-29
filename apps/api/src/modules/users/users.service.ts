@@ -64,6 +64,11 @@ export class UsersService {
   async setAvatar(id: string, avatarUrl: string | null): Promise<User> {
     return this.prisma.user.update({ where: { id }, data: { avatarUrl } });
   }
+
+  /** Supprime le compte ; projets, tâches, objectifs, notes, tags, activité et sessions suivent (cascade). */
+  async delete(id: string): Promise<void> {
+    await this.prisma.user.delete({ where: { id } });
+  }
 }
 
 export const ACCOUNT_NOT_FOUND = 'Compte introuvable';

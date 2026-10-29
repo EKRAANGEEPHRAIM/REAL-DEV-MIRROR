@@ -179,4 +179,73 @@ describe('Profil, avatar et mot de passe (e2e)', () => {
     expect((await login()).status).toBe(401);
     expect((await login('Nouveau2026')).status).toBe(200);
   });
+
+  it('exporte toutes les données en JSON, sans aucun secret', async () => {
+    const project = (
+      await authed()
+        .post('/api/v1/projects')
+        .send({ name: 'DevMirror', techStack: ['Angular'] })
+        .expect(201)
+    ).body.id as string;
+    await authed()
+      .post('/api/v1/tasks')
+      .send({ title: 'Exporter', projectId: project })
+      .expect(201);
+    await authed()
+      .post('/api/v1/notes')
+      .send({ title: 'Note exportée', content: '# Contenu' })
+      .expect(201);
+
+    const response = await authed().get('/api/v1/users/me/export').expect(200);
+
+    expect(response.headers['content-disposition']).toMatch(
+      /^attachment; filename="devmirror-export-\d{4}-\d{2}-\d{2}\.json"$/,
+    );
+    expect(response.body).toMatchObject({
+      format: 'devmirror-export',
+      version: 1,
+      profile: { email, name: 'Ada King' },
+      projects: [expect.objectContaining({ name: 'DevMirror', techStack: ['Angular'] })],
+      tasks: [expect.objectContaining({ title: 'Exporter', projectId: project, subtasks: [] })],
+      notes: [expect.objectContaining({ title: 'Note exportée', content: '# Contenu' })],
+    });
+    expect(response.body.activity.length).toBeGreaterThan(0);
+    const raw = JSON.stringify(response.body);
+    expect(raw).not.toContain('passwordHash');
+    expect(raw).not.toContain('tokenHash');
+  });
+
+  it('supprime le compte et toutes ses données, après confirmation par mot de passe', async () => {
+    const userId = (await authed().get('/api/v1/users/me')).body.id as string;
+    const remove = (password: string) =>
+      request(app.getHttpServer())
+        .delete('/api/v1/users/me')
+        .set('Authorization', `Bearer ${token}`)
+        .set('Cookie', cookie)
+        .send({ password });
+
+    const wrong = await remove('Mauvais2026');
+    expect(wrong.status).toBe(400);
+    expect(await prisma.user.count({ where: { id: userId } })).toBe(1);
+
+    const deleted = await remove('Nouveau2026');
+    expect(deleted.status).toBe(204);
+    // Cookie de session effacé
+    expect(String(deleted.headers['set-cookie'])).toMatch(/dm_refresh=;/);
+
+    const counts = await Promise.all([
+      prisma.user.count({ where: { id: userId } }),
+      prisma.project.count({ where: { userId } }),
+      prisma.task.count({ where: { userId } }),
+      prisma.note.count({ where: { userId } }),
+      prisma.activity.count({ where: { userId } }),
+      prisma.refreshToken.count({ where: { userId } }),
+    ]);
+    expect(counts).toEqual([0, 0, 0, 0, 0, 0]);
+    expect((await login('Nouveau2026')).status).toBe(401);
+    await request(app.getHttpServer())
+      .post('/api/v1/auth/refresh')
+      .set('Cookie', cookie)
+      .expect(401);
+  });
 });

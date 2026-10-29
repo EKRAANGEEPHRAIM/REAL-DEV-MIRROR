@@ -13,6 +13,7 @@ import {
   Patch,
   PayloadTooLargeException,
   Post,
+  Res,
   UploadedFile,
   UseInterceptors,
 } from '@nestjs/common';
@@ -26,10 +27,13 @@ import {
   ApiOkResponse,
   ApiOperation,
   ApiPayloadTooLargeResponse,
+  ApiProduces,
   ApiServiceUnavailableResponse,
   ApiTags,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
+import type { Response } from 'express';
 import type { Observable } from 'rxjs';
 import type { AuthUser } from '../../common/auth/auth-user.js';
 import { CurrentUser } from '../../common/decorators/current-user.decorator.js';
@@ -44,6 +48,7 @@ import {
 } from './avatar-file.js';
 import { AvatarStorage } from './avatar-storage.js';
 import { UpdateProfileDto } from './dto/profile.dto.js';
+import { ExportService, exportFileName } from './export.service.js';
 import { UserResponseDto } from './dto/user-response.dto.js';
 import { ACCOUNT_NOT_FOUND, UsersService } from './users.service.js';
 
@@ -78,6 +83,7 @@ export class UsersController {
   constructor(
     private readonly users: UsersService,
     private readonly avatars: AvatarStorage,
+    private readonly exports: ExportService,
   ) {}
 
   @Get('me')
@@ -88,6 +94,27 @@ export class UsersController {
     // Compte supprimé alors que son jeton d'accès est encore valide.
     if (!user) throw new NotFoundException(ACCOUNT_NOT_FOUND);
     return UserResponseDto.fromUser(user);
+  }
+
+  @Get('me/export')
+  @Throttle({ default: { limit: 3, ttl: 60_000 } })
+  @ApiOperation({
+    summary:
+      'Exporter toutes ses données en JSON (profil, projets, tâches, objectifs, notes, tags, activité)',
+  })
+  @ApiProduces('application/json')
+  @ApiOkResponse({
+    description: 'Fichier devmirror-export-AAAA-MM-JJ.json (Content-Disposition: attachment)',
+    schema: { type: 'object' },
+  })
+  async export(
+    @CurrentUser() current: AuthUser,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<unknown> {
+    const data = await this.exports.export(current.id);
+    res.setHeader('Content-Disposition', `attachment; filename="${exportFileName()}"`);
+    res.setHeader('Cache-Control', 'no-store');
+    return data;
   }
 
   @Patch('me')

@@ -5,6 +5,7 @@ import { JwtModule } from '@nestjs/jwt';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard.js';
 import { EnvironmentVariables } from '../../config/env.validation.js';
 import { UsersModule } from '../users/users.module.js';
+import { AccountController } from './account.controller.js';
 import { AuthController } from './auth.controller.js';
 import { AuthService } from './auth.service.js';
 import { OneTimeTokenService } from './one-time-token.service.js';
@@ -26,7 +27,7 @@ import { TokenService } from './token.service.js';
       }),
     }),
   ],
-  controllers: [AuthController],
+  controllers: [AuthController, AccountController],
   providers: [
     AuthService,
     PasswordService,
