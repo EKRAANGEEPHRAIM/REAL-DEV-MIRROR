@@ -11,15 +11,15 @@ import { AccountApi } from '../../../core/account/account.api';
 import { AuthStore } from '../../../core/auth/auth.store';
 import { apiErrorMessage } from '../../../core/http/api-error';
 import { FormAlert } from '../../../shared/ui-kit/form-alert';
+import { type TranslationKey, translate } from '../../../core/i18n/translate';
 
 /** Mêmes limites que l'API : vérifiées avant l'envoi pour un message immédiat. */
 export const AVATAR_MAX_BYTES = 2 * 1024 * 1024;
 export const AVATAR_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
 
 export function avatarFileError(file: File): string | null {
-  if (!AVATAR_TYPES.includes(file.type))
-    return 'Format non pris en charge : JPEG, PNG, WebP ou GIF.';
-  if (file.size > AVATAR_MAX_BYTES) return 'L’image dépasse 2 Mo.';
+  if (!AVATAR_TYPES.includes(file.type)) return translate('settings.profile.avatarType');
+  if (file.size > AVATAR_MAX_BYTES) return translate('settings.profile.avatarSize');
   return null;
 }
 
@@ -44,13 +44,13 @@ const FIELD_CLASSES =
     <section aria-labelledby="profile-heading" class="rounded-xl border p-5">
       <h2 id="profile-heading" class="flex items-center gap-2 text-lg font-semibold">
         <ng-icon name="lucideUserRound" aria-hidden="true" />
-        Profil
+        {{ t('settings.profile.title') }}
       </h2>
 
       <div class="mt-4 flex flex-wrap items-center gap-4">
         <hlm-avatar class="size-16 text-lg">
           @if (auth.user()?.avatarUrl; as url) {
-            <img hlmAvatarImage [src]="url" alt="Votre photo de profil" />
+            <img hlmAvatarImage [src]="url" [alt]="t('settings.profile.avatarAlt')" />
           }
           <span hlmAvatarFallback>{{ auth.initials() }}</span>
         </hlm-avatar>
@@ -78,7 +78,7 @@ const FIELD_CLASSES =
               } @else {
                 <ng-icon name="lucideImageUp" aria-hidden="true" />
               }
-              Changer la photo
+              {{ t('settings.profile.changeAvatar') }}
             </button>
             @if (auth.user()?.avatarUrl) {
               <button
@@ -90,11 +90,11 @@ const FIELD_CLASSES =
                 (click)="removeAvatar()"
               >
                 <ng-icon name="lucideTrash2" aria-hidden="true" />
-                Retirer
+                {{ t('settings.profile.removeAvatar') }}
               </button>
             }
           </div>
-          <p class="text-muted-foreground text-xs">JPEG, PNG, WebP ou GIF, 2 Mo au plus.</p>
+          <p class="text-muted-foreground text-xs">{{ t('settings.profile.avatarHint') }}</p>
         </div>
       </div>
       @if (avatarError(); as message) {
@@ -106,7 +106,7 @@ const FIELD_CLASSES =
           <dm-form-alert>{{ message }}</dm-form-alert>
         }
         <div class="flex flex-col gap-2">
-          <label hlmLabel for="profile-name">Nom *</label>
+          <label hlmLabel for="profile-name">{{ t('auth.name') }} *</label>
           <input
             hlmInput
             id="profile-name"
@@ -116,24 +116,24 @@ const FIELD_CLASSES =
             [attr.aria-invalid]="invalid('name')"
           />
           @if (invalid('name')) {
-            <p class="text-destructive text-sm">Le nom est obligatoire (80 caractères max).</p>
+            <p class="text-destructive text-sm">{{ t('settings.profile.nameError') }}</p>
           }
         </div>
         <div class="flex flex-col gap-2">
-          <label hlmLabel for="profile-bio">Bio</label>
+          <label hlmLabel for="profile-bio">{{ t('settings.profile.bio') }}</label>
           <textarea
             id="profile-bio"
             rows="3"
             maxlength="500"
             formControlName="bio"
-            placeholder="Quelques mots sur vous, vos technologies, ce que vous construisez…"
+            [placeholder]="t('settings.profile.bioPlaceholder')"
             [class]="fieldClasses"
           ></textarea>
         </div>
         <div class="grid gap-4 sm:grid-cols-3">
           @for (link of links; track link.key) {
             <div class="flex flex-col gap-2">
-              <label hlmLabel [for]="'profile-' + link.key">{{ link.label }}</label>
+              <label hlmLabel [for]="'profile-' + link.key">{{ t(link.label) }}</label>
               <input
                 hlmInput
                 type="url"
@@ -143,7 +143,7 @@ const FIELD_CLASSES =
                 [attr.aria-invalid]="invalid(link.key)"
               />
               @if (invalid(link.key)) {
-                <p class="text-destructive text-xs">Adresse http(s) attendue.</p>
+                <p class="text-destructive text-xs">{{ t('common.urlInvalid') }}</p>
               }
             </div>
           }
@@ -153,7 +153,7 @@ const FIELD_CLASSES =
             @if (saving()) {
               <ng-icon name="lucideLoader2" class="motion-safe:animate-spin" aria-hidden="true" />
             }
-            Enregistrer le profil
+            {{ t('settings.profile.save') }}
           </button>
         </div>
       </form>
@@ -161,15 +161,24 @@ const FIELD_CLASSES =
   `,
 })
 export class ProfileSettings {
+  protected readonly t = translate;
   protected readonly auth = inject(AuthStore);
   private readonly api = inject(AccountApi);
 
   protected readonly fieldClasses = FIELD_CLASSES;
-  protected readonly links = [
-    { key: 'github', label: 'GitHub', placeholder: 'https://github.com/…' },
-    { key: 'linkedin', label: 'LinkedIn', placeholder: 'https://linkedin.com/in/…' },
-    { key: 'website', label: 'Site', placeholder: 'https://…' },
-  ] as const;
+  protected readonly links: readonly {
+    key: 'github' | 'linkedin' | 'website';
+    label: TranslationKey;
+    placeholder: string;
+  }[] = [
+    { key: 'github', label: 'settings.profile.github', placeholder: 'https://github.com/…' },
+    {
+      key: 'linkedin',
+      label: 'settings.profile.linkedin',
+      placeholder: 'https://linkedin.com/in/…',
+    },
+    { key: 'website', label: 'settings.profile.website', placeholder: 'https://…' },
+  ];
 
   private readonly user = this.auth.user();
   protected readonly form = inject(NonNullableFormBuilder).group({
@@ -216,7 +225,7 @@ export class ProfileSettings {
           this.saving.set(false);
           this.auth.setUser(user);
           this.form.markAsPristine();
-          toast.success('Profil enregistré');
+          toast.success(translate('settings.profile.saved'));
         },
         error: (error: unknown) => {
           this.saving.set(false);
@@ -238,7 +247,7 @@ export class ProfileSettings {
       next: (user) => {
         this.avatarBusy.set(false);
         this.auth.setUser(user);
-        toast.success('Photo de profil mise à jour');
+        toast.success(translate('settings.profile.avatarUpdated'));
       },
       error: (error: unknown) => {
         this.avatarBusy.set(false);
@@ -256,7 +265,7 @@ export class ProfileSettings {
       next: () => {
         this.avatarBusy.set(false);
         this.auth.setUser({ ...user, avatarUrl: null });
-        toast.success('Photo de profil retirée');
+        toast.success(translate('settings.profile.avatarRemoved'));
       },
       error: (error: unknown) => {
         this.avatarBusy.set(false);

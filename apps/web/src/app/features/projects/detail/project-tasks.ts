@@ -13,6 +13,7 @@ import { TasksStore } from '../../tasks/data/tasks.store';
 import { TaskDialogs } from '../../tasks/form/task-dialogs';
 import type { TaskDialogResult } from '../../tasks/form/task-form-dialog';
 import { TaskRow } from '../../tasks/list/task-row';
+import { translate } from '../../../core/i18n/translate';
 
 export type ProjectTasksView = 'list' | 'board';
 
@@ -37,12 +38,12 @@ export type ProjectTasksView = 'list' | 'board';
     <section hlmCard aria-labelledby="tasks-title">
       <div hlmCardHeader class="gap-3">
         <div class="flex flex-wrap items-center justify-between gap-2">
-          <h2 hlmCardTitle id="tasks-title">Tâches</h2>
+          <h2 hlmCardTitle id="tasks-title">{{ t('titles.tasks') }}</h2>
           <div class="flex items-center gap-2">
             <div
               class="bg-muted flex rounded-lg p-0.5"
               role="group"
-              aria-label="Affichage des tâches"
+              [attr.aria-label]="t('tasks.view.label')"
             >
               <button
                 hlmBtn
@@ -52,7 +53,7 @@ export type ProjectTasksView = 'list' | 'board';
                 (click)="viewChange.emit('list')"
               >
                 <ng-icon name="lucideList" aria-hidden="true" />
-                Liste
+                {{ t('tasks.view.list') }}
               </button>
               <button
                 hlmBtn
@@ -62,12 +63,12 @@ export type ProjectTasksView = 'list' | 'board';
                 (click)="viewChange.emit('board')"
               >
                 <ng-icon name="lucideColumns3" aria-hidden="true" />
-                Kanban
+                {{ t('tasks.view.board') }}
               </button>
             </div>
             <button hlmBtn size="sm" (click)="create()">
               <ng-icon name="lucidePlus" aria-hidden="true" />
-              Nouvelle tâche
+              {{ t('tasks.new') }}
             </button>
           </div>
         </div>
@@ -75,10 +76,15 @@ export type ProjectTasksView = 'list' | 'board';
         <div class="flex flex-col gap-1.5">
           <p hlmCardDescription aria-live="polite">
             @if (progress().total) {
-              {{ progress().done }} terminée(s) sur {{ progress().total }} ·
-              {{ progress().percent }} %
+              {{
+                t('projects.detail.progress', {
+                  count: progress().done,
+                  total: progress().total,
+                  percent: progress().percent,
+                })
+              }}
             } @else if (loaded()) {
-              Aucune tâche pour l’instant.
+              {{ t('projects.detail.noTasks') }}
             }
           </p>
           <div
@@ -87,7 +93,7 @@ export type ProjectTasksView = 'list' | 'board';
             [attr.aria-valuenow]="progress().percent"
             aria-valuemin="0"
             aria-valuemax="100"
-            aria-label="Progression du projet"
+            [attr.aria-label]="t('projects.detail.progressLabel')"
           >
             <div
               class="bg-primary h-full rounded-full transition-all"
@@ -105,9 +111,14 @@ export type ProjectTasksView = 'list' | 'board';
             (created)="create($event)"
           />
         } @else if (tasks.status() === 'error') {
-          <dm-form-alert>{{ tasks.error() }}</dm-form-alert>
+          <div class="flex flex-col items-start gap-3">
+            <dm-form-alert>{{ tasks.error() }}</dm-form-alert>
+            <button hlmBtn variant="outline" size="sm" (click)="tasks.reload()">
+              {{ t('common.retry') }}
+            </button>
+          </div>
         } @else if (tasks.isInitialLoading()) {
-          <div class="flex flex-col gap-2" aria-busy="true" aria-label="Chargement des tâches">
+          <div class="flex flex-col gap-2" aria-busy="true" [attr.aria-label]="t('tasks.loading')">
             <hlm-skeleton class="h-14 w-full rounded-lg" />
             <hlm-skeleton class="h-14 w-full rounded-lg" />
           </div>
@@ -116,11 +127,11 @@ export type ProjectTasksView = 'list' | 'board';
             class="flex flex-col items-center gap-3 rounded-lg border border-dashed px-6 py-10 text-center"
           >
             <p class="text-muted-foreground text-sm">
-              Découpez ce projet en tâches pour suivre sa progression.
+              {{ t('projects.detail.emptyTasks') }}
             </p>
             <button hlmBtn variant="outline" (click)="create()">
               <ng-icon name="lucidePlus" aria-hidden="true" />
-              Ajouter une tâche
+              {{ t('tasks.add') }}
             </button>
           </div>
         } @else {
@@ -141,6 +152,7 @@ export type ProjectTasksView = 'list' | 'board';
   `,
 })
 export class ProjectTasks {
+  protected readonly t = translate;
   readonly projectId = input.required<string>();
   readonly view = input<ProjectTasksView>('list');
   readonly viewChange = output<ProjectTasksView>();
@@ -182,15 +194,15 @@ export class ProjectTasks {
   protected create(status?: Task['status']): void {
     this.dialogs.open(undefined, { projectId: this.projectId(), status }).subscribe((result) => {
       if (result?.type !== 'saved') return;
-      toast.success('Tâche créée');
+      toast.success(translate('tasks.toast.created'));
       this.refresh();
     });
   }
 
   protected edit(task: Task): void {
     this.dialogs.open(task).subscribe((result: TaskDialogResult | undefined) => {
-      if (result?.type === 'saved') toast.success('Tâche enregistrée');
-      if (result?.type === 'deleted') toast.success('Tâche supprimée');
+      if (result?.type === 'saved') toast.success(translate('tasks.toast.saved'));
+      if (result?.type === 'deleted') toast.success(translate('tasks.toast.deleted'));
       // La tâche a pu changer de statut, quitter le projet ou être supprimée.
       this.refresh();
     });

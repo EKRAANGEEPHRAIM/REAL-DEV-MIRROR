@@ -6,6 +6,7 @@ import { lucidePencil } from '@ng-icons/lucide';
 import { HlmButtonImports } from '@spartan-ng/helm/button';
 import { HlmCardImports } from '@spartan-ng/helm/card';
 import { TARGET_TONES, targetLabel } from '../goal-meta';
+import { translate } from '../../../core/i18n/translate';
 
 /** Jalons visibles avant « Voir les N autres ». */
 const VISIBLE_MILESTONES = 5;
@@ -27,15 +28,15 @@ const VISIBLE_MILESTONES = 5;
             variant="ghost"
             size="icon-sm"
             class="-me-2 -mt-1 shrink-0"
-            [attr.aria-label]="'Modifier « ' + g.title + ' »'"
+            [attr.aria-label]="t('goals.card.edit', { title: g.title })"
             (click)="editRequested.emit(g)"
           >
             <ng-icon name="lucidePencil" aria-hidden="true" />
           </button>
         </div>
-        @if (target(); as t) {
+        @if (target(); as due) {
           <span class="w-fit rounded-full px-2 py-0.5 text-xs font-medium" [class]="tone()">
-            {{ t.label }}
+            {{ due.label }}
           </span>
         }
         @if (g.description) {
@@ -48,9 +49,9 @@ const VISIBLE_MILESTONES = 5;
           <div class="text-muted-foreground flex justify-between text-xs">
             <span>
               @if (g.progress.total) {
-                {{ g.progress.done }}/{{ g.progress.total }} jalons
+                {{ t('goals.card.milestones', { done: g.progress.done, count: g.progress.total }) }}
               } @else {
-                Aucun jalon
+                {{ t('goals.card.noMilestones') }}
               }
             </span>
             <span>{{ g.progress.percent }} %</span>
@@ -61,7 +62,7 @@ const VISIBLE_MILESTONES = 5;
             [attr.aria-valuenow]="g.progress.percent"
             aria-valuemin="0"
             aria-valuemax="100"
-            [attr.aria-label]="'Progression de ' + g.title"
+            [attr.aria-label]="t('common.progressOf', { name: g.title })"
           >
             <div
               class="h-full rounded-full transition-all"
@@ -72,7 +73,10 @@ const VISIBLE_MILESTONES = 5;
         </div>
 
         @if (g.milestones.length) {
-          <ul class="flex flex-col gap-0.5" [attr.aria-label]="'Jalons de ' + g.title">
+          <ul
+            class="flex flex-col gap-0.5"
+            [attr.aria-label]="t('goals.card.milestonesOf', { title: g.title })"
+          >
             @for (milestone of visibleMilestones(); track milestone.id) {
               <li>
                 <label
@@ -100,7 +104,11 @@ const VISIBLE_MILESTONES = 5;
               [attr.aria-expanded]="expanded()"
               (click)="expanded.set(!expanded())"
             >
-              {{ expanded() ? 'Réduire' : 'Voir les ' + hiddenCount() + ' autres jalons' }}
+              {{
+                expanded()
+                  ? t('goals.card.collapse')
+                  : t('goals.card.showMore', { count: hiddenCount() })
+              }}
             </button>
           }
         }
@@ -127,6 +135,7 @@ const VISIBLE_MILESTONES = 5;
   `,
 })
 export class GoalCard {
+  protected readonly t = translate;
   readonly goal = input.required<Goal>();
   readonly milestoneToggled = output<{ goalId: string; milestoneId: string }>();
   readonly editRequested = output<Goal>();

@@ -15,6 +15,7 @@ import { BrnDialogRef, injectBrnDialogContext } from '@spartan-ng/brain/dialog';
 import { HlmButton } from '@spartan-ng/helm/button';
 
 import { classes } from '@spartan-ng/helm/utils';
+import { translate } from '../../../../../core/i18n/translate';
 import { HlmDialogClose } from './hlm-dialog-close';
 
 type HlmDialogContentContext = {
@@ -42,7 +43,7 @@ type HlmDialogContentContext = {
 
     @if (showCloseButton()) {
       <button hlmBtn variant="ghost" size="icon-sm" class="absolute end-4 top-4" hlmDialogClose>
-        <span class="sr-only">{{ closeLabel() }}</span>
+        <span class="sr-only">{{ closeLabel() ?? t('common.close') }}</span>
         <ng-icon name="lucideX" />
       </button>
     }
@@ -60,7 +61,8 @@ export class HlmDialogContent {
       transform: booleanAttribute,
     },
   );
-  public readonly closeLabel = input<string>(this._dialogContext?.$closeLabel ?? 'Close');
+  public readonly closeLabel = input<string | undefined>(this._dialogContext?.$closeLabel);
+  protected readonly t = translate;
 
   public readonly state = computed(() => this._dialogRef?.state() ?? 'closed');
 

@@ -14,6 +14,7 @@ import { HlmCardImports } from '@spartan-ng/helm/card';
 import { AuthApi } from '../../../core/auth/auth.api';
 import { AuthStore } from '../../../core/auth/auth.store';
 import { apiErrorMessage } from '../../../core/http/api-error';
+import { translate } from '../../../core/i18n/translate';
 
 type Status = 'verifying' | 'verified' | 'failed';
 
@@ -33,7 +34,7 @@ type Status = 'verifying' | 'verified' | 'failed';
               class="text-muted-foreground mb-2 text-3xl motion-safe:animate-spin"
               aria-hidden="true"
             />
-            <h1 hlmCardTitle class="text-xl">Vérification en cours…</h1>
+            <h1 hlmCardTitle class="text-xl">{{ t('auth.verify.pending') }}</h1>
           </div>
         }
         @case ('verified') {
@@ -43,8 +44,8 @@ type Status = 'verifying' | 'verified' | 'failed';
               class="mb-2 text-3xl text-emerald-600"
               aria-hidden="true"
             />
-            <h1 hlmCardTitle class="text-xl">Adresse email confirmée</h1>
-            <p hlmCardDescription>Merci, votre compte est sécurisé.</p>
+            <h1 hlmCardTitle class="text-xl">{{ t('auth.verify.doneTitle') }}</h1>
+            <p hlmCardDescription>{{ t('auth.verify.doneText') }}</p>
           </div>
           <div hlmCardFooter>
             <a
@@ -52,7 +53,7 @@ type Status = 'verifying' | 'verified' | 'failed';
               [routerLink]="store.isAuthenticated() ? '/dashboard' : '/login'"
               class="w-full"
             >
-              {{ store.isAuthenticated() ? 'Aller au tableau de bord' : 'Se connecter' }}
+              {{ store.isAuthenticated() ? t('auth.verify.toDashboard') : t('auth.login.submit') }}
             </a>
           </div>
         }
@@ -63,20 +64,16 @@ type Status = 'verifying' | 'verified' | 'failed';
               class="text-destructive mb-2 text-3xl"
               aria-hidden="true"
             />
-            <h1 hlmCardTitle class="text-xl">Lien invalide ou expiré</h1>
-            <p hlmCardDescription>
-              {{ error() }} Les liens sont valables 1 heure et ne servent qu’une fois.
-            </p>
+            <h1 hlmCardTitle class="text-xl">{{ t('auth.verify.failedTitle') }}</h1>
+            <p hlmCardDescription>{{ error() }} {{ t('auth.verify.failedHint') }}</p>
           </div>
           <div hlmCardFooter>
             @if (store.isAuthenticated()) {
-              <a hlmBtn routerLink="/dashboard" class="w-full"
-                >Renvoyer un lien depuis l’application</a
-              >
+              <a hlmBtn routerLink="/dashboard" class="w-full">{{
+                t('auth.verify.resendFromApp')
+              }}</a>
             } @else {
-              <a hlmBtn routerLink="/login" class="w-full"
-                >Se connecter pour recevoir un nouveau lien</a
-              >
+              <a hlmBtn routerLink="/login" class="w-full">{{ t('auth.verify.loginForLink') }}</a>
             }
           </div>
         }
@@ -85,6 +82,7 @@ type Status = 'verifying' | 'verified' | 'failed';
   `,
 })
 export class VerifyEmailPage implements OnInit {
+  protected readonly t = translate;
   private readonly api = inject(AuthApi);
   protected readonly store = inject(AuthStore);
 
@@ -97,7 +95,7 @@ export class VerifyEmailPage implements OnInit {
   ngOnInit(): void {
     const token = this.token();
     if (!token) {
-      this.fail('Ce lien est incomplet.');
+      this.fail(translate('auth.verify.incomplete'));
       return;
     }
     this.api.verifyEmail({ token }).subscribe({
@@ -105,7 +103,7 @@ export class VerifyEmailPage implements OnInit {
         this.store.markEmailVerified();
         this.status.set('verified');
       },
-      error: (error: unknown) => this.fail(apiErrorMessage(error, 'La vérification a échoué.')),
+      error: (error: unknown) => this.fail(apiErrorMessage(error, translate('auth.verify.failed'))),
     });
   }
 

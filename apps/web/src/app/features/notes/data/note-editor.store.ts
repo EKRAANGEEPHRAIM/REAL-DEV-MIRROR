@@ -14,6 +14,7 @@ import { rxMethod } from '@ngrx/signals/rxjs-interop';
 import { toast } from '@spartan-ng/brain/sonner';
 import { concatMap, debounce, EMPTY, filter, pipe, switchMap, tap, timer } from 'rxjs';
 import { apiErrorMessage } from '../../../core/http/api-error';
+import { translate } from '../../../core/i18n/translate';
 import { NotesApi } from './notes.api';
 
 /** Délai sans frappe avant la sauvegarde automatique. */
@@ -189,8 +190,7 @@ export const NoteEditorStore = signalStore(
         const body = { ...inflight, ...takeDirty() };
         if (!id || (body.title === undefined && body.content === undefined)) return;
         api.update(id, body).subscribe({
-          error: () =>
-            toast.error('Les dernières modifications de la note n’ont pas été enregistrées'),
+          error: () => toast.error(translate('notes.editor.leaveFailed')),
         });
       },
     };

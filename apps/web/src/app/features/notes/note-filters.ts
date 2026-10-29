@@ -1,3 +1,4 @@
+import { translate } from '../../core/i18n/translate';
 import type { NoteListQuery } from '@devmirror/api-client';
 
 export const NOTES_PAGE_SIZE = 24;
@@ -7,9 +8,9 @@ export const NOTES_PAGE_SIZE = 24;
  * pendant une recherche, dernières modifiées sinon. Les épinglées restent toujours en tête.
  */
 export const NOTE_SORTS = [
-  { value: 'updatedAt:desc', label: 'Récemment modifiées' },
-  { value: 'createdAt:desc', label: 'Récemment créées' },
-  { value: 'title:asc', label: 'Titre (A → Z)' },
+  { value: 'updatedAt:desc', label: 'notes.sort.updated' },
+  { value: 'createdAt:desc', label: 'notes.sort.created' },
+  { value: 'title:asc', label: 'notes.sort.title' },
 ] as const;
 
 export type NoteSort = (typeof NOTE_SORTS)[number]['value'];
@@ -59,5 +60,5 @@ export function hasActiveFilters(filters: NoteFilters): boolean {
 
 /** Libellé de l'ordre par défaut, qui change pendant une recherche. */
 export function defaultSortLabel(filters: NoteFilters): string {
-  return filters.q ? 'Pertinence' : 'Récemment modifiées';
+  return translate(filters.q ? 'notes.sort.relevance' : 'notes.sort.updated');
 }

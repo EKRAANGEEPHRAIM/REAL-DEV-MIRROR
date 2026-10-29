@@ -2,12 +2,13 @@ import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { RouterLink, RouterOutlet } from '@angular/router';
 import { NgIcon, provideIcons } from '@ng-icons/core';
 import { lucideScanFace } from '@ng-icons/lucide';
+import { LanguageSwitcher } from '../../core/i18n/language-switcher';
 import { ThemeToggle } from '../../core/theme/theme-toggle';
 
 /** Mise en page des pages publiques d'authentification : carte centrée, logo, thème. */
 @Component({
   selector: 'dm-auth-layout',
-  imports: [RouterOutlet, RouterLink, NgIcon, ThemeToggle],
+  imports: [RouterOutlet, RouterLink, NgIcon, ThemeToggle, LanguageSwitcher],
   providers: [provideIcons({ lucideScanFace })],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -17,7 +18,10 @@ import { ThemeToggle } from '../../core/theme/theme-toggle';
           <ng-icon name="lucideScanFace" class="text-primary text-xl" aria-hidden="true" />
           DevMirror
         </a>
-        <dm-theme-toggle />
+        <div class="flex items-center gap-2">
+          <dm-language-switcher />
+          <dm-theme-toggle />
+        </div>
       </header>
       <main class="flex flex-1 items-start justify-center px-4 pt-8 pb-16 sm:items-center sm:pt-0">
         <div class="w-full max-w-sm">

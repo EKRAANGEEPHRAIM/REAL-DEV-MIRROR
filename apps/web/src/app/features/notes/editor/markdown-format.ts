@@ -1,3 +1,5 @@
+import { type TranslationKey, translate } from '../../../core/i18n/translate';
+
 /** Mise en forme appliquée à la sélection d'un <textarea> Markdown. */
 export type MarkdownFormat =
   'bold' | 'italic' | 'code' | 'link' | 'heading' | 'list' | 'quote' | 'codeblock';
@@ -9,10 +11,11 @@ export interface TextEdit {
   end: number;
 }
 
-const INLINE: Partial<Record<MarkdownFormat, { marker: string; placeholder: string }>> = {
-  bold: { marker: '**', placeholder: 'texte en gras' },
-  italic: { marker: '_', placeholder: 'texte en italique' },
-  code: { marker: '`', placeholder: 'code' },
+/** placeholder : clé du texte d'exemple inséré quand rien n'est sélectionné (dans la langue courante). */
+const INLINE: Partial<Record<MarkdownFormat, { marker: string; placeholder: TranslationKey }>> = {
+  bold: { marker: '**', placeholder: 'notes.format.sample.bold' },
+  italic: { marker: '_', placeholder: 'notes.format.sample.italic' },
+  code: { marker: '`', placeholder: 'notes.format.sample.code' },
 };
 
 const LINE_PREFIX: Partial<Record<MarkdownFormat, string>> = {
@@ -23,18 +26,18 @@ const LINE_PREFIX: Partial<Record<MarkdownFormat, string>> = {
 
 export const FORMAT_ACTIONS: readonly {
   format: MarkdownFormat;
-  label: string;
+  label: TranslationKey;
   icon: string;
   shortcut?: string;
 }[] = [
-  { format: 'heading', label: 'Titre', icon: 'lucideHeading2' },
-  { format: 'bold', label: 'Gras', icon: 'lucideBold', shortcut: 'Ctrl+B' },
-  { format: 'italic', label: 'Italique', icon: 'lucideItalic', shortcut: 'Ctrl+I' },
-  { format: 'code', label: 'Code en ligne', icon: 'lucideCode' },
-  { format: 'codeblock', label: 'Bloc de code', icon: 'lucideSquareCode' },
-  { format: 'link', label: 'Lien', icon: 'lucideLink' },
-  { format: 'list', label: 'Liste', icon: 'lucideList' },
-  { format: 'quote', label: 'Citation', icon: 'lucideQuote' },
+  { format: 'heading', label: 'notes.format.heading', icon: 'lucideHeading2' },
+  { format: 'bold', label: 'notes.format.bold', icon: 'lucideBold', shortcut: 'Ctrl+B' },
+  { format: 'italic', label: 'notes.format.italic', icon: 'lucideItalic', shortcut: 'Ctrl+I' },
+  { format: 'code', label: 'notes.format.code', icon: 'lucideCode' },
+  { format: 'codeblock', label: 'notes.format.codeblock', icon: 'lucideSquareCode' },
+  { format: 'link', label: 'notes.format.link', icon: 'lucideLink' },
+  { format: 'list', label: 'notes.format.list', icon: 'lucideList' },
+  { format: 'quote', label: 'notes.format.quote', icon: 'lucideQuote' },
 ];
 
 /**
@@ -49,13 +52,13 @@ export function applyFormat(
 ): TextEdit {
   const selected = text.slice(start, end);
   const inline = INLINE[format];
-  if (inline) return toggleInline(text, start, end, inline.marker, inline.placeholder);
+  if (inline) return toggleInline(text, start, end, inline.marker, translate(inline.placeholder));
 
   const prefix = LINE_PREFIX[format];
   if (prefix) return toggleLinePrefix(text, start, end, prefix);
 
   if (format === 'link') {
-    const label = selected || 'texte du lien';
+    const label = selected || translate('notes.format.sample.link');
     const inserted = `[${label}](https://)`;
     const urlStart = start + label.length + 3;
     return {
@@ -68,7 +71,7 @@ export function applyFormat(
   // Bloc de code : sur ses propres lignes.
   const before = start > 0 && text[start - 1] !== '\n' ? '\n' : '';
   const after = end < text.length && text[end] !== '\n' ? '\n' : '';
-  const body = selected || 'code';
+  const body = selected || translate('notes.format.sample.code');
   const inserted = `${before}\`\`\`\n${body}\n\`\`\`${after}`;
   const bodyStart = start + before.length + 4;
   return {

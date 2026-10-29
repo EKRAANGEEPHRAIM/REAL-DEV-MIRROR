@@ -3,10 +3,12 @@ import { ChangeDetectionStrategy, Component, DOCUMENT, inject } from '@angular/c
 import { RouterLink, RouterOutlet } from '@angular/router';
 import { NgIcon, provideIcons } from '@ng-icons/core';
 import { lucideMenu, lucideScanFace, lucideSearch } from '@ng-icons/lucide';
-import { CommandPalette } from '../command-palette/command-palette';
-import { ThemePreferenceSync } from '../theme/theme-preference-sync';
 import { HlmButtonImports } from '@spartan-ng/helm/button';
 import { HlmSheetImports } from '@spartan-ng/helm/sheet';
+import { CommandPalette } from '../command-palette/command-palette';
+import { LanguagePreferenceSync } from '../i18n/language-preference-sync';
+import { translate } from '../i18n/translate';
+import { ThemePreferenceSync } from '../theme/theme-preference-sync';
 import { ThemeToggle } from '../theme/theme-toggle';
 import { EmailVerificationBanner } from './email-verification-banner';
 import { MAIN_NAV, SECONDARY_NAV } from './navigation';
@@ -36,7 +38,7 @@ import { UserMenu } from './user-menu';
       href="#contenu"
       class="bg-primary text-primary-foreground sr-only z-50 rounded-md px-3 py-2 focus:not-sr-only focus:fixed focus:top-2 focus:left-2"
     >
-      Aller au contenu
+      {{ t('layout.skipToContent') }}
     </a>
 
     <div class="bg-background text-foreground flex min-h-dvh">
@@ -45,8 +47,8 @@ import { UserMenu } from './user-menu';
       >
         <ng-container *ngTemplateOutlet="brand" />
         <div class="flex flex-1 flex-col justify-between gap-4 px-3 py-4">
-          <dm-sidebar-nav [items]="mainNav" label="Navigation principale" />
-          <dm-sidebar-nav [items]="secondaryNav" label="Compte" />
+          <dm-sidebar-nav [items]="mainNav" [label]="t('layout.mainNav')" />
+          <dm-sidebar-nav [items]="secondaryNav" [label]="t('layout.accountNav')" />
         </div>
       </aside>
 
@@ -62,22 +64,22 @@ import { UserMenu } from './user-menu';
               variant="ghost"
               size="icon"
               class="md:hidden"
-              aria-label="Ouvrir le menu"
+              [attr.aria-label]="t('layout.openMenu')"
             >
               <ng-icon name="lucideMenu" class="text-lg" />
             </button>
             <hlm-sheet-content *hlmSheetPortal class="w-72 gap-0 p-0">
-              <h2 hlmSheetTitle class="sr-only">Menu</h2>
+              <h2 hlmSheetTitle class="sr-only">{{ t('layout.menu') }}</h2>
               <ng-container *ngTemplateOutlet="brand" />
               <div class="flex flex-col gap-4 px-3 py-4">
                 <dm-sidebar-nav
                   [items]="mainNav"
-                  label="Navigation principale"
+                  [label]="t('layout.mainNav')"
                   (navigated)="mobileMenu.close()"
                 />
                 <dm-sidebar-nav
                   [items]="secondaryNav"
-                  label="Compte"
+                  [label]="t('layout.accountNav')"
                   (navigated)="mobileMenu.close()"
                 />
               </div>
@@ -93,7 +95,7 @@ import { UserMenu } from './user-menu';
             (click)="palette.open()"
           >
             <ng-icon name="lucideSearch" aria-hidden="true" />
-            <span class="max-md:sr-only">Rechercher…</span>
+            <span class="max-md:sr-only">{{ t('layout.search') }}</span>
             <kbd
               class="bg-muted ms-auto hidden rounded border px-1.5 font-sans text-[0.7rem] md:inline"
               aria-hidden="true"
@@ -127,6 +129,7 @@ export class Shell {
   protected readonly mainNav = MAIN_NAV;
   protected readonly secondaryNav = SECONDARY_NAV;
   protected readonly palette = inject(CommandPalette);
+  protected readonly t = translate;
   /** ⌘K sur Mac, Ctrl K ailleurs. */
   protected readonly shortcutLabel = /Mac|iPhone|iPad/.test(
     inject(DOCUMENT).defaultView?.navigator.platform ?? '',
@@ -135,8 +138,9 @@ export class Shell {
     : 'Ctrl K';
 
   constructor() {
-    // Le thème suit le compte : préférence appliquée à l'ouverture, changements enregistrés.
+    // Thème et langue suivent le compte : préférences appliquées à l'ouverture, changements enregistrés.
     inject(ThemePreferenceSync);
+    inject(LanguagePreferenceSync);
   }
 
   /** Ctrl+K / ⌘K ouvre ou ferme la palette, où que soit le focus. */

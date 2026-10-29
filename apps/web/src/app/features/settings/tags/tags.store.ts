@@ -6,6 +6,7 @@ import { removeEntity, setAllEntities, setEntity, withEntities } from '@ngrx/sig
 import { rxMethod } from '@ngrx/signals/rxjs-interop';
 import { type Observable, pipe, switchMap, tap } from 'rxjs';
 import { apiErrorMessage } from '../../../core/http/api-error';
+import { compareText } from '../../../core/i18n/format';
 import { TagsApi } from '../../../shared/data/tags.api';
 
 interface TagsState {
@@ -13,7 +14,7 @@ interface TagsState {
   error: string | null;
 }
 
-const byName = (a: Tag, b: Tag) => a.name.localeCompare(b.name, 'fr');
+const byName = (a: Tag, b: Tag) => compareText(a.name, b.name);
 
 /**
  * Tags de l'utilisateur pour la page Paramètres. Les mutations renvoient l'Observable de

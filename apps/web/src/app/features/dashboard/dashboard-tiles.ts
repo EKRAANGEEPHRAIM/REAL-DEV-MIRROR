@@ -1,4 +1,5 @@
 import type { StatsOverview } from '@devmirror/api-client';
+import { translate } from '../../core/i18n/translate';
 
 export type TileTone = 'default' | 'positive' | 'warning';
 
@@ -15,23 +16,21 @@ export interface DashboardTile {
   link?: { commands: string[]; queryParams?: Record<string, string> };
 }
 
-export function plural(count: number, singular: string, pluralForm = `${singular}s`): string {
-  return count > 1 ? pluralForm : singular;
-}
-
 /** « +2 par rapport à la semaine dernière », « 1 de moins… », « Autant que… ». */
 export function weekComparison(current: number, previous: number): string {
   const diff = current - previous;
-  if (diff === 0)
-    return previous === 0
-      ? 'Aucune la semaine dernière non plus'
-      : 'Autant que la semaine dernière';
+  if (diff === 0) {
+    return translate(previous === 0 ? 'dashboard.week.noneEither' : 'dashboard.week.same');
+  }
   return diff > 0
-    ? `+${diff} par rapport à la semaine dernière`
-    : `${-diff} de moins que la semaine dernière`;
+    ? translate('dashboard.week.more', { count: diff })
+    : translate('dashboard.week.fewer', { count: -diff });
 }
 
-/** Les quatre tuiles du haut du tableau de bord, calculées depuis /stats/overview. */
+/**
+ * Les quatre tuiles du haut du tableau de bord, calculées depuis /stats/overview. Les libellés
+ * passent par translate : appelée dans un computed, la fonction suit la langue courante.
+ */
 export function buildTiles(overview: StatsOverview): DashboardTile[] {
   const { indicators, tasksCompletedPerWeek, projectsByStatus } = overview;
   const thisWeek = indicators.tasksCompletedThisWeek;
@@ -44,18 +43,18 @@ export function buildTiles(overview: StatsOverview): DashboardTile[] {
   return [
     {
       id: 'projects',
-      label: 'Projets actifs',
+      label: translate('dashboard.tiles.projects'),
       value: indicators.activeProjects,
       detail: projects
-        ? `Sur ${projects} ${plural(projects, 'projet')} non archivé${projects > 1 ? 's' : ''}`
-        : 'Aucun projet pour l’instant',
+        ? translate('dashboard.tiles.projectsDetail', { count: projects })
+        : translate('dashboard.tiles.noProjects'),
       tone: 'default',
       icon: 'lucideFolderKanban',
       link: { commands: ['/projects'], queryParams: { status: 'IN_PROGRESS' } },
     },
     {
       id: 'tasks',
-      label: 'Tâches terminées cette semaine',
+      label: translate('dashboard.tiles.tasks'),
       value: thisWeek,
       detail: weekComparison(thisWeek, lastWeek),
       tone: thisWeek > lastWeek ? 'positive' : 'default',
@@ -64,33 +63,35 @@ export function buildTiles(overview: StatsOverview): DashboardTile[] {
     },
     {
       id: 'goals',
-      label: 'Objectifs en cours',
+      label: translate('dashboard.tiles.goals'),
       value: indicators.activeGoals,
       detail: indicators.completedGoals
-        ? `${indicators.completedGoals} ${plural(indicators.completedGoals, 'atteint')}`
-        : 'Aucun objectif atteint pour l’instant',
+        ? translate('dashboard.tiles.goalsDetail', { count: indicators.completedGoals })
+        : translate('dashboard.tiles.noGoals'),
       tone: 'default',
       icon: 'lucideTarget',
       link: { commands: ['/goals'], queryParams: { state: 'active' } },
     },
     {
       id: 'streak',
-      label: 'Série de jours actifs',
+      label: translate('dashboard.tiles.streak'),
       value: streak,
-      unit: plural(streak, 'jour'),
+      unit: translate('dashboard.tiles.days', { count: streak }),
       detail:
         streak === 0
-          ? 'Une action aujourd’hui lance une nouvelle série'
-          : `Record : ${indicators.longestStreak} ${plural(indicators.longestStreak, 'jour')}`,
+          ? translate('dashboard.tiles.streakStart')
+          : translate('dashboard.tiles.record', { count: indicators.longestStreak }),
       tone: streak > 0 && streak >= indicators.longestStreak ? 'positive' : 'default',
       icon: 'lucideFlame',
     },
   ];
 }
 
-/** « Bonjour » jusqu'à 18 h, « Bonsoir » ensuite. */
+/** « Bonjour » jusqu'à 18 h, « Bonsoir » ensuite (« Good morning / afternoon / evening » en anglais). */
 export function greeting(now: Date = new Date()): string {
-  return now.getHours() >= 18 ? 'Bonsoir' : 'Bonjour';
+  const hour = now.getHours();
+  if (hour >= 18) return translate('dashboard.greeting.evening');
+  return translate(hour < 12 ? 'dashboard.greeting.morning' : 'dashboard.greeting.afternoon');
 }
 
 /** Prénom pour le message d'accueil : premier mot du nom. */

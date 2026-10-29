@@ -7,6 +7,7 @@ import { rxMethod } from '@ngrx/signals/rxjs-interop';
 import { toast } from '@spartan-ng/brain/sonner';
 import { mergeMap, pipe, switchMap, tap } from 'rxjs';
 import { apiErrorMessage } from '../../../core/http/api-error';
+import { translate } from '../../../core/i18n/translate';
 import { withMilestones } from '../goal-meta';
 import { GoalsApi } from './goals.api';
 
@@ -85,7 +86,7 @@ export const GoalsStore = signalStore(
             const done = !milestone.done;
             const after = setMilestoneDone(goalId, milestoneId, done);
             if (after?.completed && !before.completed) {
-              toast.success(`Objectif « ${before.title} » atteint`);
+              toast.success(translate('goals.toast.completed', { name: before.title }));
             }
             return api.updateMilestone(goalId, milestoneId, { done }).pipe(
               tapResponse({

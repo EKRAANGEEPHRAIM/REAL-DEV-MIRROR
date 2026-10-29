@@ -6,6 +6,7 @@ import { rxMethod } from '@ngrx/signals/rxjs-interop';
 import { toast } from '@spartan-ng/brain/sonner';
 import { exhaustMap, mergeMap, pipe, tap } from 'rxjs';
 import { apiErrorMessage } from '../../../core/http/api-error';
+import { translate } from '../../../core/i18n/translate';
 import { TasksApi } from '../../tasks/data/tasks.api';
 import { buildTiles } from '../dashboard-tiles';
 import { StatsApi } from './stats.api';
@@ -71,7 +72,7 @@ export const DashboardStore = signalStore(
             return tasks.update(task.id, { status: 'DONE' }).pipe(
               tapResponse({
                 next: () => {
-                  toast.success(`« ${task.title} » terminée`);
+                  toast.success(translate('dashboard.dueSoon.completed', { title: task.title }));
                   load();
                 },
                 error: (error) => {

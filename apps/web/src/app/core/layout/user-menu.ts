@@ -6,6 +6,7 @@ import { HlmAvatarImports } from '@spartan-ng/helm/avatar';
 import { HlmButtonImports } from '@spartan-ng/helm/button';
 import { HlmDropdownMenuImports } from '@spartan-ng/helm/dropdown-menu';
 import { AuthStore } from '../auth/auth.store';
+import { translate } from '../i18n/translate';
 
 /** Avatar de l'utilisateur connecté et son menu (paramètres, déconnexion). */
 @Component({
@@ -21,7 +22,7 @@ import { AuthStore } from '../auth/auth.store';
       class="rounded-full"
       [hlmDropdownMenuTrigger]="menu"
       align="end"
-      [attr.aria-label]="'Menu du compte de ' + (store.user()?.name ?? '')"
+      [attr.aria-label]="t('layout.accountMenu', { name: store.user()?.name ?? '' })"
     >
       <hlm-avatar size="sm">
         @if (store.user()?.avatarUrl; as url) {
@@ -42,12 +43,12 @@ import { AuthStore } from '../auth/auth.store';
         <hlm-dropdown-menu-separator />
         <a hlmDropdownMenuItem routerLink="/settings">
           <ng-icon name="lucideSettings" aria-hidden="true" />
-          Paramètres
+          {{ t('layout.settings') }}
         </a>
         <hlm-dropdown-menu-separator />
         <button hlmDropdownMenuItem variant="destructive" (triggered)="store.logout()">
           <ng-icon name="lucideLogOut" aria-hidden="true" />
-          Se déconnecter
+          {{ t('layout.logout') }}
         </button>
       </hlm-dropdown-menu>
     </ng-template>
@@ -55,4 +56,5 @@ import { AuthStore } from '../auth/auth.store';
 })
 export class UserMenu {
   protected readonly store = inject(AuthStore);
+  protected readonly t = translate;
 }

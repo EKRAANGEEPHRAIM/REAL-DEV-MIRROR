@@ -5,6 +5,7 @@ import { AuthLayout } from './features/auth/auth-layout';
 
 // Ordre important : les deux layouts ont un chemin vide. Le shell vient en premier pour que
 // « / » y soit résolu ; un layout à chemin vide sans enfant correspondant s'afficherait vide.
+// title : clé de traduction, traduite par I18nTitleStrategy (« Projets · DevMirror »).
 export const routes: Routes = [
   {
     path: '',
@@ -14,46 +15,46 @@ export const routes: Routes = [
       { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
       {
         path: 'dashboard',
-        title: 'Tableau de bord · DevMirror',
+        title: 'titles.dashboard',
         loadComponent: () =>
           import('./features/dashboard/dashboard.page').then((m) => m.DashboardPage),
       },
       {
         path: 'projects',
-        title: 'Projets · DevMirror',
+        title: 'titles.projects',
         loadComponent: () =>
           import('./features/projects/list/projects.page').then((m) => m.ProjectsPage),
       },
       {
         path: 'projects/:id',
-        title: 'Projet · DevMirror',
+        title: 'titles.project',
         loadComponent: () =>
           import('./features/projects/detail/project-detail.page').then((m) => m.ProjectDetailPage),
       },
       {
         path: 'tasks',
-        title: 'Tâches · DevMirror',
+        title: 'titles.tasks',
         loadComponent: () => import('./features/tasks/list/tasks.page').then((m) => m.TasksPage),
       },
       {
         path: 'goals',
-        title: 'Objectifs · DevMirror',
+        title: 'titles.goals',
         loadComponent: () => import('./features/goals/list/goals.page').then((m) => m.GoalsPage),
       },
       {
         path: 'notes',
-        title: 'Notes · DevMirror',
+        title: 'titles.notes',
         loadComponent: () => import('./features/notes/list/notes.page').then((m) => m.NotesPage),
       },
       {
         path: 'notes/:id',
-        title: 'Note · DevMirror',
+        title: 'titles.note',
         loadComponent: () =>
           import('./features/notes/editor/note-editor.page').then((m) => m.NoteEditorPage),
       },
       {
         path: 'settings',
-        title: 'Paramètres · DevMirror',
+        title: 'titles.settings',
         loadComponent: () =>
           import('./features/settings/settings.page').then((m) => m.SettingsPage),
       },
@@ -65,20 +66,20 @@ export const routes: Routes = [
     children: [
       {
         path: 'login',
-        title: 'Connexion · DevMirror',
+        title: 'titles.login',
         canActivate: [guestGuard],
         loadComponent: () => import('./features/auth/login/login.page').then((m) => m.LoginPage),
       },
       {
         path: 'register',
-        title: 'Créer un compte · DevMirror',
+        title: 'titles.register',
         canActivate: [guestGuard],
         loadComponent: () =>
           import('./features/auth/register/register.page').then((m) => m.RegisterPage),
       },
       {
         path: 'forgot-password',
-        title: 'Mot de passe oublié · DevMirror',
+        title: 'titles.forgotPassword',
         canActivate: [guestGuard],
         loadComponent: () =>
           import('./features/auth/forgot-password/forgot-password.page').then(
@@ -88,7 +89,7 @@ export const routes: Routes = [
       // Liens reçus par email : accessibles même avec une session ouverte dans ce navigateur.
       {
         path: 'reset-password',
-        title: 'Nouveau mot de passe · DevMirror',
+        title: 'titles.resetPassword',
         loadComponent: () =>
           import('./features/auth/reset-password/reset-password.page').then(
             (m) => m.ResetPasswordPage,
@@ -96,7 +97,7 @@ export const routes: Routes = [
       },
       {
         path: 'verify-email',
-        title: 'Vérification de l’email · DevMirror',
+        title: 'titles.verifyEmail',
         loadComponent: () =>
           import('./features/auth/verify-email/verify-email.page').then((m) => m.VerifyEmailPage),
       },

@@ -25,6 +25,7 @@ import {
 } from '../project-filters';
 import { ProjectCard } from './project-card';
 import { ProjectFiltersBar } from './project-filters-bar';
+import { translate } from '../../../core/i18n/translate';
 
 @Component({
   selector: 'dm-projects-page',
@@ -43,7 +44,7 @@ import { ProjectFiltersBar } from './project-filters-bar';
   template: `
     <header class="mb-6 flex flex-wrap items-baseline justify-between gap-2">
       <h1 class="text-2xl font-semibold tracking-tight">
-        Projets
+        {{ t('titles.projects') }}
         @if (store.status() === 'loaded') {
           <span class="text-muted-foreground ms-1 text-base font-normal"
             >({{ store.total() }})</span
@@ -52,7 +53,7 @@ import { ProjectFiltersBar } from './project-filters-bar';
       </h1>
       <button hlmBtn (click)="create()">
         <ng-icon name="lucidePlus" aria-hidden="true" />
-        Nouveau projet
+        {{ t('projects.new') }}
       </button>
     </header>
 
@@ -70,14 +71,14 @@ import { ProjectFiltersBar } from './project-filters-bar';
         <dm-form-alert>{{ store.error() }}</dm-form-alert>
         <button hlmBtn variant="outline" (click)="reload()">
           <ng-icon name="lucideRefreshCw" aria-hidden="true" />
-          Réessayer
+          {{ t('common.retry') }}
         </button>
       </div>
     } @else if (store.isInitialLoading()) {
       <div
         class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3"
         aria-busy="true"
-        aria-label="Chargement des projets"
+        [attr.aria-label]="t('projects.loading')"
       >
         @for (i of skeletons; track i) {
           <div hlmCard class="gap-4">
@@ -98,12 +99,12 @@ import { ProjectFiltersBar } from './project-filters-bar';
       >
         @if (filtered()) {
           <ng-icon name="lucideSearchX" class="text-muted-foreground text-4xl" aria-hidden="true" />
-          <h2 class="text-lg font-medium">Aucun projet ne correspond</h2>
+          <h2 class="text-lg font-medium">{{ t('projects.empty.filteredTitle') }}</h2>
           <p class="text-muted-foreground max-w-sm text-sm">
-            Essayez d’autres filtres ou une autre recherche.
+            {{ t('projects.empty.filteredText') }}
           </p>
           <button hlmBtn variant="outline" (click)="resetFilters()">
-            Réinitialiser les filtres
+            {{ t('common.resetFilters') }}
           </button>
         } @else {
           <ng-icon
@@ -111,13 +112,13 @@ import { ProjectFiltersBar } from './project-filters-bar';
             class="text-muted-foreground text-4xl"
             aria-hidden="true"
           />
-          <h2 class="text-lg font-medium">Aucun projet pour l’instant</h2>
+          <h2 class="text-lg font-medium">{{ t('projects.empty.title') }}</h2>
           <p class="text-muted-foreground max-w-sm text-sm">
-            Créez votre premier projet pour suivre ses tâches, ses notes et sa progression.
+            {{ t('projects.empty.text') }}
           </p>
           <button hlmBtn (click)="create()">
             <ng-icon name="lucidePlus" aria-hidden="true" />
-            Créer un projet
+            {{ t('projects.empty.cta') }}
           </button>
         }
       </section>
@@ -139,8 +140,7 @@ import { ProjectFiltersBar } from './project-filters-bar';
             [page]="meta.page"
             [totalPages]="meta.totalPages"
             [total]="meta.total"
-            itemLabel="projet"
-            itemsLabel="projets"
+            unit="projects.count"
             (pageChange)="goToPage($event)"
           />
         }
@@ -149,6 +149,7 @@ import { ProjectFiltersBar } from './project-filters-bar';
   `,
 })
 export class ProjectsPage {
+  protected readonly t = translate;
   // Paramètres d'URL liés par withComponentInputBinding (?status=…&q=…&page=…)
   readonly status = input<string>();
   readonly q = input<string>();
@@ -206,7 +207,7 @@ export class ProjectsPage {
 
   protected create(): void {
     this.dialogs.open().subscribe((project) => {
-      toast.success(`Projet « ${project.name} » créé`);
+      toast.success(translate('projects.toast.created', { name: project.name }));
       this.store.reload();
     });
   }

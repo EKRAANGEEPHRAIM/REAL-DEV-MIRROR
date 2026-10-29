@@ -15,6 +15,7 @@ import { apiErrorMessage } from '../../../core/http/api-error';
 import { FormAlert } from '../../../shared/ui-kit/form-alert';
 import { PasswordChecklist } from '../password-checklist';
 import { passwordsMatchValidator, passwordValidator } from '../password-rules';
+import { translate } from '../../../core/i18n/translate';
 
 @Component({
   selector: 'dm-reset-password-page',
@@ -34,17 +35,14 @@ import { passwordsMatchValidator, passwordValidator } from '../password-rules';
   template: `
     <section hlmCard>
       <div hlmCardHeader>
-        <h1 hlmCardTitle class="text-xl">Nouveau mot de passe</h1>
-        <p hlmCardDescription>Toutes vos sessions ouvertes seront fermées après le changement.</p>
+        <h1 hlmCardTitle class="text-xl">{{ t('auth.reset.title') }}</h1>
+        <p hlmCardDescription>{{ t('auth.reset.subtitle') }}</p>
       </div>
 
       @if (!token()) {
         <div hlmCardContent class="flex flex-col gap-4">
-          <dm-form-alert
-            >Ce lien est incomplet. Utilisez le bouton reçu par email, ou demandez-en un
-            nouveau.</dm-form-alert
-          >
-          <a hlmBtn routerLink="/forgot-password" class="w-full">Demander un nouveau lien</a>
+          <dm-form-alert>{{ t('auth.reset.incomplete') }}</dm-form-alert>
+          <a hlmBtn routerLink="/forgot-password" class="w-full">{{ t('auth.reset.newLink') }}</a>
         </div>
       } @else {
         <form
@@ -57,14 +55,14 @@ import { passwordsMatchValidator, passwordValidator } from '../password-rules';
           @if (error(); as message) {
             <dm-form-alert>
               {{ message }}
-              <a routerLink="/forgot-password" class="ms-1 font-medium underline"
-                >Demander un nouveau lien</a
-              >
+              <a routerLink="/forgot-password" class="ms-1 font-medium underline">{{
+                t('auth.reset.newLink')
+              }}</a>
             </dm-form-alert>
           }
 
           <div class="flex flex-col gap-2">
-            <label hlmLabel for="password">Nouveau mot de passe</label>
+            <label hlmLabel for="password">{{ t('auth.reset.password') }}</label>
             <input
               hlmInput
               id="password"
@@ -77,7 +75,7 @@ import { passwordsMatchValidator, passwordValidator } from '../password-rules';
           </div>
 
           <div class="flex flex-col gap-2">
-            <label hlmLabel for="confirm">Confirmer le mot de passe</label>
+            <label hlmLabel for="confirm">{{ t('auth.reset.confirm') }}</label>
             <input
               hlmInput
               id="confirm"
@@ -89,7 +87,7 @@ import { passwordsMatchValidator, passwordValidator } from '../password-rules';
             />
             @if (showMismatch()) {
               <p id="confirm-error" class="text-destructive text-sm">
-                Les deux mots de passe sont différents.
+                {{ t('auth.errors.mismatch') }}
               </p>
             }
           </div>
@@ -97,9 +95,9 @@ import { passwordsMatchValidator, passwordValidator } from '../password-rules';
           <button hlmBtn type="submit" class="mt-2 w-full" [disabled]="saving()">
             @if (saving()) {
               <ng-icon name="lucideLoader2" class="motion-safe:animate-spin" aria-hidden="true" />
-              Enregistrement…
+              {{ t('auth.reset.pending') }}
             } @else {
-              Changer mon mot de passe
+              {{ t('auth.reset.submit') }}
             }
           </button>
         </form>
@@ -108,6 +106,7 @@ import { passwordsMatchValidator, passwordValidator } from '../password-rules';
   `,
 })
 export class ResetPasswordPage {
+  protected readonly t = translate;
   private readonly api = inject(AuthApi);
   private readonly store = inject(AuthStore);
   private readonly router = inject(Router);
@@ -142,7 +141,7 @@ export class ResetPasswordPage {
       next: () => {
         // L'API a fermé toutes les sessions : la session locale aussi.
         this.store.clearSession();
-        toast.success('Mot de passe modifié. Connectez-vous avec le nouveau.');
+        toast.success(translate('auth.reset.done'));
         void this.router.navigateByUrl('/login');
       },
       error: (error: unknown) => {

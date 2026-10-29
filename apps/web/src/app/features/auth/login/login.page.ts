@@ -9,6 +9,7 @@ import { HlmInputImports } from '@spartan-ng/helm/input';
 import { HlmLabelImports } from '@spartan-ng/helm/label';
 import { AuthStore } from '../../../core/auth/auth.store';
 import { FormAlert } from '../../../shared/ui-kit/form-alert';
+import { translate } from '../../../core/i18n/translate';
 
 @Component({
   selector: 'dm-login-page',
@@ -27,8 +28,8 @@ import { FormAlert } from '../../../shared/ui-kit/form-alert';
   template: `
     <section hlmCard>
       <div hlmCardHeader>
-        <h1 hlmCardTitle class="text-xl">Connexion</h1>
-        <p hlmCardDescription>Retrouvez vos projets, tâches et objectifs.</p>
+        <h1 hlmCardTitle class="text-xl">{{ t('auth.login.title') }}</h1>
+        <p hlmCardDescription>{{ t('auth.login.subtitle') }}</p>
       </div>
 
       <form
@@ -43,7 +44,7 @@ import { FormAlert } from '../../../shared/ui-kit/form-alert';
         }
 
         <div class="flex flex-col gap-2">
-          <label hlmLabel for="email">Email</label>
+          <label hlmLabel for="email">{{ t('auth.email') }}</label>
           <input
             hlmInput
             id="email"
@@ -55,16 +56,16 @@ import { FormAlert } from '../../../shared/ui-kit/form-alert';
           />
           @if (showError('email')) {
             <p id="email-error" class="text-destructive text-sm">
-              Saisissez une adresse email valide.
+              {{ t('auth.errors.email') }}
             </p>
           }
         </div>
 
         <div class="flex flex-col gap-2">
           <div class="flex items-center justify-between">
-            <label hlmLabel for="password">Mot de passe</label>
+            <label hlmLabel for="password">{{ t('auth.password') }}</label>
             <a routerLink="/forgot-password" class="text-muted-foreground text-sm hover:underline">
-              Mot de passe oublié ?
+              {{ t('auth.login.forgot') }}
             </a>
           </div>
           <input
@@ -78,7 +79,7 @@ import { FormAlert } from '../../../shared/ui-kit/form-alert';
           />
           @if (showError('password')) {
             <p id="password-error" class="text-destructive text-sm">
-              Saisissez votre mot de passe.
+              {{ t('auth.errors.passwordRequired') }}
             </p>
           }
         </div>
@@ -86,23 +87,24 @@ import { FormAlert } from '../../../shared/ui-kit/form-alert';
         <button hlmBtn type="submit" class="mt-2 w-full" [disabled]="store.pending()">
           @if (store.pending()) {
             <ng-icon name="lucideLoader2" class="motion-safe:animate-spin" aria-hidden="true" />
-            Connexion…
+            {{ t('auth.login.pending') }}
           } @else {
-            Se connecter
+            {{ t('auth.login.submit') }}
           }
         </button>
       </form>
 
       <p hlmCardFooter class="text-muted-foreground justify-center text-sm">
-        Pas encore de compte ?
-        <a routerLink="/register" class="text-foreground ms-1 font-medium hover:underline"
-          >Créer un compte</a
-        >
+        {{ t('auth.login.noAccount') }}
+        <a routerLink="/register" class="text-foreground ms-1 font-medium hover:underline">{{
+          t('auth.login.createAccount')
+        }}</a>
       </p>
     </section>
   `,
 })
 export class LoginPage implements OnInit {
+  protected readonly t = translate;
   protected readonly store = inject(AuthStore);
   /** Page demandée avant la redirection vers la connexion (paramètre ?returnUrl=). */
   readonly returnUrl = input<string | undefined>();

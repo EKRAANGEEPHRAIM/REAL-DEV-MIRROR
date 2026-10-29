@@ -1,4 +1,5 @@
 import type { ActivityCalendar } from '@devmirror/api-client';
+import { formatDate } from '../../../core/i18n/format';
 
 /** Jour AAAA-MM-JJ -> Date locale à minuit (évite le décalage d'un new Date(iso) en UTC). */
 export function parseDay(day: string): Date {
@@ -7,16 +8,16 @@ export function parseDay(day: string): Date {
 }
 
 export function formatDay(day: string): string {
-  return new Intl.DateTimeFormat('fr', {
+  return formatDate(parseDay(day), {
     weekday: 'long',
     day: 'numeric',
     month: 'long',
     year: 'numeric',
-  }).format(parseDay(day));
+  });
 }
 
 export function formatShortDay(day: string): string {
-  return new Intl.DateTimeFormat('fr', { day: 'numeric', month: 'short' }).format(parseDay(day));
+  return formatDate(parseDay(day), { day: 'numeric', month: 'short' });
 }
 
 function addDays(day: string, days: number): string {
@@ -65,8 +66,6 @@ export interface HeatmapModel {
   max: number;
 }
 
-const monthFormatter = new Intl.DateTimeFormat('fr', { month: 'short' });
-
 /** Grille de la heatmap : `from` est un lundi, les jours après `to` ne sont pas dessinés. */
 export function buildHeatmap(calendar: ActivityCalendar): HeatmapModel {
   const counts = new Map(calendar.days.map((day) => [day.date, day.count]));
@@ -91,14 +90,13 @@ export function buildHeatmap(calendar: ActivityCalendar): HeatmapModel {
     // Trop près de l'étiquette précédente (ou du bord gauche) : on la saute.
     const previous = months.at(-1);
     if (previous && column - previous.column < 3) return;
-    months.push({ label: monthFormatter.format(parseDay(first.date)), column });
+    months.push({ label: formatDate(parseDay(first.date), { month: 'short' }), column });
   });
   return { weeks, months, cells, max };
 }
 
 /** Tableau de données de la heatmap : total d'actions par mois, du plus ancien au plus récent. */
 export function monthlyTotals(calendar: ActivityCalendar): { month: string; count: number }[] {
-  const formatter = new Intl.DateTimeFormat('fr', { month: 'long', year: 'numeric' });
   const totals = new Map<string, number>();
   for (let day = calendar.from; day <= calendar.to; day = addDays(day, 1)) {
     const key = day.slice(0, 7);
@@ -109,7 +107,7 @@ export function monthlyTotals(calendar: ActivityCalendar): { month: string; coun
     if (totals.has(key)) totals.set(key, totals.get(key)! + day.count);
   }
   return [...totals].map(([key, count]) => ({
-    month: formatter.format(parseDay(`${key}-01`)),
+    month: formatDate(parseDay(`${key}-01`), { month: 'long', year: 'numeric' }),
     count,
   }));
 }

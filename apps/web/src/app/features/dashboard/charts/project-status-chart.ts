@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, input, signal } from '@angular/core';
 import type { StatusCount } from '@devmirror/api-client';
 import { projectStatus } from '../../projects/project-status';
-import { plural } from '../dashboard-tiles';
+import { translate } from '../../../core/i18n/translate';
 
 /**
  * Projets par statut, en barres horizontales d'une seule couleur : un statut de projet n'est
@@ -42,7 +42,7 @@ import { plural } from '../dashboard-tiles';
               aria-hidden="true"
             >
               <strong class="font-semibold">{{ row.share }} %</strong>
-              <span class="text-muted-foreground"> des projets</span>
+              <span class="text-muted-foreground"> {{ t('dashboard.status.ofProjects') }}</span>
             </span>
           }
         </li>
@@ -51,6 +51,7 @@ import { plural } from '../dashboard-tiles';
   `,
 })
 export class ProjectStatusChart {
+  protected readonly t = translate;
   readonly statuses = input.required<readonly StatusCount[]>();
   protected readonly active = signal<string | null>(null);
 
@@ -60,7 +61,7 @@ export class ProjectStatusChart {
     const max = Math.max(1, ...this.statuses().map((row) => row.count));
     const total = this.total();
     return this.statuses().map((row) => {
-      const label = projectStatus(row.status).label;
+      const label = translate(projectStatus(row.status).label);
       const share = total ? Math.round((row.count / total) * 100) : 0;
       return {
         ...row,
@@ -68,12 +69,16 @@ export class ProjectStatusChart {
         share,
         // 85 % au plus : la place du nombre au bout de la plus longue barre.
         width: (row.count / max) * 85,
-        description: `${label} : ${row.count} ${plural(row.count, 'projet')} (${share} %)`,
+        description: translate('dashboard.status.row', {
+          label,
+          projects: translate('projects.count', { count: row.count }),
+          share,
+        }),
       };
     });
   });
 
-  protected readonly summary = computed(
-    () => `Projets par statut, ${this.total()} ${plural(this.total(), 'projet')} au total`,
+  protected readonly summary = computed(() =>
+    translate('dashboard.status.summary', { count: this.total() }),
   );
 }

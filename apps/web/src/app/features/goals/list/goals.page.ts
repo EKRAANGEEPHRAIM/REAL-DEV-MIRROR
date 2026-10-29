@@ -22,6 +22,7 @@ import {
 } from '../goal-filters';
 import { GoalCard } from './goal-card';
 import { GoalFiltersBar } from './goal-filters-bar';
+import { translate } from '../../../core/i18n/translate';
 
 @Component({
   selector: 'dm-goals-page',
@@ -40,7 +41,7 @@ import { GoalFiltersBar } from './goal-filters-bar';
   template: `
     <header class="mb-6 flex flex-wrap items-baseline justify-between gap-2">
       <h1 class="text-2xl font-semibold tracking-tight">
-        Objectifs
+        {{ t('titles.goals') }}
         @if (store.status() === 'loaded') {
           <span class="text-muted-foreground ms-1 text-base font-normal"
             >({{ store.total() }})</span
@@ -49,7 +50,7 @@ import { GoalFiltersBar } from './goal-filters-bar';
       </h1>
       <button hlmBtn (click)="create()">
         <ng-icon name="lucidePlus" aria-hidden="true" />
-        Nouvel objectif
+        {{ t('goals.new') }}
       </button>
     </header>
 
@@ -66,14 +67,14 @@ import { GoalFiltersBar } from './goal-filters-bar';
         <dm-form-alert>{{ store.error() }}</dm-form-alert>
         <button hlmBtn variant="outline" (click)="reload()">
           <ng-icon name="lucideRefreshCw" aria-hidden="true" />
-          Réessayer
+          {{ t('common.retry') }}
         </button>
       </div>
     } @else if (store.isInitialLoading()) {
       <div
         class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3"
         aria-busy="true"
-        aria-label="Chargement des objectifs"
+        [attr.aria-label]="t('goals.loading')"
       >
         @for (i of skeletons; track i) {
           <div hlmCard class="gap-4">
@@ -95,23 +96,22 @@ import { GoalFiltersBar } from './goal-filters-bar';
       >
         @if (filtered()) {
           <ng-icon name="lucideSearchX" class="text-muted-foreground text-4xl" aria-hidden="true" />
-          <h2 class="text-lg font-medium">Aucun objectif ne correspond</h2>
+          <h2 class="text-lg font-medium">{{ t('goals.empty.filteredTitle') }}</h2>
           <p class="text-muted-foreground max-w-sm text-sm">
-            Essayez un autre état ou une autre recherche.
+            {{ t('goals.empty.filteredText') }}
           </p>
           <button hlmBtn variant="outline" (click)="resetFilters()">
-            Réinitialiser les filtres
+            {{ t('common.resetFilters') }}
           </button>
         } @else {
           <ng-icon name="lucideTarget" class="text-muted-foreground text-4xl" aria-hidden="true" />
-          <h2 class="text-lg font-medium">Aucun objectif pour l’instant</h2>
+          <h2 class="text-lg font-medium">{{ t('goals.empty.title') }}</h2>
           <p class="text-muted-foreground max-w-sm text-sm">
-            Fixez-vous un cap — une mission, une certification, un lancement — et découpez-le en
-            jalons à cocher.
+            {{ t('goals.empty.text') }}
           </p>
           <button hlmBtn (click)="create()">
             <ng-icon name="lucidePlus" aria-hidden="true" />
-            Créer un objectif
+            {{ t('goals.empty.cta') }}
           </button>
         }
       </section>
@@ -137,8 +137,7 @@ import { GoalFiltersBar } from './goal-filters-bar';
             [page]="meta.page"
             [totalPages]="meta.totalPages"
             [total]="meta.total"
-            itemLabel="objectif"
-            itemsLabel="objectifs"
+            unit="goals.count"
             (pageChange)="goToPage($event)"
           />
         }
@@ -147,6 +146,7 @@ import { GoalFiltersBar } from './goal-filters-bar';
   `,
 })
 export class GoalsPage {
+  protected readonly t = translate;
   // Paramètres d'URL liés par withComponentInputBinding (?state=…&q=…&sort=…&page=…)
   readonly state = input<string>();
   readonly q = input<string>();
@@ -186,7 +186,7 @@ export class GoalsPage {
   protected create(): void {
     this.dialogs.open().subscribe((result) => {
       if (result?.type !== 'saved') return;
-      toast.success(`Objectif « ${result.goal.title} » créé`);
+      toast.success(translate('goals.toast.created', { name: result.goal.title }));
       this.store.reload();
     });
   }
@@ -196,9 +196,9 @@ export class GoalsPage {
       if (!result) return;
       if (result.type === 'saved') {
         this.store.upsert(result.goal);
-        toast.success('Objectif enregistré');
+        toast.success(translate('goals.toast.saved'));
       } else if (result.type === 'deleted') {
-        toast.success(`Objectif « ${goal.title} » supprimé`);
+        toast.success(translate('goals.toast.deleted', { name: goal.title }));
         this.store.reload();
       } else {
         this.store.reload();

@@ -9,6 +9,7 @@ import { HlmLabelImports } from '@spartan-ng/helm/label';
 import { AccountApi } from '../../../core/account/account.api';
 import { apiErrorMessage } from '../../../core/http/api-error';
 import { FormAlert } from '../../../shared/ui-kit/form-alert';
+import { translate } from '../../../core/i18n/translate';
 
 /** Confirmation de la suppression du compte : le mot de passe est exigé. Ferme avec true si supprimé. */
 @Component({
@@ -25,10 +26,9 @@ import { FormAlert } from '../../../shared/ui-kit/form-alert';
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <hlm-dialog-header>
-      <h2 hlmDialogTitle>Supprimer définitivement votre compte ?</h2>
+      <h2 hlmDialogTitle>{{ t('settings.delete.dialogTitle') }}</h2>
       <p hlmDialogDescription>
-        Vos projets, tâches, objectifs, notes, tags et votre activité seront effacés, ainsi que
-        votre photo de profil. Cette action est irréversible : pensez à exporter vos données avant.
+        {{ t('settings.delete.dialogText') }}
       </p>
     </hlm-dialog-header>
     <form class="mt-2 flex flex-col gap-4" (submit)="$event.preventDefault(); confirm()">
@@ -36,7 +36,7 @@ import { FormAlert } from '../../../shared/ui-kit/form-alert';
         <dm-form-alert>{{ message }}</dm-form-alert>
       }
       <div class="flex flex-col gap-2">
-        <label hlmLabel for="delete-password">Mot de passe, pour confirmer</label>
+        <label hlmLabel for="delete-password">{{ t('settings.delete.password') }}</label>
         <input
           hlmInput
           id="delete-password"
@@ -47,18 +47,21 @@ import { FormAlert } from '../../../shared/ui-kit/form-alert';
         />
       </div>
       <hlm-dialog-footer>
-        <button hlmBtn type="button" variant="outline" (click)="ref.close(false)">Annuler</button>
+        <button hlmBtn type="button" variant="outline" (click)="ref.close(false)">
+          {{ t('common.cancel') }}
+        </button>
         <button hlmBtn type="submit" variant="destructive" [disabled]="!password() || pending()">
           @if (pending()) {
             <ng-icon name="lucideLoader2" class="motion-safe:animate-spin" aria-hidden="true" />
           }
-          Supprimer mon compte
+          {{ t('settings.delete.confirm') }}
         </button>
       </hlm-dialog-footer>
     </form>
   `,
 })
 export class DeleteAccountDialog {
+  protected readonly t = translate;
   protected readonly ref = inject<BrnDialogRef<boolean>>(BrnDialogRef);
   private readonly api = inject(AccountApi);
 

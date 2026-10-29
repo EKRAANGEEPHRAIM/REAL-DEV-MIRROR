@@ -8,7 +8,7 @@ import {
   viewChild,
 } from '@angular/core';
 import type { WeekCount } from '@devmirror/api-client';
-import { plural } from '../dashboard-tiles';
+import { translate } from '../../../core/i18n/translate';
 import { elementWidth } from './element-width';
 import { formatShortDay, niceTicks } from './chart-math';
 
@@ -170,7 +170,7 @@ export class WeeklyTasksChart {
       const top = this.y(week.count);
       const isLast = index === weeks.length - 1;
       const showLabel = isLast || (index % labelEvery === 0 && weeks.length - 1 - index >= 2);
-      const count = `${week.count} ${plural(week.count, 'tâche terminée', 'tâches terminées')}`;
+      const count = translate('dashboard.weekly.count', { count: week.count });
       return {
         ...week,
         bandX,
@@ -178,9 +178,16 @@ export class WeeklyTasksChart {
         center: bandX + band / 2,
         top,
         path: columnPath(x, top, barWidth, base),
-        label: showLabel ? (isLast ? 'Cette sem.' : formatShortDay(week.weekStart)) : '',
+        label: showLabel
+          ? isLast
+            ? translate('dashboard.weekly.thisWeek')
+            : formatShortDay(week.weekStart)
+          : '',
         countLabel: count,
-        description: `Semaine du ${formatShortDay(week.weekStart)} : ${count}`,
+        description: translate('dashboard.weekly.barLabel', {
+          week: formatShortDay(week.weekStart),
+          value: count,
+        }),
       };
     });
   });
@@ -192,7 +199,7 @@ export class WeeklyTasksChart {
 
   protected readonly summary = computed(() => {
     const total = this.weeks().reduce((sum, week) => sum + week.count, 0);
-    return `Tâches terminées par semaine, ${this.weeks().length} dernières semaines : ${total} au total`;
+    return translate('dashboard.weekly.summary', { weeks: this.weeks().length, count: total });
   });
 
   protected readonly tooltip = computed(() => {
@@ -205,7 +212,7 @@ export class WeeklyTasksChart {
       x: Math.min(Math.max(bar.center, half), this.width() - half),
       y: Math.min(bar.top, this.y(0)) - 8,
       value: bar.countLabel,
-      label: `Semaine du ${formatShortDay(bar.weekStart)}`,
+      label: translate('dashboard.weekly.weekOfDate', { week: formatShortDay(bar.weekStart) }),
     };
   });
 }

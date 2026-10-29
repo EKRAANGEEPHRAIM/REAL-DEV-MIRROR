@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 import { NgIcon, provideIcons } from '@ng-icons/core';
 import { lucideCheck, lucideCircle } from '@ng-icons/lucide';
 import { PASSWORD_RULES } from './password-rules';
+import { translate } from '../../core/i18n/translate';
 
 /** Liste des règles du mot de passe, cochées au fil de la saisie. */
 @Component({
@@ -23,14 +24,15 @@ import { PASSWORD_RULES } from './password-rules';
             class="text-xs"
             aria-hidden="true"
           />
-          {{ rule.label }}
-          <span class="sr-only">{{ ok ? '(respectée)' : '(non respectée)' }}</span>
+          {{ t(rule.label) }}
+          <span class="sr-only">{{ t(ok ? 'auth.rules.met' : 'auth.rules.unmet') }}</span>
         </li>
       }
     </ul>
   `,
 })
 export class PasswordChecklist {
+  protected readonly t = translate;
   readonly password = input.required<string>();
   readonly listId = input('password-rules');
   protected readonly rules = PASSWORD_RULES;

@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 import { NgIcon, provideIcons } from '@ng-icons/core';
 import { lucideCheck } from '@ng-icons/lucide';
+import { type TranslationKey, translate } from '../../../core/i18n/translate';
 
 /** Palette proposée ; null = pas de couleur. */
 export const TAG_COLORS: readonly (string | null)[] = [
@@ -15,15 +16,15 @@ export const TAG_COLORS: readonly (string | null)[] = [
   '#ec4899',
 ];
 
-const COLOR_NAMES: Record<string, string> = {
-  '#ef4444': 'Rouge',
-  '#f97316': 'Orange',
-  '#eab308': 'Jaune',
-  '#22c55e': 'Vert',
-  '#06b6d4': 'Cyan',
-  '#3b82f6': 'Bleu',
-  '#8b5cf6': 'Violet',
-  '#ec4899': 'Rose',
+const COLOR_NAMES: Record<string, TranslationKey> = {
+  '#ef4444': 'settings.colors.red',
+  '#f97316': 'settings.colors.orange',
+  '#eab308': 'settings.colors.yellow',
+  '#22c55e': 'settings.colors.green',
+  '#06b6d4': 'settings.colors.cyan',
+  '#3b82f6': 'settings.colors.blue',
+  '#8b5cf6': 'settings.colors.violet',
+  '#ec4899': 'settings.colors.pink',
 };
 
 /** Pastilles de couleur, groupe de boutons radio accessible. */
@@ -42,7 +43,7 @@ const COLOR_NAMES: Record<string, string> = {
           [class.border-dashed]="!color"
           [style.background-color]="color"
           [attr.aria-checked]="value() === color"
-          [attr.aria-label]="color ? colorName(color) : 'Sans couleur'"
+          [attr.aria-label]="color ? colorName(color) : t('settings.colors.none')"
           (click)="changed.emit(color)"
         >
           @if (value() === color) {
@@ -59,13 +60,16 @@ const COLOR_NAMES: Record<string, string> = {
   `,
 })
 export class TagColorPicker {
+  protected readonly t = translate;
   readonly value = input<string | null>(null);
-  readonly label = input('Couleur du tag');
+  /** Nom accessible du groupe, déjà traduit. */
+  readonly label = input.required<string>();
   readonly changed = output<string | null>();
 
   protected readonly colors = TAG_COLORS;
 
   protected colorName(color: string): string {
-    return COLOR_NAMES[color] ?? color;
+    const key = COLOR_NAMES[color];
+    return key ? translate(key) : color;
   }
 }

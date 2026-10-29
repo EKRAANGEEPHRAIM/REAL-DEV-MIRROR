@@ -17,6 +17,7 @@ import { ProjectsApi } from '../../projects/data/projects.api';
 import { TasksApi } from '../data/tasks.api';
 import { fromDateInput, toDateInput } from '../task-dates';
 import { TASK_PRIORITIES, TASK_STATUSES } from '../task-meta';
+import { translate } from '../../../core/i18n/translate';
 
 export interface TaskFormContext {
   task?: Task;
@@ -57,8 +58,8 @@ const FIELD_CLASSES =
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <hlm-dialog-header>
-      <h2 hlmDialogTitle>{{ editing ? 'Modifier la tâche' : 'Nouvelle tâche' }}</h2>
-      <p hlmDialogDescription>Les champs marqués * sont obligatoires.</p>
+      <h2 hlmDialogTitle>{{ editing ? t('tasks.form.editTitle') : t('tasks.new') }}</h2>
+      <p hlmDialogDescription>{{ t('common.required') }}</p>
     </hlm-dialog-header>
 
     <form
@@ -72,7 +73,7 @@ const FIELD_CLASSES =
       }
 
       <div class="flex flex-col gap-2">
-        <label hlmLabel for="task-title">Titre *</label>
+        <label hlmLabel for="task-title">{{ t('tasks.form.title') }} *</label>
         <input
           hlmInput
           id="task-title"
@@ -83,13 +84,13 @@ const FIELD_CLASSES =
         />
         @if (titleInvalid()) {
           <p id="task-title-error" class="text-destructive text-sm">
-            Le titre est obligatoire (200 caractères max).
+            {{ t('tasks.form.titleError') }}
           </p>
         }
       </div>
 
       <div class="flex flex-col gap-2">
-        <label hlmLabel for="task-description">Description</label>
+        <label hlmLabel for="task-description">{{ t('projects.form.description') }}</label>
         <textarea
           id="task-description"
           rows="3"
@@ -101,29 +102,29 @@ const FIELD_CLASSES =
 
       <div class="grid gap-4 sm:grid-cols-2">
         <div class="flex flex-col gap-2">
-          <label hlmLabel for="task-status">Statut</label>
+          <label hlmLabel for="task-status">{{ t('projects.form.status') }}</label>
           <select id="task-status" formControlName="status" [class]="fieldClasses">
             @for (status of statuses; track status.value) {
-              <option [value]="status.value">{{ status.label }}</option>
+              <option [value]="status.value">{{ t(status.label) }}</option>
             }
           </select>
         </div>
         <div class="flex flex-col gap-2">
-          <label hlmLabel for="task-priority">Priorité</label>
+          <label hlmLabel for="task-priority">{{ t('tasks.form.priority') }}</label>
           <select id="task-priority" formControlName="priority" [class]="fieldClasses">
             @for (priority of priorities; track priority.value) {
-              <option [value]="priority.value">{{ priority.label }}</option>
+              <option [value]="priority.value">{{ t(priority.label) }}</option>
             }
           </select>
         </div>
         <div class="flex flex-col gap-2">
-          <label hlmLabel for="task-due">Échéance</label>
+          <label hlmLabel for="task-due">{{ t('tasks.filters.due') }}</label>
           <input hlmInput id="task-due" type="date" formControlName="dueDate" />
         </div>
         <div class="flex flex-col gap-2">
-          <label hlmLabel for="task-project">Projet</label>
+          <label hlmLabel for="task-project">{{ t('tasks.filters.project') }}</label>
           <select id="task-project" formControlName="projectId" [class]="fieldClasses">
-            <option value="">Aucun projet</option>
+            <option value="">{{ t('tasks.form.noProject') }}</option>
             @for (project of projects(); track project.id) {
               <option [value]="project.id">{{ project.name }}</option>
             }
@@ -133,7 +134,7 @@ const FIELD_CLASSES =
 
       <fieldset class="flex flex-col gap-2">
         <legend class="mb-1 text-sm font-medium">
-          Checklist
+          {{ t('tasks.form.checklist') }}
           @if (checklist().length) {
             <span class="text-muted-foreground font-normal"
               >({{ doneCount() }}/{{ checklist().length }})</span
@@ -147,7 +148,7 @@ const FIELD_CLASSES =
                 type="checkbox"
                 class="accent-primary size-4"
                 [checked]="item.done"
-                [attr.aria-label]="'Cocher « ' + item.title + ' »'"
+                [attr.aria-label]="t('common.checkItem', { title: item.title })"
                 (change)="toggleItem(i)"
               />
               <span
@@ -161,7 +162,7 @@ const FIELD_CLASSES =
                 hlmBtn
                 variant="ghost"
                 size="icon-sm"
-                [attr.aria-label]="'Supprimer « ' + item.title + ' »'"
+                [attr.aria-label]="t('common.deleteItem', { title: item.title })"
                 (click)="removeItem(i)"
               >
                 <ng-icon name="lucideX" aria-hidden="true" />
@@ -170,12 +171,12 @@ const FIELD_CLASSES =
           }
         </ul>
         <div class="flex gap-2">
-          <label hlmLabel for="new-subtask" class="sr-only">Nouvel élément de checklist</label>
+          <label hlmLabel for="new-subtask" class="sr-only">{{ t('tasks.form.newItem') }}</label>
           <input
             hlmInput
             id="new-subtask"
             class="flex-1"
-            placeholder="Ajouter un élément…"
+            [placeholder]="t('tasks.form.newItemPlaceholder')"
             maxlength="200"
             [value]="newItem()"
             (input)="newItem.set($any($event.target).value)"
@@ -189,7 +190,7 @@ const FIELD_CLASSES =
             (click)="addItem()"
           >
             <ng-icon name="lucidePlus" aria-hidden="true" />
-            Ajouter
+            {{ t('common.add') }}
           </button>
         </div>
       </fieldset>
@@ -198,16 +199,18 @@ const FIELD_CLASSES =
         @if (editing) {
           <button hlmBtn type="button" variant="ghost" class="text-destructive" (click)="remove()">
             <ng-icon name="lucideTrash2" aria-hidden="true" />
-            Supprimer
+            {{ t('common.delete') }}
           </button>
         }
         <div class="flex flex-col-reverse gap-2 sm:flex-row">
-          <button hlmBtn type="button" variant="outline" (click)="ref.close()">Annuler</button>
+          <button hlmBtn type="button" variant="outline" (click)="ref.close()">
+            {{ t('common.cancel') }}
+          </button>
           <button hlmBtn type="submit" [disabled]="saving()">
             @if (saving()) {
               <ng-icon name="lucideLoader2" class="motion-safe:animate-spin" aria-hidden="true" />
             }
-            {{ editing ? 'Enregistrer' : 'Créer la tâche' }}
+            {{ editing ? t('common.save') : t('tasks.form.create') }}
           </button>
         </div>
       </hlm-dialog-footer>
@@ -215,6 +218,7 @@ const FIELD_CLASSES =
   `,
 })
 export class TaskFormDialog {
+  protected readonly t = translate;
   protected readonly ref = inject<BrnDialogRef<TaskDialogResult>>(BrnDialogRef);
   private readonly api = inject(TasksApi);
   private readonly confirm = inject(ConfirmService);
@@ -359,9 +363,9 @@ export class TaskFormDialog {
     if (!task) return;
     this.confirm
       .confirm({
-        title: `Supprimer « ${task.title} » ?`,
-        description: 'La tâche et sa checklist seront supprimées définitivement.',
-        confirmLabel: 'Supprimer',
+        title: translate('common.deleteTitle', { name: task.title }),
+        description: translate('tasks.delete.description'),
+        confirmLabel: translate('common.delete'),
         destructive: true,
       })
       .pipe(

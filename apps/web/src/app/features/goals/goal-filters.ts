@@ -3,18 +3,18 @@ import type { GoalListQuery } from '@devmirror/api-client';
 export const GOALS_PAGE_SIZE = 12;
 
 export const GOAL_STATES = [
-  { value: null, label: 'Tous' },
-  { value: 'active', label: 'En cours' },
-  { value: 'completed', label: 'Atteints' },
+  { value: null, label: 'goals.state.all' },
+  { value: 'active', label: 'goals.state.active' },
+  { value: 'completed', label: 'goals.state.completed' },
 ] as const;
 
 export type GoalState = 'active' | 'completed';
 
 export const GOAL_SORTS = [
-  { value: 'targetDate:asc', label: 'Date cible' },
-  { value: 'updatedAt:desc', label: 'Récemment modifiés' },
-  { value: 'createdAt:desc', label: 'Récemment créés' },
-  { value: 'title:asc', label: 'Titre (A → Z)' },
+  { value: 'targetDate:asc', label: 'goals.sort.target' },
+  { value: 'updatedAt:desc', label: 'goals.sort.updated' },
+  { value: 'createdAt:desc', label: 'goals.sort.created' },
+  { value: 'title:asc', label: 'goals.sort.title' },
 ] as const;
 
 export type GoalSort = (typeof GOAL_SORTS)[number]['value'];

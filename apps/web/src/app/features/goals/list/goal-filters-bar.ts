@@ -15,6 +15,7 @@ import { HlmInputImports } from '@spartan-ng/helm/input';
 import { HlmLabelImports } from '@spartan-ng/helm/label';
 import { debounceTime, distinctUntilChanged, Subject } from 'rxjs';
 import { GOAL_SORTS, GOAL_STATES, type GoalFilters, type GoalSort } from '../goal-filters';
+import { translate } from '../../../core/i18n/translate';
 
 const SELECT_CLASSES =
   'border-input bg-background focus-visible:ring-ring h-9 rounded-md border px-3 text-sm outline-none focus-visible:ring-2';
@@ -27,7 +28,11 @@ const SELECT_CLASSES =
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div role="search" class="flex flex-col gap-3 md:flex-row md:flex-wrap md:items-end">
-      <div class="bg-muted inline-flex h-9 w-fit rounded-md p-1" role="group" aria-label="État">
+      <div
+        class="bg-muted inline-flex h-9 w-fit rounded-md p-1"
+        role="group"
+        [attr.aria-label]="t('goals.filters.state')"
+      >
         @for (state of states; track state.label) {
           <button
             type="button"
@@ -38,13 +43,13 @@ const SELECT_CLASSES =
             [attr.aria-pressed]="value().state === state.value"
             (click)="changed.emit({ state: state.value })"
           >
-            {{ state.label }}
+            {{ t(state.label) }}
           </button>
         }
       </div>
 
       <div class="relative flex-1 md:min-w-64">
-        <label hlmLabel for="goal-search" class="sr-only">Rechercher un objectif</label>
+        <label hlmLabel for="goal-search" class="sr-only">{{ t('goals.filters.search') }}</label>
         <ng-icon
           name="lucideSearch"
           class="text-muted-foreground pointer-events-none absolute top-1/2 left-3 -translate-y-1/2"
@@ -55,18 +60,20 @@ const SELECT_CLASSES =
           id="goal-search"
           type="search"
           class="w-full ps-9"
-          placeholder="Rechercher un objectif…"
+          [placeholder]="t('goals.filters.searchPlaceholder')"
           [value]="search()"
           (input)="onSearch($any($event.target).value)"
         />
       </div>
 
       <div class="flex flex-col gap-1">
-        <label hlmLabel for="goal-sort" class="text-muted-foreground text-xs">Trier par</label>
+        <label hlmLabel for="goal-sort" class="text-muted-foreground text-xs">{{
+          t('common.sortBy')
+        }}</label>
         <select id="goal-sort" [class]="selectClasses" (change)="onSort($any($event.target).value)">
           @for (sort of sorts; track sort.value) {
             <option [value]="sort.value" [selected]="value().sort === sort.value">
-              {{ sort.label }}
+              {{ t(sort.label) }}
             </option>
           }
         </select>
@@ -75,13 +82,14 @@ const SELECT_CLASSES =
       @if (active()) {
         <button hlmBtn variant="ghost" size="sm" class="h-9" (click)="cleared.emit()">
           <ng-icon name="lucideX" aria-hidden="true" />
-          Réinitialiser
+          {{ t('common.reset') }}
         </button>
       }
     </div>
   `,
 })
 export class GoalFiltersBar {
+  protected readonly t = translate;
   readonly value = input.required<GoalFilters>();
   readonly active = input(false);
   readonly changed = output<Partial<GoalFilters>>();

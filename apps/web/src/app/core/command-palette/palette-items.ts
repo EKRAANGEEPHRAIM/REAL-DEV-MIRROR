@@ -1,11 +1,12 @@
 import type { SearchResults } from '@devmirror/api-client';
 import { taskStatus } from '../../features/tasks/task-meta';
+import { translate } from '../i18n/translate';
 import { MAIN_NAV, SECONDARY_NAV } from '../layout/navigation';
 
 /** Recherche lancée côté API à partir de ce nombre de caractères (comme l'API). */
 export const MIN_SEARCH_LENGTH = 2;
 
-export type PaletteGroup = 'Actions' | 'Navigation' | 'Projets' | 'Tâches' | 'Notes';
+export type PaletteGroup = 'actions' | 'navigation' | 'projects' | 'tasks' | 'notes';
 
 /** Ce que fait une entrée : aller à une URL, ou une commande gérée par la palette. */
 export type PaletteTarget =
@@ -28,41 +29,54 @@ export interface PaletteItem {
   keywords?: string;
 }
 
-const COMMANDS: readonly PaletteItem[] = [
-  {
-    id: 'cmd-new-note',
-    group: 'Actions',
-    label: 'Nouvelle note',
-    icon: 'lucideNotebookPen',
-    keywords: 'créer écrire markdown',
-    target: { kind: 'command', command: 'new-note' },
-  },
-  {
-    id: 'cmd-new-project',
-    group: 'Actions',
-    label: 'Nouveau projet',
-    icon: 'lucideFolderPlus',
-    keywords: 'créer',
-    target: { kind: 'command', command: 'new-project' },
-  },
-  {
-    id: 'cmd-theme',
-    group: 'Actions',
-    label: 'Basculer le thème clair / sombre',
-    icon: 'lucideSunMoon',
-    keywords: 'dark mode nuit couleur',
-    target: { kind: 'command', command: 'toggle-theme' },
-  },
-];
+/** Libellé affiché d'un groupe, dans la langue courante. */
+export function groupLabel(group: PaletteGroup): string {
+  return translate(`palette.groups.${group}`);
+}
 
-const NAVIGATION: readonly PaletteItem[] = [...MAIN_NAV, ...SECONDARY_NAV].map((item) => ({
-  id: `nav-${item.path.slice(1)}`,
-  group: 'Navigation' as const,
-  label: `Aller à : ${item.label}`,
-  icon: item.icon,
-  keywords: item.label,
-  target: { kind: 'link' as const, commands: [item.path] },
-}));
+/** Actions et pages, construites à l'appel : leurs libellés suivent la langue courante. */
+function commandItems(): PaletteItem[] {
+  return [
+    {
+      id: 'cmd-new-note',
+      group: 'actions',
+      label: translate('palette.commands.newNote'),
+      icon: 'lucideNotebookPen',
+      keywords: translate('palette.keywords.newNote'),
+      target: { kind: 'command', command: 'new-note' },
+    },
+    {
+      id: 'cmd-new-project',
+      group: 'actions',
+      label: translate('palette.commands.newProject'),
+      icon: 'lucideFolderPlus',
+      keywords: translate('palette.keywords.create'),
+      target: { kind: 'command', command: 'new-project' },
+    },
+    {
+      id: 'cmd-theme',
+      group: 'actions',
+      label: translate('palette.commands.toggleTheme'),
+      icon: 'lucideSunMoon',
+      keywords: translate('palette.keywords.theme'),
+      target: { kind: 'command', command: 'toggle-theme' },
+    },
+  ];
+}
+
+function navigationItems(): PaletteItem[] {
+  return [...MAIN_NAV, ...SECONDARY_NAV].map((item) => {
+    const page = translate(item.label);
+    return {
+      id: `nav-${item.path.slice(1)}`,
+      group: 'navigation',
+      label: translate('palette.goTo', { page }),
+      icon: item.icon,
+      keywords: page,
+      target: { kind: 'link', commands: [item.path] },
+    };
+  });
+}
 
 /** Comparaison sans casse ni accents : « tache » trouve « Tâches ». */
 export function normalize(text: string): string {
@@ -72,7 +86,7 @@ export function normalize(text: string): string {
 /** Actions et pages filtrées localement ; toutes affichées quand la saisie est vide. */
 export function staticItems(query: string): PaletteItem[] {
   const needle = normalize(query);
-  const all = [...COMMANDS, ...NAVIGATION];
+  const all = [...commandItems(), ...navigationItems()];
   if (!needle) return all;
   return all.filter((item) => normalize(`${item.label} ${item.keywords ?? ''}`).includes(needle));
 }
@@ -83,7 +97,7 @@ export function resultItems(results: SearchResults | null): PaletteItem[] {
   return [
     ...results.projects.map((project): PaletteItem => ({
       id: `project-${project.id}`,
-      group: 'Projets',
+      group: 'projects',
       label: project.name,
       icon: 'lucideFolderKanban',
       color: project.color,
@@ -91,16 +105,18 @@ export function resultItems(results: SearchResults | null): PaletteItem[] {
     })),
     ...results.tasks.map((task): PaletteItem => ({
       id: `task-${task.id}`,
-      group: 'Tâches',
+      group: 'tasks',
       label: task.title,
-      hint: [taskStatus(task.status).label, task.project?.name].filter(Boolean).join(' · '),
+      hint: [translate(taskStatus(task.status).label), task.project?.name]
+        .filter(Boolean)
+        .join(' · '),
       icon: task.status === 'DONE' ? 'lucideSquareCheckBig' : 'lucideSquare',
       // Pas de page de détail : la liste filtrée sur le titre.
       target: { kind: 'link', commands: ['/tasks'], queryParams: { q: task.title } },
     })),
     ...results.notes.map((note): PaletteItem => ({
       id: `note-${note.id}`,
-      group: 'Notes',
+      group: 'notes',
       label: note.title,
       hint: note.excerpt || undefined,
       icon: note.pinned ? 'lucidePin' : 'lucideStickyNote',

@@ -1,3 +1,5 @@
+import { formatDate } from '../../core/i18n/format';
+import { translate } from '../../core/i18n/translate';
 import type { Goal, Milestone } from '@devmirror/api-client';
 
 /** Limite fixée par l'API (MAX_MILESTONES_PER_GOAL). */
@@ -26,11 +28,6 @@ export interface TargetLabel {
 }
 
 const DAY = 86_400_000;
-const dateFormatter = new Intl.DateTimeFormat('fr', {
-  day: 'numeric',
-  month: 'short',
-  year: 'numeric',
-});
 
 function startOfDay(date: Date): number {
   return new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime();
@@ -38,17 +35,17 @@ function startOfDay(date: Date): number {
 
 /** « Atteint », « Dépassé · 12 oct. 2026 », « Aujourd’hui », « Dans 5 jours », « 15 déc. 2026 ». */
 export function targetLabel(goal: Goal, now: Date = new Date()): TargetLabel | null {
-  if (goal.completed) return { label: 'Atteint', tone: 'completed' };
+  if (goal.completed) return { label: translate('goals.target.completed'), tone: 'completed' };
   if (!goal.targetDate) return null;
 
   const target = new Date(goal.targetDate);
   const days = Math.round((startOfDay(target) - startOfDay(now)) / DAY);
-  const date = dateFormatter.format(target);
+  const date = formatDate(target, { day: 'numeric', month: 'short', year: 'numeric' });
 
-  if (days < 0) return { label: `Dépassé · ${date}`, tone: 'overdue' };
-  if (days === 0) return { label: 'Aujourd’hui', tone: 'soon' };
-  if (days === 1) return { label: 'Demain', tone: 'soon' };
-  if (days <= 14) return { label: `Dans ${days} jours`, tone: 'soon' };
+  if (days < 0) return { label: translate('goals.target.overdue', { date }), tone: 'overdue' };
+  if (days === 0) return { label: translate('tasks.due.today'), tone: 'soon' };
+  if (days === 1) return { label: translate('tasks.due.tomorrow'), tone: 'soon' };
+  if (days <= 14) return { label: translate('goals.target.inDays', { count: days }), tone: 'soon' };
   return { label: date, tone: 'later' };
 }
 

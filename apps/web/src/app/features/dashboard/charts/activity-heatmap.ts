@@ -9,7 +9,8 @@ import {
   viewChild,
 } from '@angular/core';
 import type { ActivityCalendar } from '@devmirror/api-client';
-import { plural } from '../dashboard-tiles';
+import { formatDate } from '../../../core/i18n/format';
+import { translate } from '../../../core/i18n/translate';
 import { buildHeatmap, formatDay, type HeatCell } from './chart-math';
 
 const CELL = 11;
@@ -17,14 +18,18 @@ const GAP = 3;
 const PITCH = CELL + GAP;
 const TOP = 16;
 const LEFT = 30;
-const DAY_LABELS = [
-  { row: 0, label: 'lun.' },
-  { row: 2, label: 'mer.' },
-  { row: 4, label: 'ven.' },
-];
+/** Lundi, mercredi, vendredi : noms courts dans la langue courante (le 1er janvier 2024 est un lundi). */
+function dayLabels(): { row: number; label: string }[] {
+  return [0, 2, 4].map((row) => ({
+    row,
+    label: formatDate(new Date(2024, 0, 1 + row), { weekday: 'short' }),
+  }));
+}
 
 function describe(cell: HeatCell): string {
-  const actions = cell.count ? `${cell.count} ${plural(cell.count, 'action')}` : 'Aucune action';
+  const actions = cell.count
+    ? translate('dashboard.activity.actionsCount', { count: cell.count })
+    : translate('dashboard.activity.noAction');
   return `${actions} — ${formatDay(cell.date)}`;
 }
 
@@ -59,7 +64,7 @@ function describe(cell: HeatCell): string {
               {{ month.label }}
             </text>
           }
-          @for (day of dayLabels; track day.row) {
+          @for (day of dayLabels(); track day.row) {
             <text
               [attr.x]="left - 6"
               [attr.y]="top + day.row * pitch + cell / 2"
@@ -104,16 +109,16 @@ function describe(cell: HeatCell): string {
     <div
       class="text-muted-foreground mt-2 flex flex-wrap items-center justify-between gap-2 text-xs"
     >
-      <p id="heatmap-help">Flèches : parcourir les jours</p>
+      <p id="heatmap-help">{{ t('dashboard.activity.keyboardHelp') }}</p>
       <p class="flex items-center gap-1" aria-hidden="true">
-        Moins
+        {{ t('dashboard.activity.less') }}
         @for (level of levels; track level) {
           <span
             class="inline-block size-[11px] rounded-[2px]"
             [style.background-color]="'var(--viz-heat-' + level + ')'"
           ></span>
         }
-        Plus
+        {{ t('dashboard.activity.more') }}
       </p>
     </div>
     <p class="sr-only" aria-live="polite">{{ announcement() }}</p>
@@ -127,7 +132,8 @@ export class ActivityHeatmap {
   protected readonly top = TOP;
   protected readonly left = LEFT;
   protected readonly height = TOP + 7 * PITCH;
-  protected readonly dayLabels = DAY_LABELS;
+  protected readonly dayLabels = computed(dayLabels);
+  protected readonly t = translate;
   protected readonly levels = [0, 1, 2, 3, 4];
   protected readonly active = signal<number | null>(null);
 
@@ -139,7 +145,10 @@ export class ActivityHeatmap {
   protected readonly summary = computed(() => {
     const { total } = this.calendar();
     const activeDays = this.calendar().days.length;
-    return `Activité sur un an : ${total} ${plural(total, 'action')} sur ${activeDays} ${plural(activeDays, 'jour actif', 'jours actifs')}`;
+    return translate('dashboard.activity.summary', {
+      actions: translate('dashboard.activity.actionsCount', { count: total }),
+      days: translate('dashboard.activity.activeDays', { count: activeDays }),
+    });
   });
 
   private readonly position = computed(() => {

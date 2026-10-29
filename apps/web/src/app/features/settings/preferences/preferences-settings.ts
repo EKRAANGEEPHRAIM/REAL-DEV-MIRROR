@@ -1,24 +1,19 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
-import type { UserPreferences } from '@devmirror/api-client';
+import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { NgIcon, provideIcons } from '@ng-icons/core';
 import { lucideMonitor, lucideMoon, lucideSlidersHorizontal, lucideSun } from '@ng-icons/lucide';
-import { toast } from '@spartan-ng/brain/sonner';
 import { HlmLabelImports } from '@spartan-ng/helm/label';
-import { AccountApi } from '../../../core/account/account.api';
-import { AuthStore } from '../../../core/auth/auth.store';
-import { apiErrorMessage } from '../../../core/http/api-error';
-import { type ThemeMode, ThemeStore } from '../../../core/theme/theme.store';
-
-const THEMES: readonly { value: ThemeMode; label: string; icon: string }[] = [
-  { value: 'light', label: 'Clair', icon: 'lucideSun' },
-  { value: 'dark', label: 'Sombre', icon: 'lucideMoon' },
-  { value: 'system', label: 'Système', icon: 'lucideMonitor' },
-];
+import { currentLanguage, isLanguage } from '../../../core/i18n/language';
+import { setLanguage, translate } from '../../../core/i18n/translate';
+import { ThemeStore } from '../../../core/theme/theme.store';
+import { THEME_OPTIONS } from '../../../core/theme/theme-toggle';
 
 const SELECT_CLASSES =
   'border-input bg-background focus-visible:ring-ring h-9 rounded-md border px-3 text-sm outline-none focus-visible:ring-2';
 
-/** Thème (appliqué aussitôt, enregistré dans le compte) et langue de l'interface. */
+/**
+ * Thème et langue de l'interface, appliqués aussitôt. L'enregistrement dans le compte est fait
+ * par ThemePreferenceSync et LanguagePreferenceSync (démarrés par le shell).
+ */
 @Component({
   selector: 'dm-preferences-settings',
   imports: [NgIcon, HlmLabelImports],
@@ -28,13 +23,13 @@ const SELECT_CLASSES =
     <section aria-labelledby="preferences-heading" class="rounded-xl border p-5">
       <h2 id="preferences-heading" class="flex items-center gap-2 text-lg font-semibold">
         <ng-icon name="lucideSlidersHorizontal" aria-hidden="true" />
-        Préférences
+        {{ t('settings.preferences.title') }}
       </h2>
 
       <fieldset class="mt-4">
-        <legend class="mb-2 text-sm font-medium">Thème</legend>
+        <legend class="mb-2 text-sm font-medium">{{ t('settings.preferences.theme') }}</legend>
         <div class="grid max-w-md grid-cols-3 gap-2">
-          @for (theme of themes; track theme.value) {
+          @for (theme of themes; track theme.mode) {
             <label
               class="has-[:focus-visible]:ring-ring flex cursor-pointer flex-col items-center gap-1.5 rounded-lg border px-3 py-3 text-sm has-[:checked]:border-[var(--primary)] has-[:checked]:bg-[var(--accent)] has-[:focus-visible]:ring-2"
             >
@@ -42,31 +37,28 @@ const SELECT_CLASSES =
                 type="radio"
                 name="theme"
                 class="sr-only"
-                [value]="theme.value"
-                [checked]="themeStore.mode() === theme.value"
-                (change)="themeStore.setMode(theme.value)"
+                [value]="theme.mode"
+                [checked]="themeStore.mode() === theme.mode"
+                (change)="themeStore.setMode(theme.mode)"
               />
               <ng-icon [name]="theme.icon" class="text-lg" aria-hidden="true" />
-              {{ theme.label }}
+              {{ t(theme.label) }}
             </label>
           }
         </div>
-        <p class="text-muted-foreground mt-2 text-xs">
-          Enregistré dans votre compte : il vous suit sur vos autres appareils.
-        </p>
+        <p class="text-muted-foreground mt-2 text-xs">{{ t('settings.preferences.synced') }}</p>
       </fieldset>
 
       <div class="mt-6 flex flex-col gap-2">
-        <label hlmLabel for="language">Langue de l’interface</label>
+        <label hlmLabel for="language">{{ t('settings.preferences.language') }}</label>
         <select
           id="language"
           [class]="selectClasses + ' w-fit'"
-          [disabled]="savingLanguage()"
           (change)="setLanguage($any($event.target).value)"
         >
-          <option value="fr" [selected]="language() === 'fr'">Français</option>
-          <!-- Activée avec la traduction de l'interface -->
-          <option value="en" [selected]="language() === 'en'" disabled>English (bientôt)</option>
+          <!-- Noms dans leur propre langue : chacun reconnaît la sienne. -->
+          <option value="fr" lang="fr" [selected]="language() === 'fr'">Français</option>
+          <option value="en" lang="en" [selected]="language() === 'en'">English</option>
         </select>
       </div>
     </section>
@@ -74,30 +66,12 @@ const SELECT_CLASSES =
 })
 export class PreferencesSettings {
   protected readonly themeStore = inject(ThemeStore);
-  private readonly auth = inject(AuthStore);
-  private readonly api = inject(AccountApi);
-
-  protected readonly themes = THEMES;
+  protected readonly themes = THEME_OPTIONS;
   protected readonly selectClasses = SELECT_CLASSES;
-  protected readonly savingLanguage = signal(false);
+  protected readonly language = currentLanguage;
+  protected readonly t = translate;
 
-  protected language(): UserPreferences['language'] {
-    return this.auth.user()?.preferences.language ?? 'fr';
-  }
-
-  protected setLanguage(language: UserPreferences['language']): void {
-    if (language === this.language()) return;
-    this.savingLanguage.set(true);
-    this.api.updateProfile({ preferences: { language } }).subscribe({
-      next: (user) => {
-        this.savingLanguage.set(false);
-        this.auth.setUser(user);
-        toast.success(language === 'en' ? 'Language saved' : 'Langue enregistrée');
-      },
-      error: (error: unknown) => {
-        this.savingLanguage.set(false);
-        toast.error(apiErrorMessage(error));
-      },
-    });
+  protected setLanguage(value: string): void {
+    if (isLanguage(value)) void setLanguage(value);
   }
 }

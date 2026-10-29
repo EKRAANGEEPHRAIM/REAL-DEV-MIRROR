@@ -16,6 +16,7 @@ import { AccountApi } from '../../../core/account/account.api';
 import { AuthStore } from '../../../core/auth/auth.store';
 import { apiErrorMessage } from '../../../core/http/api-error';
 import { DeleteAccountDialog } from './delete-account-dialog';
+import { translate } from '../../../core/i18n/translate';
 
 /** Export JSON des données et suppression du compte. */
 @Component({
@@ -27,11 +28,10 @@ import { DeleteAccountDialog } from './delete-account-dialog';
     <section aria-labelledby="data-heading" class="rounded-xl border p-5">
       <h2 id="data-heading" class="flex items-center gap-2 text-lg font-semibold">
         <ng-icon name="lucideDatabase" aria-hidden="true" />
-        Vos données
+        {{ t('settings.data.title') }}
       </h2>
       <p class="text-muted-foreground mt-1 text-sm">
-        Téléchargez tout ce que vous avez saisi dans DevMirror, dans un fichier JSON lisible :
-        profil, projets, tâches, objectifs, notes, tags et activité.
+        {{ t('settings.data.text') }}
       </p>
       <button hlmBtn variant="outline" class="mt-4" [disabled]="exporting()" (click)="exportData()">
         @if (exporting()) {
@@ -39,7 +39,7 @@ import { DeleteAccountDialog } from './delete-account-dialog';
         } @else {
           <ng-icon name="lucideDownload" aria-hidden="true" />
         }
-        Exporter mes données
+        {{ t('settings.data.export') }}
       </button>
     </section>
 
@@ -52,19 +52,19 @@ import { DeleteAccountDialog } from './delete-account-dialog';
         class="text-destructive flex items-center gap-2 text-lg font-semibold"
       >
         <ng-icon name="lucideTriangleAlert" aria-hidden="true" />
-        Supprimer le compte
+        {{ t('settings.delete.title') }}
       </h2>
       <p class="text-muted-foreground mt-1 text-sm">
-        Efface définitivement votre compte et toutes vos données. Votre mot de passe vous sera
-        demandé.
+        {{ t('settings.delete.text') }}
       </p>
       <button hlmBtn variant="destructive" class="mt-4" (click)="deleteAccount()">
-        Supprimer mon compte…
+        {{ t('settings.delete.open') }}
       </button>
     </section>
   `,
 })
 export class AccountSettings {
+  protected readonly t = translate;
   private readonly api = inject(AccountApi);
   private readonly auth = inject(AuthStore);
   private readonly dialog = inject(HlmDialogService);
@@ -84,7 +84,7 @@ export class AccountSettings {
         link.download = fileName;
         link.click();
         URL.revokeObjectURL(url);
-        toast.success('Export téléchargé');
+        toast.success(translate('settings.data.downloaded'));
       },
       error: (error: unknown) => {
         this.exporting.set(false);
@@ -101,7 +101,7 @@ export class AccountSettings {
         // Le compte n'existe plus : la session locale est fermée sans appel à l'API.
         this.auth.clearSession();
         void this.router.navigateByUrl('/login');
-        toast.success('Votre compte a été supprimé.');
+        toast.success(translate('settings.delete.done'));
       });
   }
 }

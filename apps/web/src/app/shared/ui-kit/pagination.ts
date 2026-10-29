@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, input, output } from '@angular/core
 import { NgIcon, provideIcons } from '@ng-icons/core';
 import { lucideChevronLeft, lucideChevronRight } from '@ng-icons/lucide';
 import { HlmButtonImports } from '@spartan-ng/helm/button';
+import { type TranslationKey, translate } from '../../core/i18n/translate';
 
 /** Navigation précédent / suivant avec la position courante. */
 @Component({
@@ -10,10 +11,10 @@ import { HlmButtonImports } from '@spartan-ng/helm/button';
   providers: [provideIcons({ lucideChevronLeft, lucideChevronRight })],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <nav aria-label="Pagination" class="flex items-center justify-between gap-4">
+    <nav [attr.aria-label]="t('common.pagination')" class="flex items-center justify-between gap-4">
       <p class="text-muted-foreground text-sm" aria-live="polite">
-        Page {{ page() }} sur {{ totalPages() }} · {{ total() }}
-        {{ total() > 1 ? itemsLabel() : itemLabel() }}
+        {{ t('common.pageOf', { page: page(), totalPages: totalPages() }) }} ·
+        {{ t(unit(), { count: total() }) }}
       </p>
       <div class="flex gap-2">
         <button
@@ -24,7 +25,7 @@ import { HlmButtonImports } from '@spartan-ng/helm/button';
           (click)="pageChange.emit(page() - 1)"
         >
           <ng-icon name="lucideChevronLeft" aria-hidden="true" />
-          Précédente
+          {{ t('common.previous') }}
         </button>
         <button
           hlmBtn
@@ -33,7 +34,7 @@ import { HlmButtonImports } from '@spartan-ng/helm/button';
           [disabled]="page() >= totalPages()"
           (click)="pageChange.emit(page() + 1)"
         >
-          Suivante
+          {{ t('common.next') }}
           <ng-icon name="lucideChevronRight" aria-hidden="true" />
         </button>
       </div>
@@ -44,7 +45,8 @@ export class Pagination {
   readonly page = input.required<number>();
   readonly totalPages = input.required<number>();
   readonly total = input.required<number>();
-  readonly itemLabel = input('élément');
-  readonly itemsLabel = input('éléments');
+  /** Clé « {count} projet|{count} projets » : nombre d'éléments accordé. */
+  readonly unit = input.required<TranslationKey>();
   readonly pageChange = output<number>();
+  protected readonly t = translate;
 }

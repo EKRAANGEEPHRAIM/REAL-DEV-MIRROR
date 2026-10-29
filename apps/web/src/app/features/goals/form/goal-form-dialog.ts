@@ -17,6 +17,7 @@ import { ProjectsApi } from '../../projects/data/projects.api';
 import { fromDateInput, toDateInput } from '../../tasks/task-dates';
 import { GoalsApi } from '../data/goals.api';
 import { MAX_MILESTONES } from '../goal-meta';
+import { translate } from '../../../core/i18n/translate';
 
 export interface GoalFormContext {
   goal?: Goal;
@@ -58,9 +59,9 @@ const FIELD_CLASSES =
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <hlm-dialog-header>
-      <h2 hlmDialogTitle>{{ editing ? 'Modifier l’objectif' : 'Nouvel objectif' }}</h2>
+      <h2 hlmDialogTitle>{{ editing ? t('goals.form.editTitle') : t('goals.new') }}</h2>
       <p hlmDialogDescription>
-        Découpez l’objectif en jalons : la progression se calcule toute seule.
+        {{ t('goals.form.subtitle') }}
       </p>
     </hlm-dialog-header>
 
@@ -75,25 +76,25 @@ const FIELD_CLASSES =
       }
 
       <div class="flex flex-col gap-2">
-        <label hlmLabel for="goal-title">Titre *</label>
+        <label hlmLabel for="goal-title">{{ t('tasks.form.title') }} *</label>
         <input
           hlmInput
           id="goal-title"
           formControlName="title"
           maxlength="200"
-          placeholder="Décrocher une première mission freelance"
+          [placeholder]="t('goals.form.titlePlaceholder')"
           [attr.aria-invalid]="titleInvalid()"
           aria-describedby="goal-title-error"
         />
         @if (titleInvalid()) {
           <p id="goal-title-error" class="text-destructive text-sm">
-            Le titre est obligatoire (200 caractères max).
+            {{ t('tasks.form.titleError') }}
           </p>
         }
       </div>
 
       <div class="flex flex-col gap-2">
-        <label hlmLabel for="goal-description">Description</label>
+        <label hlmLabel for="goal-description">{{ t('projects.form.description') }}</label>
         <textarea
           id="goal-description"
           rows="2"
@@ -104,13 +105,13 @@ const FIELD_CLASSES =
       </div>
 
       <div class="flex flex-col gap-2 sm:w-1/2">
-        <label hlmLabel for="goal-target">Date cible</label>
+        <label hlmLabel for="goal-target">{{ t('goals.form.targetDate') }}</label>
         <input hlmInput id="goal-target" type="date" formControlName="targetDate" />
       </div>
 
       <fieldset class="flex flex-col gap-2">
         <legend class="mb-1 text-sm font-medium">
-          Jalons
+          {{ t('goals.form.milestones') }}
           @if (milestones().length) {
             <span class="text-muted-foreground font-normal"
               >({{ doneCount() }}/{{ milestones().length }})</span
@@ -124,7 +125,7 @@ const FIELD_CLASSES =
                 type="checkbox"
                 class="accent-primary size-4"
                 [checked]="item.done"
-                [attr.aria-label]="'Cocher « ' + item.title + ' »'"
+                [attr.aria-label]="t('common.checkItem', { title: item.title })"
                 (change)="toggleMilestone(i)"
               />
               <span
@@ -138,7 +139,7 @@ const FIELD_CLASSES =
                 hlmBtn
                 variant="ghost"
                 size="icon-sm"
-                [attr.aria-label]="'Supprimer « ' + item.title + ' »'"
+                [attr.aria-label]="t('common.deleteItem', { title: item.title })"
                 (click)="removeMilestone(i)"
               >
                 <ng-icon name="lucideX" aria-hidden="true" />
@@ -148,12 +149,14 @@ const FIELD_CLASSES =
         </ul>
         @if (milestones().length < maxMilestones) {
           <div class="flex gap-2">
-            <label hlmLabel for="new-milestone" class="sr-only">Nouveau jalon</label>
+            <label hlmLabel for="new-milestone" class="sr-only">{{
+              t('goals.form.newMilestone')
+            }}</label>
             <input
               hlmInput
               id="new-milestone"
               class="flex-1"
-              placeholder="Ajouter un jalon…"
+              [placeholder]="t('goals.form.newMilestonePlaceholder')"
               maxlength="200"
               [value]="newMilestone()"
               (input)="newMilestone.set($any($event.target).value)"
@@ -167,17 +170,19 @@ const FIELD_CLASSES =
               (click)="addMilestone()"
             >
               <ng-icon name="lucidePlus" aria-hidden="true" />
-              Ajouter
+              {{ t('common.add') }}
             </button>
           </div>
         } @else {
-          <p class="text-muted-foreground text-sm">{{ maxMilestones }} jalons au maximum.</p>
+          <p class="text-muted-foreground text-sm">
+            {{ t('goals.form.max', { max: maxMilestones }) }}
+          </p>
         }
       </fieldset>
 
       @if (projects().length) {
         <fieldset class="flex flex-col gap-2">
-          <legend class="mb-1 text-sm font-medium">Projets liés</legend>
+          <legend class="mb-1 text-sm font-medium">{{ t('goals.form.projects') }}</legend>
           <div class="flex max-h-40 flex-col gap-1 overflow-y-auto rounded-md border p-2">
             @for (project of projects(); track project.id) {
               <label class="hover:bg-muted/60 flex items-center gap-2 rounded px-1 py-1 text-sm">
@@ -203,16 +208,18 @@ const FIELD_CLASSES =
         @if (editing) {
           <button hlmBtn type="button" variant="ghost" class="text-destructive" (click)="remove()">
             <ng-icon name="lucideTrash2" aria-hidden="true" />
-            Supprimer
+            {{ t('common.delete') }}
           </button>
         }
         <div class="flex flex-col-reverse gap-2 sm:flex-row">
-          <button hlmBtn type="button" variant="outline" (click)="cancel()">Annuler</button>
+          <button hlmBtn type="button" variant="outline" (click)="cancel()">
+            {{ t('common.cancel') }}
+          </button>
           <button hlmBtn type="submit" [disabled]="saving()">
             @if (saving()) {
               <ng-icon name="lucideLoader2" class="motion-safe:animate-spin" aria-hidden="true" />
             }
-            {{ editing ? 'Enregistrer' : 'Créer l’objectif' }}
+            {{ editing ? t('common.save') : t('goals.form.create') }}
           </button>
         </div>
       </hlm-dialog-footer>
@@ -220,6 +227,7 @@ const FIELD_CLASSES =
   `,
 })
 export class GoalFormDialog {
+  protected readonly t = translate;
   protected readonly ref = inject<BrnDialogRef<GoalDialogResult>>(BrnDialogRef);
   private readonly api = inject(GoalsApi);
   private readonly confirm = inject(ConfirmService);
@@ -366,9 +374,9 @@ export class GoalFormDialog {
     if (!goal) return;
     this.confirm
       .confirm({
-        title: `Supprimer « ${goal.title} » ?`,
-        description: 'L’objectif et ses jalons seront supprimés. Les projets liés sont conservés.',
-        confirmLabel: 'Supprimer',
+        title: translate('common.deleteTitle', { name: goal.title }),
+        description: translate('goals.delete.description'),
+        confirmLabel: translate('common.delete'),
         destructive: true,
       })
       .pipe(
