@@ -8,6 +8,7 @@ import { detectImageType } from './avatar-file.js';
 import { AVATAR_STORAGE_DISABLED, AvatarStorage } from './avatar-storage.js';
 import { UpdateProfileDto } from './dto/profile.dto.js';
 import { readLinks, readPreferences } from './dto/user-response.dto.js';
+import { exportFileName } from './export.service.js';
 import { mergeLinks, mergePreferences } from './users.service.js';
 
 const bytes = (...values: number[]) => Buffer.from(values);
@@ -88,6 +89,14 @@ describe('profil', () => {
       theme: 'dark',
       language: 'en',
     });
+  });
+});
+
+describe('export', () => {
+  it('nomme le fichier avec la date du jour', () => {
+    expect(exportFileName(new Date('2026-10-29T15:00:00Z'))).toBe(
+      'devmirror-export-2026-10-29.json',
+    );
   });
 });
 

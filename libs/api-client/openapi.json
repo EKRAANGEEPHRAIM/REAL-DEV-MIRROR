@@ -331,6 +331,55 @@
       }
     },
     "/api/v1/users/me": {
+      "delete": {
+        "operationId": "AccountController_delete",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DeleteAccountDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Compte supprimé ; cookie de session effacé"
+          },
+          "400": {
+            "description": "Mot de passe incorrect",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Jeton d’accès manquant ou invalide",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Trop de tentatives, réessayez dans une minute"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Supprimer définitivement son compte et toutes ses données (confirmation par mot de passe)",
+        "tags": ["users"]
+      },
       "get": {
         "operationId": "UsersController_me",
         "parameters": [],
@@ -415,6 +464,41 @@
           }
         ],
         "summary": "Modifier son profil (nom, bio, liens, préférences)",
+        "tags": ["users"]
+      }
+    },
+    "/api/v1/users/me/export": {
+      "get": {
+        "operationId": "UsersController_export",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Fichier devmirror-export-AAAA-MM-JJ.json (Content-Disposition: attachment)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Jeton d’accès manquant ou invalide",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Exporter toutes ses données en JSON (profil, projets, tâches, objectifs, notes, tags, activité)",
         "tags": ["users"]
       }
     },
@@ -3100,6 +3184,17 @@
           }
         },
         "required": ["currentPassword", "newPassword"]
+      },
+      "DeleteAccountDto": {
+        "type": "object",
+        "properties": {
+          "password": {
+            "type": "string",
+            "example": "MotDePasse2026",
+            "description": "Mot de passe actuel, pour confirmer"
+          }
+        },
+        "required": ["password"]
       },
       "ErrorResponseDto": {
         "type": "object",

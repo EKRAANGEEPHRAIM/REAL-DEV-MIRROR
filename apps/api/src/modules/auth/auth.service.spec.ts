@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { Test } from '@nestjs/testing';
 import { AuthTokenType, Prisma, type User } from '../../generated/prisma/client.js';
 import { MailService } from '../mail/mail.service.js';
+import { AvatarStorage } from '../users/avatar-storage.js';
 import { UsersService } from '../users/users.service.js';
 import {
   AuthService,
@@ -37,11 +38,13 @@ describe('AuthService', () => {
     create: vi.fn(),
     markEmailVerified: vi.fn(),
     updatePassword: vi.fn(),
+    delete: vi.fn(),
   };
   const oneTimeTokens = { create: vi.fn(), consume: vi.fn() };
   const mail = { send: vi.fn() };
   const config = { get: vi.fn(() => 'https://app.devmirror.dev/') };
   const passwords = { hash: vi.fn(), verify: vi.fn() };
+  const avatars = { enabled: true, remove: vi.fn() };
   const tokens = {
     accessTokenTtlSeconds: 900,
     signAccessToken: vi.fn(),
@@ -67,10 +70,55 @@ describe('AuthService', () => {
         { provide: TokenService, useValue: tokens },
         { provide: OneTimeTokenService, useValue: oneTimeTokens },
         { provide: MailService, useValue: mail },
+        { provide: AvatarStorage, useValue: avatars },
         { provide: ConfigService, useValue: config },
       ],
     }).compile();
     service = moduleRef.get(AuthService);
+  });
+
+  describe('deleteAccount', () => {
+    it('refuse un mauvais mot de passe sans rien supprimer', async () => {
+      users.findById.mockResolvedValue(user);
+      passwords.verify.mockResolvedValue(false);
+
+      await expect(service.deleteAccount('user-1', 'Mauvais2026')).rejects.toMatchObject({
+        status: 400,
+        message: WRONG_CURRENT_PASSWORD,
+      });
+      expect(users.delete).not.toHaveBeenCalled();
+      expect(avatars.remove).not.toHaveBeenCalled();
+    });
+
+    it('retire l’avatar puis supprime le compte', async () => {
+      users.findById.mockResolvedValue({ ...user, avatarUrl: 'https://res.cloudinary.com/x.webp' });
+      passwords.verify.mockResolvedValue(true);
+
+      await service.deleteAccount('user-1', 'MotDePasse2026');
+
+      expect(avatars.remove).toHaveBeenCalledWith('user-1');
+      expect(users.delete).toHaveBeenCalledWith('user-1');
+    });
+
+    it('supprime le compte même si Cloudinary échoue', async () => {
+      users.findById.mockResolvedValue({ ...user, avatarUrl: 'https://res.cloudinary.com/x.webp' });
+      passwords.verify.mockResolvedValue(true);
+      avatars.remove.mockRejectedValueOnce(new Error('Cloudinary indisponible'));
+
+      await service.deleteAccount('user-1', 'MotDePasse2026');
+
+      expect(users.delete).toHaveBeenCalledWith('user-1');
+    });
+
+    it('sans avatar, ne sollicite pas Cloudinary', async () => {
+      users.findById.mockResolvedValue(user);
+      passwords.verify.mockResolvedValue(true);
+
+      await service.deleteAccount('user-1', 'MotDePasse2026');
+
+      expect(avatars.remove).not.toHaveBeenCalled();
+      expect(users.delete).toHaveBeenCalledWith('user-1');
+    });
   });
 
   describe('changePassword', () => {

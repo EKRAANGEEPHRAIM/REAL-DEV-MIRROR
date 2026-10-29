@@ -4,6 +4,7 @@ import { RouterLink, RouterOutlet } from '@angular/router';
 import { NgIcon, provideIcons } from '@ng-icons/core';
 import { lucideMenu, lucideScanFace, lucideSearch } from '@ng-icons/lucide';
 import { CommandPalette } from '../command-palette/command-palette';
+import { ThemePreferenceSync } from '../theme/theme-preference-sync';
 import { HlmButtonImports } from '@spartan-ng/helm/button';
 import { HlmSheetImports } from '@spartan-ng/helm/sheet';
 import { ThemeToggle } from '../theme/theme-toggle';
@@ -132,6 +133,11 @@ export class Shell {
   )
     ? '⌘K'
     : 'Ctrl K';
+
+  constructor() {
+    // Le thème suit le compte : préférence appliquée à l'ouverture, changements enregistrés.
+    inject(ThemePreferenceSync);
+  }
 
   /** Ctrl+K / ⌘K ouvre ou ferme la palette, où que soit le focus. */
   protected onKeydown(event: KeyboardEvent): void {

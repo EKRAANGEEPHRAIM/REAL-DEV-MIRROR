@@ -10,6 +10,7 @@ import { EnvironmentVariables } from '../../config/env.validation.js';
 import { AuthTokenType, Prisma, type User } from '../../generated/prisma/client.js';
 import { type MailMessage, MailService } from '../mail/mail.service.js';
 import { UserResponseDto } from '../users/dto/user-response.dto.js';
+import { AvatarStorage } from '../users/avatar-storage.js';
 import { UsersService } from '../users/users.service.js';
 import { passwordResetEmail, verificationEmail } from './auth-mails.js';
 import type { ChangePasswordDto } from './dto/change-password.dto.js';
@@ -43,6 +44,7 @@ export class AuthService {
     private readonly tokens: TokenService,
     private readonly oneTimeTokens: OneTimeTokenService,
     private readonly mail: MailService,
+    private readonly avatars: AvatarStorage,
     config: ConfigService<EnvironmentVariables, true>,
   ) {
     this.appUrl = config.get('APP_URL', { infer: true }).replace(/\/+$/, '');
@@ -123,6 +125,27 @@ export class AuthService {
     }
     await this.users.updatePassword(userId, await this.passwords.hash(dto.newPassword));
     await this.tokens.revokeAllExcept(userId, currentRefreshToken);
+  }
+
+  /**
+   * Supprime définitivement le compte après confirmation par mot de passe : toutes les données
+   * suivent en cascade. L'avatar est retiré de Cloudinary au mieux (un échec du stockage
+   * n'empêche pas la suppression, il est journalisé).
+   */
+  async deleteAccount(userId: string, password: string): Promise<void> {
+    const user = await this.users.findById(userId);
+    if (!user) throw new UnauthorizedException(INVALID_REFRESH_MESSAGE);
+    if (!(await this.passwords.verify(password, user.passwordHash))) {
+      throw new BadRequestException(WRONG_CURRENT_PASSWORD);
+    }
+    if (user.avatarUrl && this.avatars.enabled) {
+      try {
+        await this.avatars.remove(userId);
+      } catch (error) {
+        this.logger.error(`Avatar non supprimé de Cloudinary (utilisateur ${userId})`, error);
+      }
+    }
+    await this.users.delete(userId);
   }
 
   /** Vérifie les identifiants ; le même message couvre l'email inconnu et le mauvais mot de passe. */

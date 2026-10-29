@@ -146,6 +146,11 @@ export const AuthStore = signalStore(
       clearSession,
       clearError: () => patchState(store, { error: null }),
 
+      /** Profil ou avatar modifié : la version renvoyée par l'API remplace l'actuelle. */
+      setUser: (user: User) => {
+        if (store.user()) patchState(store, { user });
+      },
+
       /** Après une vérification réussie : met à jour la session ouverte, s'il y en a une. */
       markEmailVerified: () => {
         const user = store.user();
