@@ -1,5 +1,5 @@
-import { Directive } from '@angular/core';
-import { BrnFieldControlDescribedBy } from '@spartan-ng/brain/field';
+import { Directive, inject } from '@angular/core';
+import { BrnFieldControl, BrnFieldControlDescribedBy } from '@spartan-ng/brain/field';
 import { BrnInput } from '@spartan-ng/brain/input';
 import { classes } from '@spartan-ng/helm/utils';
 
@@ -9,9 +9,16 @@ import { classes } from '@spartan-ng/helm/utils';
     { directive: BrnInput, inputs: ['id', 'forceInvalid'] },
     BrnFieldControlDescribedBy,
   ],
-  host: { 'data-slot': 'input' },
+  host: {
+    'data-slot': 'input',
+    // BrnInput annonce « invalide » dès le chargement (champ requis vide). On s'aligne sur l'état
+    // visuel (touché ou soumis) : un lecteur d'écran n'entend pas d'erreur avant toute saisie.
+    '[attr.aria-invalid]': '_fieldControl?.spartanInvalid() ? "true" : null',
+  },
 })
 export class HlmInput {
+  protected readonly _fieldControl = inject(BrnFieldControl, { optional: true });
+
   constructor() {
     classes(
       () =>
