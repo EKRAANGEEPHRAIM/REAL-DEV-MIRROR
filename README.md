@@ -39,3 +39,17 @@ pnpm install
 ```
 
 Les règles de code de la stack sont dans [.claude.code.md](.claude.code.md).
+
+## Tests
+
+```bash
+pnpm test                                   # tests unitaires (API et front)
+pnpm --filter @devmirror/api test:e2e       # e2e de l'API (base de test : DATABASE_URL)
+pnpm --filter @devmirror/web e2e --project=audit   # responsive + accessibilité, API simulée
+E2E_API=1 pnpm --filter @devmirror/web e2e --project=parcours   # parcours complet, vraie API
+```
+
+Les tests Playwright tournent sur le build de production. L'audit (14 pages × 4 largeurs, anglais,
+mode sombre, règles WCAG 2.2 AA) n'a besoin d'aucune base. Le parcours (inscription → projet →
+tâche → tableau de bord → suppression du compte) démarre l'API en local avec `apps/api/.env` :
+sa `DATABASE_URL` doit viser une base de test, jamais la production. La CI lance les deux.

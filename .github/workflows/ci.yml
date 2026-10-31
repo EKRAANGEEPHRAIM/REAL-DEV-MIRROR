@@ -54,7 +54,7 @@ jobs:
       - name: Installer Chromium
         run: pnpm --filter @devmirror/web exec playwright install --with-deps chromium
       # API simulée dans le navigateur : aucune base ni secret nécessaire.
-      - run: pnpm --filter @devmirror/web e2e
+      - run: pnpm --filter @devmirror/web e2e --project=audit
       - if: failure()
         uses: actions/upload-artifact@v4
         with:
@@ -63,7 +63,7 @@ jobs:
           retention-days: 7
 
   api-e2e:
-    name: Tests e2e de l'API (branche Neon test)
+    name: Tests e2e de l'API et parcours complet (branche Neon test)
     runs-on: ubuntu-latest
     env:
       NODE_ENV: test
@@ -102,3 +102,21 @@ jobs:
 
       - if: steps.secret.outputs.available == 'true'
         run: pnpm --filter @devmirror/api test:e2e
+
+      # Parcours complet : front (build de production) + API locale + base de test.
+      - name: Installer Chromium
+        if: steps.secret.outputs.available == 'true'
+        run: pnpm --filter @devmirror/web exec playwright install --with-deps chromium
+
+      - name: Parcours inscription → projet → tâche → tableau de bord
+        if: steps.secret.outputs.available == 'true'
+        env:
+          E2E_API: '1'
+        run: pnpm --filter @devmirror/web exec playwright test --project=parcours
+
+      - if: failure() && steps.secret.outputs.available == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: parcours-results
+          path: apps/web/e2e-results
+          retention-days: 7
