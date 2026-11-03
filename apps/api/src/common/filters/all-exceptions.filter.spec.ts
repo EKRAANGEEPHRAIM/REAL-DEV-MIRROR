@@ -2,6 +2,7 @@ import type { ArgumentsHost } from '@nestjs/common';
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { ThrottlerException } from '@nestjs/throttler';
 import { Prisma } from '../../generated/prisma/client.js';
+import type { ErrorResponseDto } from '../dto/error-response.dto.js';
 import { AllExceptionsFilter } from './all-exceptions.filter.js';
 
 function prismaError(code: string) {
@@ -13,8 +14,8 @@ function prismaError(code: string) {
 
 describe('AllExceptionsFilter', () => {
   const filter = new AllExceptionsFilter();
-  const json = vi.fn();
-  const status = vi.fn(() => ({ json }));
+  const json = vi.fn<(body: ErrorResponseDto) => void>();
+  const status = vi.fn((_code: number) => ({ json }));
   const response = { status, headersSent: false };
   const host = {
     switchToHttp: () => ({

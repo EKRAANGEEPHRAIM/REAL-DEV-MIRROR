@@ -49,6 +49,39 @@ describe('TagsService', () => {
     expect(prisma.tag.create).not.toHaveBeenCalled();
   });
 
+  it('crée et renomme un tag, avec sa couleur', async () => {
+    const saved = { id: 't1', name: 'nestjs', color: '#22c55e', _count: { projects: 0, notes: 0 } };
+    prisma.tag.count.mockResolvedValue(0);
+    prisma.tag.create.mockResolvedValue(saved);
+    prisma.tag.update.mockResolvedValue({ ...saved, name: 'nest' });
+
+    await expect(service.create('user-1', { name: 'nestjs', color: '#22c55e' })).resolves.toEqual({
+      id: 't1',
+      name: 'nestjs',
+      color: '#22c55e',
+      usage: { projects: 0, notes: 0 },
+    });
+    await expect(service.update('user-1', 't1', { name: 'nest' })).resolves.toMatchObject({
+      name: 'nest',
+    });
+    expect(prisma.tag.update.mock.calls[0][0].where).toEqual({ id: 't1', userId: 'user-1' });
+  });
+
+  it('renommer vers un nom déjà pris : 409 ; autres erreurs telles quelles', async () => {
+    const outage = new Error('connexion perdue');
+    prisma.tag.count.mockResolvedValue(0);
+    prisma.tag.update.mockRejectedValueOnce(prismaError('P2002')).mockRejectedValueOnce(outage);
+    prisma.tag.create.mockRejectedValueOnce(outage);
+    prisma.tag.delete.mockRejectedValueOnce(outage);
+
+    await expect(service.update('user-1', 't1', { name: 'angular' })).rejects.toBeInstanceOf(
+      ConflictException,
+    );
+    await expect(service.update('user-1', 't1', { name: 'x' })).rejects.toBe(outage);
+    await expect(service.create('user-1', { name: 'x' })).rejects.toBe(outage);
+    await expect(service.remove('user-1', 't1')).rejects.toBe(outage);
+  });
+
   it('update et remove renvoient 404 pour le tag d’un autre utilisateur', async () => {
     prisma.tag.update.mockRejectedValue(prismaError('P2025'));
     prisma.tag.delete.mockRejectedValue(prismaError('P2025'));

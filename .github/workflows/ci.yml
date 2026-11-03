@@ -30,6 +30,8 @@ jobs:
       - run: pnpm format:check
       - run: pnpm lint
       - run: pnpm test
+      - name: Couverture des services de l'API (≥ 70 % par fichier)
+        run: pnpm --filter @devmirror/api test:cov
       - run: pnpm build
 
       - name: Vérifier que le client API généré est à jour

@@ -1,9 +1,10 @@
-import { BadRequestException } from '@nestjs/common';
+import { BadRequestException, NotFoundException } from '@nestjs/common';
+import { Prisma } from '../../generated/prisma/client.js';
 import type { PrismaService } from '../../prisma/prisma.service.js';
 import type { ProjectsService } from '../projects/projects.service.js';
 import type { TagsService } from '../tags/tags.service.js';
 import { noteExcerpt } from './note-excerpt.js';
-import { NotesService } from './notes.service.js';
+import { NOTE_NOT_FOUND, NotesService } from './notes.service.js';
 
 describe('noteExcerpt', () => {
   it('retire la syntaxe Markdown et les blocs de code', () => {
@@ -34,7 +35,13 @@ describe('noteExcerpt', () => {
 describe('NotesService', () => {
   const tx = { note: { create: vi.fn() }, activity: { create: vi.fn() } };
   const prisma = {
-    note: { findMany: vi.fn(), count: vi.fn(), update: vi.fn() },
+    note: {
+      findMany: vi.fn(),
+      count: vi.fn(),
+      update: vi.fn(),
+      findFirst: vi.fn(),
+      deleteMany: vi.fn(),
+    },
     $queryRaw: vi.fn(),
     $transaction: vi.fn((arg: unknown) =>
       typeof arg === 'function' ? (arg as (t: typeof tx) => unknown)(tx) : Promise.all(arg as []),
@@ -63,6 +70,39 @@ describe('NotesService', () => {
     vi.clearAllMocks();
     prisma.note.findMany.mockResolvedValue([]);
     prisma.note.count.mockResolvedValue(0);
+  });
+
+  it('findOne : la note de l’utilisateur avec son contenu, sinon 404', async () => {
+    prisma.note.findFirst.mockResolvedValueOnce(note('n1', true)).mockResolvedValueOnce(null);
+
+    await expect(service.findOne('user-1', 'n1')).resolves.toMatchObject({
+      id: 'n1',
+      content: 'contenu n1',
+      pinned: true,
+    });
+    await expect(service.findOne('user-1', 'n9')).rejects.toThrow(
+      new NotFoundException(NOTE_NOT_FOUND),
+    );
+    expect(prisma.note.findFirst.mock.calls[1][0].where).toEqual({ id: 'n9', userId: 'user-1' });
+  });
+
+  it('remove : 404 quand rien n’est supprimé', async () => {
+    prisma.note.deleteMany.mockResolvedValueOnce({ count: 1 }).mockResolvedValueOnce({ count: 0 });
+
+    await expect(service.remove('user-1', 'n1')).resolves.toBeUndefined();
+    await expect(service.remove('user-1', 'n9')).rejects.toBeInstanceOf(NotFoundException);
+  });
+
+  it('update : P2025 devient 404, les autres erreurs passent telles quelles', async () => {
+    const notFound = new Prisma.PrismaClientKnownRequestError('absent', {
+      code: 'P2025',
+      clientVersion: '7.10.0',
+    });
+    const outage = new Error('connexion perdue');
+    prisma.note.update.mockRejectedValueOnce(notFound).mockRejectedValueOnce(outage);
+
+    await expect(service.update('user-1', 'n1', { pinned: true })).rejects.toThrow(NOTE_NOT_FOUND);
+    await expect(service.update('user-1', 'n1', { pinned: true })).rejects.toBe(outage);
   });
 
   it('liste : épinglées en tête, puis le tri demandé', async () => {

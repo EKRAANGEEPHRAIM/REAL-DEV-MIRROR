@@ -37,6 +37,13 @@ Sans ce secret, le job `api-e2e` est ignoré avec un avertissement ; le job `qua
    - `CORS_ORIGIN` : URL Vercel du front (étape 4) ; mettre une valeur provisoire puis la corriger
 3. Le build applique les migrations (`prisma migrate deploy`) avant le démarrage.
 4. Vérifier : `https://<service>.onrender.com/api/v1/health` renvoie `"database": "up"`.
+5. Facultatif : `SENTRY_DSN` pour recevoir les erreurs serveur (5xx) dans Sentry, `LOG_LEVEL`
+   pour changer le niveau des logs (`info` par défaut en production).
+
+Logs : une ligne JSON par événement (onglet **Logs** de Render), une par requête avec statut et
+durée. Chaque réponse porte un en-tête `x-request-id` que l'on retrouve dans la ligne de log
+correspondante. Jetons, cookies et mots de passe sont masqués ; les sondes `/health` ne sont
+pas journalisées.
 
 Plan gratuit : le service se met en veille après 15 minutes sans trafic ; la première
 requête suivante prend environ 30 secondes.
