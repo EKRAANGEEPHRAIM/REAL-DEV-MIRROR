@@ -2,6 +2,7 @@ import { plainToInstance, Transform, Type } from 'class-transformer';
 import {
   IsBoolean,
   IsEnum,
+  IsIn,
   IsInt,
   IsNotEmpty,
   IsOptional,
@@ -13,6 +14,9 @@ import {
   MinLength,
   validateSync,
 } from 'class-validator';
+
+export const LOG_LEVELS = ['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent'] as const;
+export type LogLevel = (typeof LOG_LEVELS)[number];
 
 export enum NodeEnv {
   Development = 'development',
@@ -104,6 +108,22 @@ export class EnvironmentVariables {
   @Transform(toBoolean)
   @IsBoolean()
   TRUST_PROXY = false;
+
+  /** Niveau des logs Pino ; absent : info en production, debug en développement, silent en test. */
+  @IsOptional()
+  @IsIn(LOG_LEVELS, { message: `LOG_LEVEL doit valoir ${LOG_LEVELS.join(', ')}` })
+  LOG_LEVEL?: LogLevel;
+
+  /** DSN Sentry (optionnel) : absent, aucune erreur n'est envoyée à Sentry. */
+  @Transform(({ value }: { value: unknown }) =>
+    typeof value === 'string' ? value.trim() || undefined : value,
+  )
+  @IsOptional()
+  @IsUrl(
+    { protocols: ['https'], require_protocol: true },
+    { message: 'SENTRY_DSN doit être une URL https' },
+  )
+  SENTRY_DSN?: string;
 }
 
 /** Valide `process.env` au démarrage : l'API refuse de démarrer avec une configuration invalide. */

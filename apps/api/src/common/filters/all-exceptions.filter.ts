@@ -10,6 +10,7 @@ import {
 import type { Request, Response } from 'express';
 import { Prisma } from '../../generated/prisma/client.js';
 import type { ErrorResponseDto } from '../dto/error-response.dto.js';
+import { reportServerError } from '../monitoring/sentry.js';
 
 interface ResolvedError {
   status: number;
@@ -52,6 +53,8 @@ export class AllExceptionsFilter implements ExceptionFilter {
         `${request.method} ${request.originalUrl} → ${status}`,
         exception instanceof Error ? exception.stack : String(exception),
       );
+      // Chemin sans la query string : elle peut contenir un jeton (liens d'email).
+      reportServerError(exception, { method: request.method, path: request.path });
     }
     if (response.headersSent) return;
 

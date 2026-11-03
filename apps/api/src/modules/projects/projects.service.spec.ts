@@ -1,4 +1,4 @@
-import { NotFoundException } from '@nestjs/common';
+import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { Prisma, ProjectStatus, TaskStatus } from '../../generated/prisma/client.js';
 import type { PrismaService } from '../../prisma/prisma.service.js';
 import { ProjectQueryDto } from './dto/project-query.dto.js';
@@ -129,5 +129,112 @@ describe('ProjectsService', () => {
     );
     await expect(service.remove('user-1', 'p1')).rejects.toThrow('Projet introuvable');
     expect(prisma.project.delete).toHaveBeenCalledWith({ where: { id: 'p1', userId: 'user-1' } });
+  });
+
+  it('laisse passer les autres erreurs de la base (pas de faux 404)', async () => {
+    const outage = new Error('connexion perdue');
+    prisma.project.update.mockRejectedValue(outage);
+    prisma.project.delete.mockRejectedValue(outage);
+
+    await expect(service.update('user-1', 'p1', { name: 'X' })).rejects.toBe(outage);
+    await expect(service.remove('user-1', 'p1')).rejects.toBe(outage);
+  });
+
+  it('findOne renvoie le projet avec sa progression', async () => {
+    prisma.project.findFirst.mockResolvedValue(project('p1'));
+    prisma.task.groupBy.mockResolvedValue([
+      { projectId: 'p1', status: TaskStatus.DONE, _count: { _all: 3 } },
+      { projectId: null, status: TaskStatus.DONE, _count: { _all: 5 } },
+    ]);
+
+    await expect(service.findOne('user-1', 'p1')).resolves.toMatchObject({
+      id: 'p1',
+      progress: { total: 3, done: 3, percent: 100 },
+    });
+  });
+
+  describe('create', () => {
+    const tx = { project: { create: vi.fn() }, activity: { create: vi.fn() } };
+
+    beforeEach(() => {
+      prisma.$transaction.mockImplementation((work: (client: typeof tx) => unknown) => work(tx));
+      tx.project.create.mockResolvedValue(project('p3'));
+    });
+
+    it('vérifie les tags, crée le projet et journalise l’activité dans la même transaction', async () => {
+      const created = await service.create('user-1', {
+        name: 'Nouveau',
+        techStack: ['NestJS'],
+        tagIds: ['t1', 't2'],
+      });
+
+      expect(tags.assertOwned).toHaveBeenCalledWith('user-1', ['t1', 't2']);
+      expect(tx.project.create.mock.calls[0][0].data).toMatchObject({
+        name: 'Nouveau',
+        techStack: ['NestJS'],
+        userId: 'user-1',
+        tags: { connect: [{ id: 't1' }, { id: 't2' }] },
+      });
+      expect(tx.activity.create).toHaveBeenCalledWith({
+        data: { userId: 'user-1', type: 'PROJECT_CREATED', entityType: 'PROJECT', entityId: 'p3' },
+      });
+      expect(created.progress).toEqual({ total: 0, done: 0, percent: 0 });
+    });
+
+    it('sans tag : rien à connecter', async () => {
+      await service.create('user-1', { name: 'Seul' });
+
+      expect(tags.assertOwned).toHaveBeenCalledWith('user-1', []);
+      expect(tx.project.create.mock.calls[0][0].data).not.toHaveProperty('tags');
+    });
+
+    it('un tag d’un autre utilisateur bloque la création', async () => {
+      tags.assertOwned.mockRejectedValueOnce(new Error('Tag introuvable'));
+
+      await expect(service.create('user-1', { name: 'X', tagIds: ['t9'] })).rejects.toThrow(
+        'Tag introuvable',
+      );
+      expect(tx.project.create).not.toHaveBeenCalled();
+    });
+  });
+
+  it('update remplace la liste des tags seulement quand elle est fournie', async () => {
+    prisma.project.update.mockResolvedValue(project('p1'));
+
+    await service.update('user-1', 'p1', { tagIds: ['t1'] });
+    await service.update('user-1', 'p1', { status: ProjectStatus.DONE });
+
+    expect(tags.assertOwned).toHaveBeenCalledTimes(1);
+    expect(prisma.project.update.mock.calls[0][0]).toMatchObject({
+      where: { id: 'p1', userId: 'user-1' },
+      data: { tags: { set: [{ id: 't1' }] } },
+    });
+    expect(prisma.project.update.mock.calls[1][0].data).not.toHaveProperty('tags');
+    expect(prisma.project.update.mock.calls[1][0].data.status).toBe(ProjectStatus.DONE);
+  });
+
+  describe('appartenance (tâches, notes, objectifs)', () => {
+    it('assertOwned : 400 si le projet n’est pas à l’utilisateur', async () => {
+      prisma.project.count.mockResolvedValueOnce(1).mockResolvedValueOnce(0);
+
+      await expect(service.assertOwned('user-1', 'p1')).resolves.toBeUndefined();
+      await expect(service.assertOwned('user-1', 'p9')).rejects.toBeInstanceOf(BadRequestException);
+      expect(prisma.project.count).toHaveBeenLastCalledWith({
+        where: { id: 'p9', userId: 'user-1' },
+      });
+    });
+
+    it('assertAllOwned : tout ou rien, doublons comptés une fois, liste vide sans requête', async () => {
+      await service.assertAllOwned('user-1', []);
+      expect(prisma.project.count).not.toHaveBeenCalled();
+
+      prisma.project.count.mockResolvedValueOnce(2);
+      await expect(service.assertAllOwned('user-1', ['p1', 'p2', 'p1'])).resolves.toBeUndefined();
+
+      prisma.project.count.mockResolvedValueOnce(1);
+      await expect(service.assertAllOwned('user-1', ['p1', 'p9'])).rejects.toThrow(
+        'Un ou plusieurs projets sont introuvables',
+      );
+    });
   });
 });

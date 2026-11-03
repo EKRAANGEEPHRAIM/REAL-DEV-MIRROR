@@ -1,4 +1,5 @@
 import { BadRequestException, NotFoundException } from '@nestjs/common';
+import { Prisma } from '../../generated/prisma/client.js';
 import type { PrismaService } from '../../prisma/prisma.service.js';
 import type { ProjectsService } from '../projects/projects.service.js';
 import { MAX_MILESTONES_PER_GOAL } from './dto/goal.dto.js';
@@ -39,7 +40,14 @@ describe('toGoalResponse', () => {
 
 describe('GoalsService', () => {
   const prisma = {
-    goal: { findMany: vi.fn(), count: vi.fn(), create: vi.fn(), update: vi.fn() },
+    goal: {
+      findMany: vi.fn(),
+      count: vi.fn(),
+      create: vi.fn(),
+      update: vi.fn(),
+      findFirst: vi.fn(),
+      deleteMany: vi.fn(),
+    },
     $transaction: vi.fn((queries: Promise<unknown>[]) => Promise.all(queries)),
   };
   const projects = { assertAllOwned: vi.fn() };
@@ -54,6 +62,62 @@ describe('GoalsService', () => {
     prisma.goal.count.mockResolvedValue(0);
     prisma.goal.create.mockResolvedValue(goal([]));
     prisma.goal.update.mockResolvedValue(goal([]));
+  });
+
+  it('filtre « en cours », par projet et par recherche, tout ensemble', async () => {
+    await service.findAll('user-1', {
+      page: 1,
+      limit: 20,
+      state: 'active',
+      projectId: 'p1',
+      q: 'free',
+    });
+
+    const { AND } = prisma.goal.findMany.mock.calls[0][0].where;
+    expect(AND[0]).toEqual({ userId: 'user-1' });
+    expect(AND).toContainEqual({ projects: { some: { id: 'p1' } } });
+    expect(AND).toContainEqual({
+      OR: [
+        { title: { contains: 'free', mode: 'insensitive' } },
+        { description: { contains: 'free', mode: 'insensitive' } },
+      ],
+    });
+    expect(AND).toHaveLength(4);
+  });
+
+  it('findOne : l’objectif de l’utilisateur, sinon 404', async () => {
+    prisma.goal.findFirst.mockResolvedValueOnce(goal([{ done: true }])).mockResolvedValueOnce(null);
+
+    await expect(service.findOne('user-1', 'g1')).resolves.toMatchObject({
+      id: 'g1',
+      completed: true,
+    });
+    await expect(service.findOne('user-1', 'g9')).rejects.toThrow(
+      new NotFoundException(GOAL_NOT_FOUND),
+    );
+    expect(prisma.goal.findFirst.mock.calls[1][0].where).toEqual({ id: 'g9', userId: 'user-1' });
+  });
+
+  it('remove : 404 quand rien n’est supprimé (objectif absent ou d’un autre)', async () => {
+    prisma.goal.deleteMany.mockResolvedValueOnce({ count: 1 }).mockResolvedValueOnce({ count: 0 });
+
+    await expect(service.remove('user-1', 'g1')).resolves.toBeUndefined();
+    await expect(service.remove('user-1', 'g9')).rejects.toBeInstanceOf(NotFoundException);
+    expect(prisma.goal.deleteMany).toHaveBeenLastCalledWith({
+      where: { id: 'g9', userId: 'user-1' },
+    });
+  });
+
+  it('update : P2025 devient 404, les autres erreurs passent telles quelles', async () => {
+    const notFound = new Prisma.PrismaClientKnownRequestError('absent', {
+      code: 'P2025',
+      clientVersion: '7.10.0',
+    });
+    const outage = new Error('connexion perdue');
+    prisma.goal.update.mockRejectedValueOnce(notFound).mockRejectedValueOnce(outage);
+
+    await expect(service.update('user-1', 'g1', { title: 'X' })).rejects.toThrow(GOAL_NOT_FOUND);
+    await expect(service.update('user-1', 'g1', { title: 'X' })).rejects.toBe(outage);
   });
 
   it('filtre « atteints » : au moins un jalon, tous faits', async () => {
