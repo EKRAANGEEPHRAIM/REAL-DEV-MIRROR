@@ -145,7 +145,12 @@ import { translate } from '../../core/i18n/translate';
             <h2 id="weekly-heading" class="font-medium">{{ t('dashboard.weekly.title') }}</h2>
             <p class="text-muted-foreground text-sm">{{ t('dashboard.weekly.subtitle') }}</p>
           </header>
-          <dm-weekly-tasks-chart [weeks]="data.tasksCompletedPerWeek" />
+          <!-- Graphiques chargés à l'approche de l'écran : le haut du tableau de bord s'affiche d'abord. -->
+          @defer (on viewport) {
+            <dm-weekly-tasks-chart [weeks]="data.tasksCompletedPerWeek" />
+          } @placeholder {
+            <hlm-skeleton class="h-56 w-full" />
+          }
           <details class="text-sm">
             <summary class="text-muted-foreground cursor-pointer text-xs">
               {{ t('common.seeData') }}
@@ -176,7 +181,11 @@ import { translate } from '../../core/i18n/translate';
             <h2 id="status-heading" class="font-medium">{{ t('dashboard.status.title') }}</h2>
             <p class="text-muted-foreground text-sm">{{ t('dashboard.status.subtitle') }}</p>
           </header>
-          <dm-project-status-chart [statuses]="data.projectsByStatus" />
+          @defer (on viewport) {
+            <dm-project-status-chart [statuses]="data.projectsByStatus" />
+          } @placeholder {
+            <hlm-skeleton class="h-44 w-full" />
+          }
         </section>
 
         <section hlmCard class="gap-4 p-5 lg:col-span-3" aria-labelledby="activity-heading">
@@ -186,7 +195,11 @@ import { translate } from '../../core/i18n/translate';
               {{ t('dashboard.activity.subtitle', { count: data.activity.total }) }}
             </p>
           </header>
-          <dm-activity-heatmap [calendar]="data.activity" />
+          @defer (on viewport) {
+            <dm-activity-heatmap [calendar]="data.activity" />
+          } @placeholder {
+            <hlm-skeleton class="h-36 w-full" />
+          }
           <details class="text-sm">
             <summary class="text-muted-foreground cursor-pointer text-xs">
               {{ t('dashboard.activity.byMonth') }}

@@ -53,3 +53,9 @@ Les tests Playwright tournent sur le build de production. L'audit (14 pages × 4
 mode sombre, règles WCAG 2.2 AA) n'a besoin d'aucune base. Le parcours (inscription → projet →
 tâche → tableau de bord → suppression du compte) démarre l'API en local avec `apps/api/.env` :
 sa `DATABASE_URL` doit viser une base de test, jamais la production. La CI lance les deux.
+
+Performance : avec l'API locale et le build servis (comme pour le parcours), la commande
+`RUNS=3 pnpm --filter @devmirror/web lighthouse` mesure six pages avec Lighthouse (profil
+mobile ; `FORM_FACTOR=desktop` pour l'ordinateur) et garde la médiane de trois passages.
+Rapports HTML dans `apps/web/e2e-results/lighthouse/`. Le bundle initial est plafonné à
+550 ko (avertissement) et 700 ko (erreur) dans `angular.json`.

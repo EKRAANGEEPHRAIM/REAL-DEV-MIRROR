@@ -1,6 +1,5 @@
 import { Routes } from '@angular/router';
 import { authGuard, guestGuard } from './core/auth/auth.guards';
-import { Shell } from './core/layout/shell';
 import { AuthLayout } from './features/auth/auth-layout';
 
 // Ordre important : les deux layouts ont un chemin vide. Le shell vient en premier pour que
@@ -9,7 +8,8 @@ import { AuthLayout } from './features/auth/auth-layout';
 export const routes: Routes = [
   {
     path: '',
-    component: Shell,
+    // Chargé après authGuard : menus, panneau mobile et palette restent hors du bundle initial.
+    loadComponent: () => import('./core/layout/shell').then((m) => m.Shell),
     canActivate: [authGuard],
     children: [
       { path: '', pathMatch: 'full', redirectTo: 'dashboard' },

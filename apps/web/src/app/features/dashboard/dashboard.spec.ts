@@ -52,11 +52,15 @@ describe('Tableau de bord', () => {
     expect(
       harness.routeNativeElement!.querySelector('a[href="/projects?status=IN_PROGRESS"]'),
     ).not.toBeNull();
-    // Graphiques et heatmap alimentés par la même réponse : aucune autre requête
+    // Graphiques et heatmap alimentés par la même réponse : aucune autre requête. Ils sont
+    // chargés par @defer (on viewport) : on attend leur rendu.
     const root = harness.routeNativeElement!;
-    expect(root.querySelector('dm-weekly-tasks-chart')).not.toBeNull();
-    expect(root.querySelector('dm-project-status-chart')).not.toBeNull();
-    expect(root.querySelector('dm-activity-heatmap')).not.toBeNull();
+    await vi.waitFor(() => {
+      harness.detectChanges();
+      expect(root.querySelector('dm-weekly-tasks-chart')).not.toBeNull();
+      expect(root.querySelector('dm-project-status-chart')).not.toBeNull();
+      expect(root.querySelector('dm-activity-heatmap')).not.toBeNull();
+    });
     // Tableaux de données : 12 semaines, et un total par mois
     expect(root.querySelectorAll('[aria-labelledby="weekly-heading"] tbody tr')).toHaveLength(12);
     expect(

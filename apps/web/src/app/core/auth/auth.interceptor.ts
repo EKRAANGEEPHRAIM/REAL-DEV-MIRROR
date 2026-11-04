@@ -10,8 +10,12 @@ import { catchError, switchMap, throwError } from 'rxjs';
 import { API_BASE_URL } from '../http/api-base-url';
 import { AuthStore } from './auth.store';
 
-/** Routes d'authentification qui n'utilisent pas le jeton d'accès (et ne déclenchent pas de refresh). */
+/**
+ * Routes qui n'utilisent pas le jeton d'accès (et ne déclenchent pas de refresh) : authentification,
+ * et /health, appelé par AuthStore pendant sa propre création pour réveiller l'API.
+ */
 const SESSION_ROUTES = [
+  '/health',
   '/auth/login',
   '/auth/register',
   '/auth/refresh',

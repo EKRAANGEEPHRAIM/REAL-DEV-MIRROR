@@ -8,6 +8,7 @@
     "watch": "ng build --watch --configuration development",
     "test": "ng test --watch=false",
     "e2e": "tsc -p tsconfig.e2e.json && playwright test",
+    "lighthouse": "node e2e/support/lighthouse.mjs",
     "lint": "ng lint"
   },
   "private": true,
@@ -51,6 +52,7 @@
     "angular-eslint": "22.6.0",
     "eslint": "^10.12.0",
     "jsdom": "^30.0.0",
+    "lighthouse": "^13.6.0",
     "postcss": "^8.5.3",
     "prettier": "^3.8.1",
     "tailwindcss": "^4.1.12",

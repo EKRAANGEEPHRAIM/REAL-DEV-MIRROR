@@ -3,7 +3,7 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { TestBed } from '@angular/core/testing';
 import { provideRouter, Router } from '@angular/router';
 import { sessionResponse } from '../../../testing/auth-fixtures';
-import { AuthStore, initialsOf, safeReturnUrl } from './auth.store';
+import { AuthStore, initialsOf, safeReturnUrl, SESSION_HINT_KEY } from './auth.store';
 
 describe('AuthStore', () => {
   let http: HttpTestingController;
@@ -15,6 +15,9 @@ describe('AuthStore', () => {
   }
 
   beforeEach(() => {
+    // Session déjà ouverte dans ce navigateur : la restauration interroge l'API.
+
+    localStorage.setItem(SESSION_HINT_KEY, '1');
     TestBed.configureTestingModule({
       providers: [provideHttpClient(), provideHttpClientTesting(), provideRouter([])],
     });
@@ -23,7 +26,11 @@ describe('AuthStore', () => {
     vi.spyOn(router, 'navigateByUrl').mockResolvedValue(true);
   });
 
-  afterEach(() => http.verify());
+  afterEach(() => {
+    http.verify();
+
+    localStorage.clear();
+  });
 
   describe('restauration au démarrage', () => {
     it('restaure la session depuis le cookie', () => {
@@ -47,7 +54,41 @@ describe('AuthStore', () => {
 
       expect(store.status()).toBe('anonymous');
       expect(store.accessToken()).toBeNull();
+      // Session refusée : plus d'indice, la prochaine ouverture ne tentera pas de refresh.
+      expect(localStorage.getItem(SESSION_HINT_KEY)).toBeNull();
     });
+
+    it('sans session dans ce navigateur : anonyme aussitôt, API réveillée, aucun refresh', () => {
+      localStorage.removeItem(SESSION_HINT_KEY);
+      const store = createStore();
+
+      expect(store.status()).toBe('anonymous');
+      http.expectNone('/api/v1/auth/refresh');
+      http.expectOne((r) => r.method === 'GET' && r.url === '/api/v1/health').flush({});
+    });
+
+    it('le réveil de l’API peut échouer sans conséquence', () => {
+      localStorage.removeItem(SESSION_HINT_KEY);
+      const store = createStore();
+
+      http.expectOne('/api/v1/health').error(new ProgressEvent('error'));
+      expect(store.status()).toBe('anonymous');
+    });
+  });
+
+  it('connexion puis déconnexion : l’indice de session suit la session', () => {
+    localStorage.removeItem(SESSION_HINT_KEY);
+    const store = createStore();
+    http.expectOne('/api/v1/health').flush({});
+
+    store.login({ credentials: { email: 'ada@devmirror.dev', password: 'MotDePasse2026' } });
+    http.expectOne('/api/v1/auth/login').flush(sessionResponse());
+    expect(localStorage.getItem(SESSION_HINT_KEY)).toBe('1');
+
+    store.logout();
+    http.expectOne('/api/v1/auth/logout').flush(null);
+    expect(localStorage.getItem(SESSION_HINT_KEY)).toBeNull();
+    expect(store.status()).toBe('anonymous');
   });
 
   describe('connexion', () => {

@@ -48,6 +48,30 @@ const initialState: AuthState = {
 
 export const DEFAULT_REDIRECT = '/dashboard';
 
+/**
+ * Indice « une session a été ouverte dans ce navigateur » : un simple booléen, jamais un jeton
+ * (la session reste dans le cookie httpOnly). Sans lui, inutile d'attendre un refresh voué au
+ * 401 : la page de connexion s'affiche aussitôt, sans dépendre du réveil de l'API.
+ */
+export const SESSION_HINT_KEY = 'devmirror.session';
+
+export function hasSessionHint(): boolean {
+  try {
+    return globalThis.localStorage?.getItem(SESSION_HINT_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
+
+function setSessionHint(active: boolean): void {
+  try {
+    if (active) globalThis.localStorage?.setItem(SESSION_HINT_KEY, '1');
+    else globalThis.localStorage?.removeItem(SESSION_HINT_KEY);
+  } catch {
+    // Stockage indisponible (navigation privée) : le refresh se fera à chaque ouverture.
+  }
+}
+
 /** N'accepte que des chemins internes, pour qu'un lien piégé ne redirige pas hors du site. */
 export function safeReturnUrl(url: string | null | undefined): string {
   return url && url.startsWith('/') && !url.startsWith('//') ? url : DEFAULT_REDIRECT;
@@ -77,7 +101,8 @@ export const AuthStore = signalStore(
     // Un seul refresh à la fois : les requêtes qui reçoivent un 401 en même temps l'attendent.
     let refreshInFlight: Observable<string> | null = null;
 
-    const startSession = (response: AuthResponse) =>
+    const startSession = (response: AuthResponse) => {
+      setSessionHint(true);
       patchState(store, {
         user: response.user,
         accessToken: response.accessToken,
@@ -85,9 +110,12 @@ export const AuthStore = signalStore(
         pending: false,
         error: null,
       });
+    };
 
-    const clearSession = () =>
+    const clearSession = () => {
+      setSessionHint(false);
       patchState(store, { user: null, accessToken: null, status: 'anonymous', pending: false });
+    };
 
     /** Connexion ou inscription : même déroulé, seul l'appel change. */
     const authenticate = <T>(call: (credentials: T) => Observable<AuthResponse>) =>
@@ -159,9 +187,16 @@ export const AuthStore = signalStore(
     };
   }),
   withHooks({
-    onInit(store) {
-      // Restaure la session depuis le cookie httpOnly ; sans cookie valide, statut anonyme.
-      store.refreshAccessToken().subscribe({ error: () => undefined });
+    onInit(store, api = inject(AuthApi)) {
+      if (hasSessionHint()) {
+        // Restaure la session depuis le cookie httpOnly ; sans cookie valide, statut anonyme.
+        store.refreshAccessToken().subscribe({ error: () => undefined });
+        return;
+      }
+      // Visiteur sans session : anonyme tout de suite, et l'API (en veille sur Render) est
+      // réveillée en arrière-plan pour que la connexion qui suit soit rapide.
+      store.clearSession();
+      api.warmUp().subscribe({ error: () => undefined });
     },
   }),
 );

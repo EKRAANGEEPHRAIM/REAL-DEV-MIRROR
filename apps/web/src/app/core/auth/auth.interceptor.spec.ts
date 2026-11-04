@@ -3,7 +3,7 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { TestBed } from '@angular/core/testing';
 import { provideRouter, Router } from '@angular/router';
 import { authInterceptor } from './auth.interceptor';
-import { AuthStore } from './auth.store';
+import { AuthStore, SESSION_HINT_KEY } from './auth.store';
 import { sessionResponse } from '../../../testing/auth-fixtures';
 
 describe('authInterceptor', () => {
@@ -12,6 +12,9 @@ describe('authInterceptor', () => {
   let router: Router;
 
   beforeEach(() => {
+    // Session déjà ouverte dans ce navigateur : la restauration interroge l'API.
+
+    localStorage.setItem(SESSION_HINT_KEY, '1');
     TestBed.configureTestingModule({
       providers: [
         provideHttpClient(withInterceptors([authInterceptor])),
@@ -29,7 +32,11 @@ describe('authInterceptor', () => {
     backend.expectOne('/api/v1/auth/refresh').flush(sessionResponse('jwt-1'));
   });
 
-  afterEach(() => backend.verify());
+  afterEach(() => {
+    backend.verify();
+
+    localStorage.clear();
+  });
 
   it('ajoute le jeton d’accès aux appels de l’API', () => {
     http.get('/api/v1/users/me').subscribe();

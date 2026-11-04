@@ -5,7 +5,8 @@ import {
   provideBrowserGlobalErrorListeners,
 } from '@angular/core';
 import { provideRouter, TitleStrategy, withComponentInputBinding } from '@angular/router';
-import { provideSpartanHlm } from '@spartan-ng/helm/utils';
+// Import direct (pas le barrel helm/utils) : tailwind-merge reste hors du bundle initial.
+import { provideSpartanHlm } from './shared/ui/utils/src/lib/provide-spartan-hlm';
 import { routes } from './app.routes';
 import { authInterceptor } from './core/auth/auth.interceptor';
 import { I18nTitleStrategy } from './core/i18n/i18n-title-strategy';

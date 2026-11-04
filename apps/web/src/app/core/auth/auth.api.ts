@@ -34,6 +34,11 @@ export class AuthApi {
     return this.http.post<void>(`${this.baseUrl}/auth/logout`, {});
   }
 
+  /** Réveille l'API (en veille sur le plan gratuit de Render) sans rien demander d'autre. */
+  warmUp(): Observable<unknown> {
+    return this.http.get(`${this.baseUrl}/health`);
+  }
+
   verifyEmail(body: VerifyEmailRequest): Observable<void> {
     return this.http.post<void>(`${this.baseUrl}/auth/verify-email`, body);
   }
