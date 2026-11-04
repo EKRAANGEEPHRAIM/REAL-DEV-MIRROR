@@ -3,6 +3,7 @@
 import { createReadStream, existsSync, statSync } from 'node:fs';
 import { createServer, request as httpRequest } from 'node:http';
 import { extname, join, normalize, resolve } from 'node:path';
+import { createBrotliCompress } from 'node:zlib';
 
 const root = resolve(import.meta.dirname, '../../dist/web/browser');
 const port = Number(process.env.PORT ?? 4300);
@@ -55,6 +56,20 @@ createServer((request, response) => {
   if (!file.startsWith(root) || !existsSync(file) || statSync(file).isDirectory()) {
     file = join(root, 'index.html');
   }
-  response.writeHead(200, { 'Content-Type': types[extname(file)] ?? 'application/octet-stream' });
+  const type = types[extname(file)] ?? 'application/octet-stream';
+  // Compression Brotli comme sur Vercel : sans elle, Lighthouse mesure des fichiers 4 fois plus lourds.
+  if (
+    /text|javascript|json|svg/.test(type) &&
+    /\bbr\b/.test(request.headers['accept-encoding'] ?? '')
+  ) {
+    response.writeHead(200, {
+      'Content-Type': type,
+      'Content-Encoding': 'br',
+      Vary: 'Accept-Encoding',
+    });
+    createReadStream(file).pipe(createBrotliCompress()).pipe(response);
+    return;
+  }
+  response.writeHead(200, { 'Content-Type': type });
   createReadStream(file).pipe(response);
 }).listen(port, () => console.log(`DevMirror (build) sur http://localhost:${port}`));

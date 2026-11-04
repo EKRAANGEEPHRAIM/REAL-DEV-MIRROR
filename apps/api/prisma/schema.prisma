@@ -181,6 +181,8 @@ model Note {
   updatedAt DateTime @updatedAt
 
   @@index([userId, pinned])
+  // Supprimer un projet détache ses notes (SET NULL) : sans index, toute la table serait lue.
+  @@index([projectId])
 }
 
 model Tag {

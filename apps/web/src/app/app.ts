@@ -1,16 +1,19 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
-import { HlmToasterImports } from '@spartan-ng/helm/sonner';
+import { HlmToaster } from '@spartan-ng/helm/sonner';
 import { AuthStore } from './core/auth/auth.store';
 import { ThemeStore } from './core/theme/theme.store';
 
 @Component({
   selector: 'dm-root',
-  imports: [RouterOutlet, HlmToasterImports],
+  imports: [RouterOutlet, HlmToaster],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <router-outlet />
-    <hlm-toaster [theme]="theme.isDark() ? 'dark' : 'light'" />
+    <!-- Hors du bundle initial ; un toast émis avant reste en file et s'affiche au montage. -->
+    @defer (on idle) {
+      <hlm-toaster [theme]="theme.isDark() ? 'dark' : 'light'" />
+    }
   `,
 })
 export class App {

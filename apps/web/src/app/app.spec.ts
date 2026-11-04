@@ -5,12 +5,18 @@ import { provideRouter, Router, withComponentInputBinding } from '@angular/route
 import { App } from './app';
 import { routes } from './app.routes';
 import { authInterceptor } from './core/auth/auth.interceptor';
+import { SESSION_HINT_KEY } from './core/auth/auth.store';
 import { sessionResponse } from '../testing/auth-fixtures';
 
 describe('App', () => {
   let backend: HttpTestingController;
 
   beforeEach(async () => {
+    // Session déjà ouverte dans ce navigateur : la restauration interroge l'API.
+
+    localStorage.clear();
+
+    localStorage.setItem(SESSION_HINT_KEY, '1');
     await TestBed.configureTestingModule({
       imports: [App],
       providers: [

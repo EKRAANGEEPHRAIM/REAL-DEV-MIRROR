@@ -1,6 +1,6 @@
 import { inject } from '@angular/core';
 import { toObservable } from '@angular/core/rxjs-interop';
-import { type CanActivateFn, Router } from '@angular/router';
+import { type ActivatedRouteSnapshot, type CanActivateFn, Router } from '@angular/router';
 import { filter, map, type Observable, take } from 'rxjs';
 import { AuthStore, DEFAULT_REDIRECT } from './auth.store';
 
@@ -14,9 +14,21 @@ function isAuthenticatedAfterRestore(): Observable<boolean> {
   );
 }
 
+/**
+ * Télécharge d'avance le code des routes demandées (shell, page) pendant la restauration de
+ * session : le routeur ne les charge qu'après ce guard, la réponse du refresh et le code
+ * arrivent ainsi en parallèle. Rien n'est affiché avant de connaître l'utilisateur.
+ */
+function prefetchRoutes(route: ActivatedRouteSnapshot | null): void {
+  for (let node = route; node; node = node.firstChild) {
+    void node.routeConfig?.loadComponent?.();
+  }
+}
+
 /** Espace connecté : sans session, redirige vers /login?returnUrl=… */
-export const authGuard: CanActivateFn = (_route, state) => {
+export const authGuard: CanActivateFn = (route, state) => {
   const router = inject(Router);
+  if (inject(AuthStore).status() === 'restoring') prefetchRoutes(route);
   return isAuthenticatedAfterRestore().pipe(
     map(
       (authenticated) =>

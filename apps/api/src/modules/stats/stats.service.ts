@@ -115,7 +115,9 @@ export class StatsService {
              count(*)::int AS "count"
       FROM "Activity"
       WHERE "userId" = ${userId}
-        AND (("createdAt" AT TIME ZONE 'UTC') AT TIME ZONE ${timeZone}) >= ${from}::timestamp
+        -- Borne convertie en UTC plutôt que la colonne en heure locale : même résultat, mais la
+        -- plage peut parcourir l'index (userId, createdAt) au lieu de lire toute l'activité.
+        AND "createdAt" >= ((${from}::timestamp AT TIME ZONE ${timeZone}) AT TIME ZONE 'UTC')
       GROUP BY 1
       ORDER BY 1`;
     return {

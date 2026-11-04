@@ -313,6 +313,10 @@ export interface MockOptions {
 export async function mockApi(page: Page, options: MockOptions = {}): Promise<void> {
   const { authenticated = true, empty = false, theme = 'light' } = options;
   const list = <T>(items: T[]) => (empty ? [] : items);
+  // Session déjà ouverte dans ce navigateur : sans cet indice, l'app ne tente pas de la restaurer.
+  if (authenticated) {
+    await page.addInitScript(() => localStorage.setItem('devmirror.session', '1'));
+  }
 
   await page.route('**/api/v1/**', async (route: Route) => {
     const request = route.request();
