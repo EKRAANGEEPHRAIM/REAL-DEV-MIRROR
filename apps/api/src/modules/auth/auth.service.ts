@@ -1,3 +1,4 @@
+import { isDemoAccount } from '../../common/demo/demo-account.js';
 import {
   BadRequestException,
   ConflictException,
@@ -89,7 +90,8 @@ export class AuthService {
    */
   async forgotPassword(email: string): Promise<void> {
     const user = await this.users.findByEmail(email);
-    if (!user) return;
+    // Compte de démo : mot de passe public et fixe, aucun email de réinitialisation.
+    if (!user || isDemoAccount(user.email)) return;
 
     const token = await this.oneTimeTokens.create(user.id, AuthTokenType.PASSWORD_RESET);
     void this.sendSafely(

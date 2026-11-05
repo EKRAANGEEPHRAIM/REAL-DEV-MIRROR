@@ -55,7 +55,8 @@ test('inscription → projet → tâches → tableau de bord → suppression du 
     await page.getByLabel('Mot de passe').fill(password);
     await page.getByRole('button', { name: 'Créer mon compte' }).click();
 
-    await expect(page).toHaveURL(/\/dashboard$/);
+    // Première requête de l'API : connexion à Neon (parfois en réveil) et hachage bcrypt.
+    await expect(page).toHaveURL(/\/dashboard$/, { timeout: 30_000 });
     await expect(page.getByRole('heading', { level: 1 })).toContainText('Grace');
     // Compte neuf : rien à faire cette semaine, adresse à confirmer.
     await expect(page.getByText('Rien d’urgent : aucune échéance cette semaine.')).toBeVisible();

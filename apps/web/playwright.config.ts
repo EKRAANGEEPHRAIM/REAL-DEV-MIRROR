@@ -26,7 +26,12 @@ export default defineConfig({
   },
   projects: [
     { name: 'audit', testMatch: 'audit.spec.ts' },
-    { name: 'parcours', testMatch: 'parcours.spec.ts' },
+    {
+      name: 'parcours',
+      testMatch: 'parcours.spec.ts',
+      // Base distante : un appel peut prendre plusieurs secondes quand Neon se réveille.
+      expect: { timeout: 15_000 },
+    },
   ],
   webServer: [
     {
