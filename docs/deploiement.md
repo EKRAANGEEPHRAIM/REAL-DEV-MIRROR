@@ -58,3 +58,21 @@ requête suivante prend environ 30 secondes.
 
 - Chaque push sur `main` redéploie Render et Vercel automatiquement.
 - Une nouvelle migration Prisma est appliquée en production au déploiement suivant.
+
+## Compte de démo
+
+`demo@devmirror.dev`, mot de passe `DemoDevMirror2026` (ou `DEMO_PASSWORD`) : environ trois mois
+d'activité (6 projets, 44 tâches, 3 objectifs, 8 notes). Les visiteurs peuvent modifier les
+données mais pas le compte (voir [securite.md](securite.md)).
+
+Le plan gratuit de Render n'a pas de console : le seed se lance depuis un poste, avec l'URL de la
+base visée (dashboard Neon, branche `main` pour la production).
+
+```bash
+pnpm --filter @devmirror/api build
+DATABASE_URL="<url poolée>" pnpm --filter @devmirror/api seed:demo              # affiche la base visée
+DATABASE_URL="<url poolée>" pnpm --filter @devmirror/api seed:demo -- --confirm # recrée le compte
+```
+
+Le seed supprime puis recrée le compte en une transaction (environ 30 secondes) : le relancer
+remet la démo dans son état d'origine.

@@ -1,6 +1,6 @@
 // Sert le build de production (dist/web/browser) comme Vercel : fichiers statiques, et
 // index.html pour toute autre route (application monopage). Utilisé par playwright.config.ts.
-import { createReadStream, existsSync, statSync } from 'node:fs';
+import { createReadStream, existsSync, readFileSync, statSync } from 'node:fs';
 import { createServer, request as httpRequest } from 'node:http';
 import { extname, join, normalize, resolve } from 'node:path';
 import { createBrotliCompress } from 'node:zlib';
@@ -23,6 +23,15 @@ if (!existsSync(join(root, 'index.html'))) {
   console.error(`Build introuvable dans ${root} : lancez d'abord « pnpm build ».`);
   process.exit(1);
 }
+
+// En-têtes de sécurité de vercel.json (CSP comprise) : les tests tournent sous les mêmes règles
+// qu'en production, et une ressource que la CSP bloquerait se voit avant le déploiement.
+const vercel = JSON.parse(readFileSync(resolve(import.meta.dirname, '../../vercel.json'), 'utf8'));
+const securityHeaders = Object.fromEntries(
+  vercel.headers
+    .filter((rule) => rule.source === '/(.*)')
+    .flatMap((rule) => rule.headers.map(({ key, value }) => [key, value])),
+);
 
 // Comme la réécriture de vercel.json : /api/* part vers l'API (même origine, donc le cookie
 // httpOnly du refresh token, en SameSite=Strict, fonctionne comme en production).
@@ -63,6 +72,7 @@ createServer((request, response) => {
     /\bbr\b/.test(request.headers['accept-encoding'] ?? '')
   ) {
     response.writeHead(200, {
+      ...securityHeaders,
       'Content-Type': type,
       'Content-Encoding': 'br',
       Vary: 'Accept-Encoding',
@@ -70,6 +80,6 @@ createServer((request, response) => {
     createReadStream(file).pipe(createBrotliCompress()).pipe(response);
     return;
   }
-  response.writeHead(200, { 'Content-Type': type });
+  response.writeHead(200, { ...securityHeaders, 'Content-Type': type });
   createReadStream(file).pipe(response);
 }).listen(port, () => console.log(`DevMirror (build) sur http://localhost:${port}`));

@@ -5,6 +5,7 @@ import {
   Controller,
   Delete,
   type ExecutionContext,
+  ForbiddenException,
   Get,
   HttpCode,
   HttpStatus,
@@ -23,6 +24,7 @@ import {
   ApiBearerAuth,
   ApiBody,
   ApiConsumes,
+  ApiForbiddenResponse,
   ApiNoContentResponse,
   ApiOkResponse,
   ApiOperation,
@@ -36,6 +38,11 @@ import { Throttle } from '@nestjs/throttler';
 import type { Response } from 'express';
 import type { Observable } from 'rxjs';
 import type { AuthUser } from '../../common/auth/auth-user.js';
+import {
+  DEMO_RESTRICTED_MESSAGE,
+  DemoRestricted,
+  isDemoAccount,
+} from '../../common/demo/demo-account.js';
 import { CurrentUser } from '../../common/decorators/current-user.decorator.js';
 import { ErrorResponseDto } from '../../common/dto/error-response.dto.js';
 import {
@@ -121,14 +128,24 @@ export class UsersController {
   @ApiOperation({ summary: 'Modifier son profil (nom, bio, liens, préférences)' })
   @ApiOkResponse({ type: UserResponseDto })
   @ApiBadRequestResponse({ type: ErrorResponseDto, description: 'Données invalides' })
+  @ApiForbiddenResponse({
+    type: ErrorResponseDto,
+    description: 'Compte de démo : seules les préférences (thème, langue) sont modifiables',
+  })
   async update(
     @CurrentUser() current: AuthUser,
     @Body() dto: UpdateProfileDto,
   ): Promise<UserResponseDto> {
+    // Profil du compte de démo vu par tous les visiteurs : seules les préférences changent.
+    const editsProfile = dto.name !== undefined || dto.bio !== undefined || dto.links !== undefined;
+    if (editsProfile && isDemoAccount(current.email)) {
+      throw new ForbiddenException(DEMO_RESTRICTED_MESSAGE);
+    }
     return UserResponseDto.fromUser(await this.users.updateProfile(current.id, dto));
   }
 
   @Post('me/avatar')
+  @DemoRestricted()
   @UseInterceptors(AvatarUploadInterceptor)
   @ApiOperation({
     summary: 'Envoyer un avatar (JPEG, PNG, WebP ou GIF, 2 Mo au plus) ; recadré en 256 × 256',
@@ -160,6 +177,7 @@ export class UsersController {
   }
 
   @Delete('me/avatar')
+  @DemoRestricted()
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: 'Retirer son avatar' })
   @ApiNoContentResponse()

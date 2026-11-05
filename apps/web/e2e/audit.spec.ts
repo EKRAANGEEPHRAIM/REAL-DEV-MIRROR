@@ -30,12 +30,18 @@ const PAGES: AuditedPage[] = [
 
 /** Page prête : titre affiché et plus aucun squelette de chargement. */
 async function open(page: Page, path: string): Promise<void> {
+  // Ressource bloquée par la Content-Security-Policy de vercel.json (appliquée par serve-dist).
+  const cspViolations: string[] = [];
+  page.on('console', (message) => {
+    if (/Content Security Policy/i.test(message.text())) cspViolations.push(message.text());
+  });
   await page.goto(path);
   await expect(page.locator('h1').first()).toBeVisible();
   await expect(page.locator('[aria-busy="true"]')).toHaveCount(0);
   // Laisse les graphiques mesurer leur largeur et les polices se charger.
   await page.evaluate(() => document.fonts.ready);
   await page.waitForTimeout(150);
+  expect(cspViolations, 'violations de la CSP').toEqual([]);
 }
 
 /**

@@ -12,6 +12,7 @@ import {
 } from '@nestjs/swagger';
 import type { Response } from 'express';
 import type { AuthUser } from '../../common/auth/auth-user.js';
+import { DemoRestricted } from '../../common/demo/demo-account.js';
 import { CurrentUser } from '../../common/decorators/current-user.decorator.js';
 import { ErrorResponseDto } from '../../common/dto/error-response.dto.js';
 import { EnvironmentVariables, NodeEnv } from '../../config/env.validation.js';
@@ -37,6 +38,7 @@ export class AccountController {
   }
 
   @Delete('me')
+  @DemoRestricted()
   @Throttle({ default: { limit: 5, ttl: 60_000 } })
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({

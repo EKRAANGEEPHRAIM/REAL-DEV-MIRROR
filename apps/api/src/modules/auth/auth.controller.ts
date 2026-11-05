@@ -17,6 +17,8 @@ import {
 } from '@nestjs/swagger';
 import type { Request, Response } from 'express';
 import type { AuthUser } from '../../common/auth/auth-user.js';
+import { DemoRestricted } from '../../common/demo/demo-account.js';
+import { LimitPerAccount } from '../../common/throttling/account-throttle.js';
 import { CurrentUser } from '../../common/decorators/current-user.decorator.js';
 import { Public } from '../../common/decorators/public.decorator.js';
 import { EnvironmentVariables, NodeEnv } from '../../config/env.validation.js';
@@ -33,6 +35,9 @@ const ONE_MINUTE = 60_000;
 const STRICT_LIMIT = { default: { limit: 5, ttl: ONE_MINUTE } };
 /** Routes qui envoient un email : 3 par minute, pour ne pas servir de relais de spam. */
 const MAIL_LIMIT = { default: { limit: 3, ttl: ONE_MINUTE } };
+/** Par compte, quelle que soit l'IP annoncée (voir AccountThrottleGuard). */
+const LOGIN_ACCOUNT_LIMIT = { scope: 'login', limit: 10, ttl: 15 * ONE_MINUTE };
+const RESET_ACCOUNT_LIMIT = { scope: 'forgot-password', limit: 3, ttl: 60 * ONE_MINUTE };
 
 @ApiTags('auth')
 @ApiTooManyRequestsResponse({ description: 'Trop de tentatives, réessayez dans une minute' })
@@ -63,6 +68,7 @@ export class AuthController {
 
   @Public()
   @Throttle(STRICT_LIMIT)
+  @LimitPerAccount(LOGIN_ACCOUNT_LIMIT)
   @Post('login')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Se connecter' })
@@ -119,6 +125,7 @@ export class AuthController {
 
   @Public()
   @Throttle(MAIL_LIMIT)
+  @LimitPerAccount(RESET_ACCOUNT_LIMIT)
   @Post('forgot-password')
   @HttpCode(HttpStatus.ACCEPTED)
   @ApiOperation({ summary: 'Demander un lien de réinitialisation du mot de passe' })
@@ -142,6 +149,7 @@ export class AuthController {
 
   @Throttle(STRICT_LIMIT)
   @Post('change-password')
+  @DemoRestricted()
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiBearerAuth()
   @ApiOperation({
@@ -172,6 +180,7 @@ export class AuthController {
   }
 
   @Post('logout-all')
+  @DemoRestricted()
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Fermer toutes les sessions de l’utilisateur' })
