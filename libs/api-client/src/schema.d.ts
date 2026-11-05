@@ -699,13 +699,6 @@ export interface components {
        */
       newPassword: string;
     };
-    DeleteAccountDto: {
-      /**
-       * @description Mot de passe actuel, pour confirmer
-       * @example MotDePasse2026
-       */
-      password: string;
-    };
     ErrorResponseDto: {
       /** @example 404 */
       statusCode: number;
@@ -720,6 +713,13 @@ export interface components {
       path: string;
       /** @example 2026-10-20T09:00:00.000Z */
       timestamp: string;
+    };
+    DeleteAccountDto: {
+      /**
+       * @description Mot de passe actuel, pour confirmer
+       * @example MotDePasse2026
+       */
+      password: string;
     };
     ProfileLinksDto: {
       /** @example https://github.com/ada */
@@ -1747,6 +1747,15 @@ export interface operations {
         };
         content?: never;
       };
+      /** @description Action désactivée sur le compte de démo */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponseDto'];
+        };
+      };
       /** @description Trop de tentatives, réessayez dans une minute */
       429: {
         headers: {
@@ -1801,6 +1810,15 @@ export interface operations {
           [name: string]: unknown;
         };
         content?: never;
+      };
+      /** @description Action désactivée sur le compte de démo */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponseDto'];
+        };
       };
       /** @description Trop de tentatives, réessayez dans une minute */
       429: {
@@ -1877,6 +1895,15 @@ export interface operations {
           'application/json': components['schemas']['ErrorResponseDto'];
         };
       };
+      /** @description Action désactivée sur le compte de démo */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponseDto'];
+        };
+      };
       /** @description Trop de tentatives, réessayez dans une minute */
       429: {
         headers: {
@@ -1918,6 +1945,15 @@ export interface operations {
       };
       /** @description Jeton d’accès manquant ou invalide */
       401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponseDto'];
+        };
+      };
+      /** @description Compte de démo : seules les préférences (thème, langue) sont modifiables */
+      403: {
         headers: {
           [name: string]: unknown;
         };
@@ -1998,6 +2034,15 @@ export interface operations {
           'application/json': components['schemas']['ErrorResponseDto'];
         };
       };
+      /** @description Action désactivée sur le compte de démo */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponseDto'];
+        };
+      };
       /** @description Image de plus de 2 Mo */
       413: {
         headers: {
@@ -2035,6 +2080,15 @@ export interface operations {
       };
       /** @description Jeton d’accès manquant ou invalide */
       401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponseDto'];
+        };
+      };
+      /** @description Action désactivée sur le compte de démo */
+      403: {
         headers: {
           [name: string]: unknown;
         };

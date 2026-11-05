@@ -272,6 +272,16 @@
           "401": {
             "description": "Jeton d’accès manquant ou invalide"
           },
+          "403": {
+            "description": "Action désactivée sur le compte de démo",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
           "429": {
             "description": "Trop de tentatives, réessayez dans une minute"
           }
@@ -317,6 +327,16 @@
           "401": {
             "description": "Jeton d’accès manquant ou invalide"
           },
+          "403": {
+            "description": "Action désactivée sur le compte de démo",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
           "429": {
             "description": "Trop de tentatives, réessayez dans une minute"
           }
@@ -360,6 +380,16 @@
           },
           "401": {
             "description": "Jeton d’accès manquant ou invalide",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Action désactivée sur le compte de démo",
             "content": {
               "application/json": {
                 "schema": {
@@ -449,6 +479,16 @@
           },
           "401": {
             "description": "Jeton d’accès manquant ou invalide",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Compte de démo : seules les préférences (thème, langue) sont modifiables",
             "content": {
               "application/json": {
                 "schema": {
@@ -554,6 +594,16 @@
               }
             }
           },
+          "403": {
+            "description": "Action désactivée sur le compte de démo",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
           "413": {
             "description": "Image de plus de 2 Mo",
             "content": {
@@ -592,6 +642,16 @@
           },
           "401": {
             "description": "Jeton d’accès manquant ou invalide",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Action désactivée sur le compte de démo",
             "content": {
               "application/json": {
                 "schema": {
@@ -3185,17 +3245,6 @@
         },
         "required": ["currentPassword", "newPassword"]
       },
-      "DeleteAccountDto": {
-        "type": "object",
-        "properties": {
-          "password": {
-            "type": "string",
-            "example": "MotDePasse2026",
-            "description": "Mot de passe actuel, pour confirmer"
-          }
-        },
-        "required": ["password"]
-      },
       "ErrorResponseDto": {
         "type": "object",
         "properties": {
@@ -3232,6 +3281,17 @@
           }
         },
         "required": ["statusCode", "message", "error", "path", "timestamp"]
+      },
+      "DeleteAccountDto": {
+        "type": "object",
+        "properties": {
+          "password": {
+            "type": "string",
+            "example": "MotDePasse2026",
+            "description": "Mot de passe actuel, pour confirmer"
+          }
+        },
+        "required": ["password"]
       },
       "ProfileLinksDto": {
         "type": "object",
