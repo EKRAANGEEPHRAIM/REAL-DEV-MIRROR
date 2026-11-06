@@ -103,5 +103,11 @@ export const routes: Routes = [
       },
     ],
   },
+  // Public, avec ou sans session : mentions légales et confidentialité.
+  {
+    path: 'legal',
+    title: 'titles.legal',
+    loadComponent: () => import('./features/legal/legal.page').then((m) => m.LegalPage),
+  },
   { path: '**', redirectTo: '' },
 ];

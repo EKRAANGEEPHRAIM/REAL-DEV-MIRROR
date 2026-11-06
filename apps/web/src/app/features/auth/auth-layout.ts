@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { RouterLink, RouterOutlet } from '@angular/router';
 import { LanguageSwitcher } from '../../core/i18n/language-switcher';
+import { translate } from '../../core/i18n/translate';
 import { ThemeToggle } from '../../core/theme/theme-toggle';
 
 /** Mise en page des pages publiques d'authentification : carte centrée, logo, thème. */
@@ -49,7 +50,12 @@ import { ThemeToggle } from '../../core/theme/theme-toggle';
           <router-outlet />
         </div>
       </main>
+      <footer class="text-muted-foreground pb-6 text-center text-xs">
+        <a routerLink="/legal" class="hover:underline">{{ t('layout.legal') }}</a>
+      </footer>
     </div>
   `,
 })
-export class AuthLayout {}
+export class AuthLayout {
+  protected readonly t = translate;
+}

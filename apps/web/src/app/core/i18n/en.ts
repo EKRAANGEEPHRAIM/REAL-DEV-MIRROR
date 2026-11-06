@@ -56,6 +56,7 @@ export const en: Translations = {
     forgotPassword: 'Forgot password',
     resetPassword: 'New password',
     verifyEmail: 'Email verification',
+    legal: 'Legal notice and privacy',
   },
   layout: {
     skipToContent: 'Skip to content',
@@ -69,6 +70,7 @@ export const en: Translations = {
     logout: 'Sign out',
     changeTheme: 'Change theme',
     language: 'Language',
+    legal: 'Legal notice and privacy',
     theme: { light: 'Light', dark: 'Dark', system: 'System' },
     emailBanner: {
       before: 'Confirm your address',
@@ -488,6 +490,8 @@ export const en: Translations = {
       submit: 'Sign in',
       noAccount: 'No account yet?',
       createAccount: 'Create an account',
+      demo: 'Try the demo account',
+      demoHint: 'Shared with other visitors and reset regularly.',
     },
     register: {
       title: 'Create an account',

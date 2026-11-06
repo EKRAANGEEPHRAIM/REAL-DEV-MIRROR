@@ -4,6 +4,11 @@ const PORT = 4300;
 const API_PORT = 3100;
 /** Parcours complet contre la vraie API (et sa base) : activé par E2E_API=1. */
 const withApi = process.env['E2E_API'] === '1';
+/**
+ * Site déjà en ligne (production, aperçu Vercel) : aucun serveur local n'est démarré.
+ *   E2E_BASE_URL=https://… E2E_API=1 pnpm exec playwright test --project=parcours
+ */
+const remoteUrl = process.env['E2E_BASE_URL'];
 
 /**
  * Tests de bout en bout du front, sur le build de production servi en statique (plus fidèle à
@@ -20,7 +25,7 @@ export default defineConfig({
   workers: process.env['CI'] ? 4 : undefined,
   reporter: process.env['CI'] ? [['github'], ['list']] : 'list',
   use: {
-    baseURL: `http://localhost:${PORT}`,
+    baseURL: remoteUrl ?? `http://localhost:${PORT}`,
     trace: 'retain-on-failure',
     ...devices['Desktop Chrome'],
   },
@@ -33,34 +38,36 @@ export default defineConfig({
       expect: { timeout: 15_000 },
     },
   ],
-  webServer: [
-    {
-      command: 'pnpm exec ng build && node e2e/support/serve-dist.mjs',
-      env: { PORT: String(PORT), API_PROXY: `http://localhost:${API_PORT}` },
-      url: `http://localhost:${PORT}`,
-      reuseExistingServer: !process.env['CI'],
-      timeout: 300_000,
-    },
-    ...(withApi
-      ? [
-          {
-            // DATABASE_URL et JWT_ACCESS_SECRET : variables de la CI, ou apps/api/.env en local.
-            command: 'pnpm run build && node dist/main',
-            cwd: '../api',
-            env: {
-              NODE_ENV: 'test',
-              PORT: String(API_PORT),
-              APP_URL: `http://localhost:${PORT}`,
-              CORS_ORIGIN: `http://localhost:${PORT}`,
-              RATE_LIMIT_ENABLED: 'false',
-              // Emails écrits dans les logs, jamais envoyés (même si apps/api/.env a une clé).
-              RESEND_API_KEY: '',
-            },
-            url: `http://localhost:${API_PORT}/api/v1/health`,
-            reuseExistingServer: !process.env['CI'],
-            timeout: 300_000,
-          },
-        ]
-      : []),
-  ],
+  webServer: remoteUrl
+    ? []
+    : [
+        {
+          command: 'pnpm exec ng build && node e2e/support/serve-dist.mjs',
+          env: { PORT: String(PORT), API_PROXY: `http://localhost:${API_PORT}` },
+          url: `http://localhost:${PORT}`,
+          reuseExistingServer: !process.env['CI'],
+          timeout: 300_000,
+        },
+        ...(withApi
+          ? [
+              {
+                // DATABASE_URL et JWT_ACCESS_SECRET : variables de la CI, ou apps/api/.env en local.
+                command: 'pnpm run build && node dist/main',
+                cwd: '../api',
+                env: {
+                  NODE_ENV: 'test',
+                  PORT: String(API_PORT),
+                  APP_URL: `http://localhost:${PORT}`,
+                  CORS_ORIGIN: `http://localhost:${PORT}`,
+                  RATE_LIMIT_ENABLED: 'false',
+                  // Emails écrits dans les logs, jamais envoyés (même si apps/api/.env a une clé).
+                  RESEND_API_KEY: '',
+                },
+                url: `http://localhost:${API_PORT}/api/v1/health`,
+                reuseExistingServer: !process.env['CI'],
+                timeout: 300_000,
+              },
+            ]
+          : []),
+      ],
 });

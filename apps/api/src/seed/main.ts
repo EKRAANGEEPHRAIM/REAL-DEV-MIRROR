@@ -14,10 +14,21 @@ import { seedDemoAccount } from './demo-seed.js';
 const DEFAULT_DEMO_PASSWORD = 'DemoDevMirror2026';
 
 async function main(): Promise<void> {
-  const databaseUrl = process.env.DATABASE_URL?.trim().replace(/^(['"])(.*)\1$/, '$2');
+  // Tolère les guillemets et les chevrons d'un modèle copié tel quel (« '<url>' »).
+  const databaseUrl = process.env.DATABASE_URL?.trim()
+    .replace(/^(['"])(.*)\1$/, '$2')
+    .replace(/^<(.*)>$/, '$1');
   if (!databaseUrl) throw new Error('DATABASE_URL manquante');
-  // Hôte seulement : jamais l'URL complète, qui contient le mot de passe de la base.
-  const host = new URL(databaseUrl).hostname;
+  // Hôte seulement : jamais l'URL complète, qui contient le mot de passe de la base. Une URL
+  // invalide ne doit pas non plus apparaître dans le message d'erreur de Node.
+  let host: string;
+  try {
+    host = new URL(databaseUrl).hostname;
+  } catch {
+    throw new Error(
+      'DATABASE_URL invalide : attendu postgresql://utilisateur:mot-de-passe@hôte/base',
+    );
+  }
   console.log(`Base visée : ${host}`);
   if (!process.argv.includes('--confirm')) {
     console.log(`Rien n'a été modifié. Relancer avec --confirm pour recréer ${DEMO_EMAIL}.`);

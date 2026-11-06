@@ -9,6 +9,7 @@ import { HlmInputImports } from '@spartan-ng/helm/input';
 import { HlmLabelImports } from '@spartan-ng/helm/label';
 import { AuthStore } from '../../../core/auth/auth.store';
 import { FormAlert } from '../../../shared/ui-kit/form-alert';
+import { DEMO_CREDENTIALS } from '../../../core/auth/demo-account';
 import { translate } from '../../../core/i18n/translate';
 
 @Component({
@@ -92,6 +93,17 @@ import { translate } from '../../../core/i18n/translate';
             {{ t('auth.login.submit') }}
           }
         </button>
+        <button
+          hlmBtn
+          type="button"
+          variant="outline"
+          class="w-full"
+          [disabled]="store.pending()"
+          (click)="tryDemo()"
+        >
+          {{ t('auth.login.demo') }}
+        </button>
+        <p class="text-muted-foreground text-center text-xs">{{ t('auth.login.demoHint') }}</p>
       </form>
 
       <p hlmCardFooter class="text-muted-foreground justify-center text-sm">
@@ -129,5 +141,10 @@ export class LoginPage implements OnInit {
       return;
     }
     this.store.login({ credentials: this.form.getRawValue(), returnUrl: this.returnUrl() });
+  }
+
+  /** Compte de démo partagé : connexion directe, sans saisie. */
+  protected tryDemo(): void {
+    this.store.login({ credentials: { ...DEMO_CREDENTIALS }, returnUrl: this.returnUrl() });
   }
 }

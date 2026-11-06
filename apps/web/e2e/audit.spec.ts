@@ -15,6 +15,7 @@ const PAGES: AuditedPage[] = [
   { name: 'connexion', path: '/login', options: { authenticated: false } },
   { name: 'inscription', path: '/register', options: { authenticated: false } },
   { name: 'mot-de-passe-oublie', path: '/forgot-password', options: { authenticated: false } },
+  { name: 'mentions-legales', path: '/legal', options: { authenticated: false } },
   { name: 'tableau-de-bord', path: '/dashboard' },
   { name: 'tableau-de-bord-vide', path: '/dashboard', options: { empty: true } },
   { name: 'projets', path: '/projects' },

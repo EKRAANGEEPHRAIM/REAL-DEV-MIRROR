@@ -75,4 +75,18 @@ describe('LoginPage', () => {
     );
     expect(element.querySelector<HTMLButtonElement>('button[type="submit"]')!.disabled).toBe(true);
   });
+
+  it('« Essayer avec le compte de démo » connecte le compte public, en gardant la page demandée', async () => {
+    const { element } = await render('/projects');
+    const demo = Array.from(element.querySelectorAll('button')).find((b) =>
+      b.textContent?.includes('compte de démo'),
+    )!;
+
+    demo.click();
+
+    expect(store.login).toHaveBeenCalledWith({
+      credentials: { email: 'demo@devmirror.dev', password: 'DemoDevMirror2026' },
+      returnUrl: '/projects',
+    });
+  });
 });
