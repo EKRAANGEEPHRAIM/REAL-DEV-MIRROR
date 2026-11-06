@@ -57,6 +57,7 @@ export const fr = {
     forgotPassword: 'Mot de passe oublié',
     resetPassword: 'Nouveau mot de passe',
     verifyEmail: 'Vérification de l’email',
+    legal: 'Mentions légales et confidentialité',
   },
   layout: {
     skipToContent: 'Aller au contenu',
@@ -70,6 +71,7 @@ export const fr = {
     logout: 'Se déconnecter',
     changeTheme: 'Changer le thème',
     language: 'Langue',
+    legal: 'Mentions légales et confidentialité',
     theme: { light: 'Clair', dark: 'Sombre', system: 'Système' },
     emailBanner: {
       before: 'Confirmez votre adresse',
@@ -494,6 +496,8 @@ export const fr = {
       submit: 'Se connecter',
       noAccount: 'Pas encore de compte ?',
       createAccount: 'Créer un compte',
+      demo: 'Essayer avec le compte de démo',
+      demoHint: 'Compte partagé entre visiteurs et remis à zéro régulièrement.',
     },
     register: {
       title: 'Créer un compte',

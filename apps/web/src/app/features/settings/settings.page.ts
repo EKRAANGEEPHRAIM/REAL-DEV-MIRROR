@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component } from '@angular/core';
+import { RouterLink } from '@angular/router';
 import { AccountSettings } from './account/account-settings';
 import { PreferencesSettings } from './preferences/preferences-settings';
 import { ProfileSettings } from './profile/profile-settings';
@@ -9,7 +10,14 @@ import { translate } from '../../core/i18n/translate';
 /** Paramètres du compte : profil, sécurité, préférences, tags, données. */
 @Component({
   selector: 'dm-settings-page',
-  imports: [ProfileSettings, PasswordSettings, PreferencesSettings, TagsSettings, AccountSettings],
+  imports: [
+    RouterLink,
+    ProfileSettings,
+    PasswordSettings,
+    PreferencesSettings,
+    TagsSettings,
+    AccountSettings,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <header class="mb-6">
@@ -22,6 +30,9 @@ import { translate } from '../../core/i18n/translate';
       <dm-preferences-settings />
       <dm-tags-settings />
       <dm-account-settings />
+      <a routerLink="/legal" class="text-muted-foreground text-sm hover:underline">{{
+        t('layout.legal')
+      }}</a>
     </div>
   `,
 })
