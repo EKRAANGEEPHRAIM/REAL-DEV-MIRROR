@@ -47,7 +47,7 @@ describe('NotesService', () => {
       typeof arg === 'function' ? (arg as (t: typeof tx) => unknown)(tx) : Promise.all(arg as []),
     ),
   };
-  const projects = { assertOwned: vi.fn() };
+  const projects = { assertVisible: vi.fn() };
   const tags = { assertOwned: vi.fn() };
   const service = new NotesService(
     prisma as unknown as PrismaService,
@@ -158,7 +158,7 @@ describe('NotesService', () => {
 
     await service.create('user-1', { title: 'JWT', projectId: 'p1', tagIds: ['t1'] });
 
-    expect(projects.assertOwned).toHaveBeenCalledWith('user-1', 'p1');
+    expect(projects.assertVisible).toHaveBeenCalledWith('user-1', 'p1');
     expect(tags.assertOwned).toHaveBeenCalledWith('user-1', ['t1']);
     expect(tx.note.create.mock.calls[0][0].data).toMatchObject({
       content: '',
@@ -185,6 +185,6 @@ describe('NotesService', () => {
     const data = prisma.note.update.mock.calls[0][0].data;
     expect(data).toMatchObject({ pinned: true, projectId: null });
     expect(data).not.toHaveProperty('tags');
-    expect(projects.assertOwned).not.toHaveBeenCalled();
+    expect(projects.assertVisible).not.toHaveBeenCalled();
   });
 });

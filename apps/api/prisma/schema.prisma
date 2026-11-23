@@ -35,31 +35,40 @@ enum Priority {
   URGENT
 }
 
+/// Rôle d'un membre invité sur un projet. Le propriétaire (Project.userId) n'est pas un membre :
+/// il a tous les droits, dont la gestion de l'équipe et la suppression du projet.
+enum ProjectRole {
+  EDITOR
+  VIEWER
+}
+
 enum AuthTokenType {
   EMAIL_VERIFY
   PASSWORD_RESET
 }
 
 model User {
-  id            String         @id @default(cuid())
-  email         String         @unique
-  passwordHash  String
-  name          String
-  avatarUrl     String?
-  bio           String?
-  links         Json           @default("{}")
-  preferences   Json           @default("{}")
-  emailVerified Boolean        @default(false)
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
-  refreshTokens RefreshToken[]
-  authTokens    AuthToken[]
-  projects      Project[]
-  tasks         Task[]
-  goals         Goal[]
-  notes         Note[]
-  tags          Tag[]
-  activities    Activity[]
+  id              String              @id @default(cuid())
+  email           String              @unique
+  passwordHash    String
+  name            String
+  avatarUrl       String?
+  bio             String?
+  links           Json                @default("{}")
+  preferences     Json                @default("{}")
+  emailVerified   Boolean             @default(false)
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+  refreshTokens   RefreshToken[]
+  authTokens      AuthToken[]
+  projects        Project[]
+  tasks           Task[]
+  goals           Goal[]
+  notes           Note[]
+  tags            Tag[]
+  activities      Activity[]
+  memberships     ProjectMember[]
+  invitationsSent ProjectInvitation[] @relation("InvitationsSent")
 }
 
 model RefreshToken {
@@ -88,24 +97,60 @@ model AuthToken {
 }
 
 model Project {
-  id          String        @id @default(cuid())
+  id          String              @id @default(cuid())
   name        String
   description String?
-  status      ProjectStatus @default(IDEA)
+  status      ProjectStatus       @default(IDEA)
   techStack   String[]
   repoUrl     String?
   demoUrl     String?
   color       String?
   userId      String
-  user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user        User                @relation(fields: [userId], references: [id], onDelete: Cascade)
   tasks       Task[]
   notes       Note[]
   tags        Tag[]
   goals       Goal[]
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
+  members     ProjectMember[]
+  invitations ProjectInvitation[]
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
 
   @@index([userId, status])
+}
+
+/// Personne invitée qui a rejoint un projet (le propriétaire n'y figure pas).
+model ProjectMember {
+  id        String      @id @default(cuid())
+  role      ProjectRole @default(EDITOR)
+  projectId String
+  project   Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime    @default(now())
+
+  @@unique([projectId, userId])
+  // « Projets partagés avec moi » : lecture par utilisateur
+  @@index([userId])
+}
+
+/// Invitation envoyée par email ; seule l'empreinte du jeton est stockée.
+model ProjectInvitation {
+  id          String      @id @default(cuid())
+  email       String
+  role        ProjectRole @default(EDITOR)
+  tokenHash   String      @unique
+  projectId   String
+  project     Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  invitedById String
+  invitedBy   User        @relation("InvitationsSent", fields: [invitedById], references: [id], onDelete: Cascade)
+  expiresAt   DateTime
+  acceptedAt  DateTime?
+  createdAt   DateTime    @default(now())
+
+  @@index([projectId])
+  // Invitations en attente d'un utilisateur, retrouvées par son email
+  @@index([email])
 }
 
 model Task {

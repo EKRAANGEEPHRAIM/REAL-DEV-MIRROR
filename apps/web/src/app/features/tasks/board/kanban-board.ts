@@ -72,15 +72,17 @@ import { translate } from '../../../core/i18n/translate';
                   ></span
                 >
               </h2>
-              <button
-                hlmBtn
-                variant="ghost"
-                size="icon-sm"
-                [attr.aria-label]="t('tasks.board.newIn', { column: t(column.label) })"
-                (click)="created.emit(column.value)"
-              >
-                <ng-icon name="lucidePlus" aria-hidden="true" />
-              </button>
+              @if (!readOnly()) {
+                <button
+                  hlmBtn
+                  variant="ghost"
+                  size="icon-sm"
+                  [attr.aria-label]="t('tasks.board.newIn', { column: t(column.label) })"
+                  (click)="created.emit(column.value)"
+                >
+                  <ng-icon name="lucidePlus" aria-hidden="true" />
+                </button>
+              }
             </header>
 
             <div
@@ -97,11 +99,12 @@ import { translate } from '../../../core/i18n/translate';
                 <dm-kanban-card
                   cdkDrag
                   [cdkDragData]="task"
-                  class="cursor-grab active:cursor-grabbing"
+                  [cdkDragDisabled]="readOnly()"
+                  [class]="readOnly() ? '' : 'cursor-grab active:cursor-grabbing'"
                   [task]="task"
                   [showProject]="showProject()"
                   (opened)="opened.emit($event)"
-                  (moved)="store.moveTo(task, $event)"
+                  (moved)="readOnly() || store.moveTo(task, $event)"
                 >
                   <div
                     *cdkDragPlaceholder
@@ -129,6 +132,8 @@ export class KanbanBoard {
   protected readonly limit = BOARD_LIMIT;
 
   readonly showProject = input(true);
+  /** Projet partagé en lecture seule : ni création, ni déplacement. */
+  readonly readOnly = input(false);
   readonly opened = output<Task>();
   /** Bouton « + » d'une colonne : nouvelle tâche avec ce statut. */
   readonly created = output<TaskStatus>();

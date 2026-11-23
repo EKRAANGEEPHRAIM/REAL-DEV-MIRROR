@@ -13,6 +13,7 @@ import {
 import {
   ApiBadRequestResponse,
   ApiBearerAuth,
+  ApiForbiddenResponse,
   ApiCreatedResponse,
   ApiNoContentResponse,
   ApiNotFoundResponse,
@@ -72,6 +73,10 @@ export class ProjectsController {
   }
 
   @Patch(':id')
+  @ApiForbiddenResponse({
+    type: ErrorResponseDto,
+    description: 'Lecture seule, ou étiquettes réservées au propriétaire',
+  })
   @ApiOperation({ summary: 'Modifier un projet (champs envoyés uniquement)' })
   @ApiOkResponse({ type: ProjectResponseDto })
   @ApiBadRequestResponse({ type: ErrorResponseDto, description: 'Données invalides' })
@@ -85,6 +90,7 @@ export class ProjectsController {
   }
 
   @Delete(':id')
+  @ApiForbiddenResponse({ type: ErrorResponseDto, description: 'Réservé au propriétaire' })
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: 'Supprimer un projet et ses tâches' })
   @ApiNoContentResponse()

@@ -2,6 +2,7 @@ import { Body, Controller, Delete, HttpCode, HttpStatus, Param, Patch, Post } fr
 import {
   ApiBadRequestResponse,
   ApiBearerAuth,
+  ApiForbiddenResponse,
   ApiCreatedResponse,
   ApiNoContentResponse,
   ApiNotFoundResponse,
@@ -28,6 +29,7 @@ export class SubtasksController {
   constructor(private readonly subtasks: SubtasksService) {}
 
   @Post()
+  @ApiForbiddenResponse({ type: ErrorResponseDto, description: 'Lecture seule sur ce projet' })
   @ApiOperation({ summary: 'Ajouter une sous-tâche (en bas de la checklist)' })
   @ApiCreatedResponse({ type: SubtaskDto })
   @ApiBadRequestResponse({
@@ -44,6 +46,7 @@ export class SubtasksController {
   }
 
   @Patch(':id')
+  @ApiForbiddenResponse({ type: ErrorResponseDto, description: 'Lecture seule sur ce projet' })
   @ApiOperation({ summary: 'Cocher, renommer ou déplacer une sous-tâche' })
   @ApiOkResponse({ type: SubtaskDto })
   @ApiNotFoundResponse({ type: ErrorResponseDto, description: 'Sous-tâche introuvable' })
@@ -57,6 +60,7 @@ export class SubtasksController {
   }
 
   @Delete(':id')
+  @ApiForbiddenResponse({ type: ErrorResponseDto, description: 'Lecture seule sur ce projet' })
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: 'Supprimer une sous-tâche' })
   @ApiNoContentResponse()

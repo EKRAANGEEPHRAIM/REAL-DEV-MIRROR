@@ -1,10 +1,11 @@
-import { BadRequestException, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { plainToInstance } from 'class-transformer';
 import { Priority, TaskStatus } from '../../generated/prisma/client.js';
 import type { PrismaService } from '../../prisma/prisma.service.js';
-import type { ProjectsService } from '../projects/projects.service.js';
+import { visibleTasks } from '../projects/project-access.js';
+import { READ_ONLY_PROJECT, type ProjectsService } from '../projects/projects.service.js';
 import { TaskQueryDto } from './dto/task-query.dto.js';
-import { TasksService } from './tasks.service.js';
+import { TASK_LEAVE_PROJECT, TasksService } from './tasks.service.js';
 
 const task = (overrides: Record<string, unknown> = {}) => ({
   id: 't1',
@@ -31,9 +32,9 @@ describe('TasksService', () => {
   };
   const prisma = {
     $transaction: vi.fn(),
-    task: { findMany: vi.fn(), count: vi.fn(), findFirst: vi.fn(), deleteMany: vi.fn() },
+    task: { findMany: vi.fn(), count: vi.fn(), findFirst: vi.fn(), delete: vi.fn() },
   };
-  const projects = { assertOwned: vi.fn() };
+  const projects = { assertCanEdit: vi.fn() };
   const service = new TasksService(
     prisma as unknown as PrismaService,
     projects as unknown as ProjectsService,
@@ -70,7 +71,7 @@ describe('TasksService', () => {
 
       expect(prisma.task.findMany.mock.calls[0][0].where).toEqual({
         AND: [
-          { userId: 'user-1' },
+          visibleTasks('user-1'),
           { projectId: 'p1' },
           { status: TaskStatus.TODO },
           { priority: Priority.HIGH },
@@ -100,14 +101,14 @@ describe('TasksService', () => {
   });
 
   describe('create', () => {
-    it('vérifie le projet, place la tâche en bas de sa colonne', async () => {
+    it('vérifie le droit d’écrire dans le projet, place la tâche en bas de la colonne commune', async () => {
       tx.task.create.mockResolvedValue(task());
 
       await service.create('user-1', { title: 'Tâche', projectId: 'p1' });
 
-      expect(projects.assertOwned).toHaveBeenCalledWith('user-1', 'p1');
+      expect(projects.assertCanEdit).toHaveBeenCalledWith('user-1', 'p1');
+      // Colonne partagée par l'équipe : pas de filtre par auteur
       expect(tx.task.aggregate.mock.calls[0][0].where).toEqual({
-        userId: 'user-1',
         projectId: 'p1',
         status: TaskStatus.TODO,
       });
@@ -118,8 +119,21 @@ describe('TasksService', () => {
       expect(tx.activity.create).not.toHaveBeenCalled();
     });
 
-    it('refuse le projet d’un autre utilisateur', async () => {
-      projects.assertOwned.mockRejectedValueOnce(new BadRequestException('Projet introuvable'));
+    it('sans projet, la colonne est propre à l’utilisateur', async () => {
+      tx.task.create.mockResolvedValue(task());
+
+      await service.create('user-1', { title: 'Perso' });
+
+      expect(projects.assertCanEdit).not.toHaveBeenCalled();
+      expect(tx.task.aggregate.mock.calls[0][0].where).toEqual({
+        userId: 'user-1',
+        projectId: null,
+        status: TaskStatus.TODO,
+      });
+    });
+
+    it('refuse un projet où il ne peut pas écrire', async () => {
+      projects.assertCanEdit.mockRejectedValueOnce(new BadRequestException('Projet introuvable'));
 
       await expect(service.create('user-1', { title: 'X', projectId: 'p-autre' })).rejects.toThrow(
         'Projet introuvable',
@@ -173,10 +187,48 @@ describe('TasksService', () => {
     });
   });
 
-  it('remove renvoie 404 si rien n’a été supprimé', async () => {
-    prisma.task.deleteMany.mockResolvedValue({ count: 0 });
+  describe('droits d’équipe', () => {
+    it('remove : tâche invisible → 404, rien n’est supprimé', async () => {
+      prisma.task.findFirst.mockResolvedValue(null);
+      prisma.task.count.mockResolvedValue(0);
 
-    await expect(service.remove('user-1', 't1')).rejects.toThrow('Tâche introuvable');
-    expect(prisma.task.deleteMany).toHaveBeenCalledWith({ where: { id: 't1', userId: 'user-1' } });
+      await expect(service.remove('user-1', 't1')).rejects.toThrow('Tâche introuvable');
+      expect(prisma.task.delete).not.toHaveBeenCalled();
+    });
+
+    it('un lecteur voit la tâche mais ne peut ni la modifier ni la supprimer (403)', async () => {
+      prisma.task.findFirst.mockResolvedValue(null);
+      prisma.task.count.mockResolvedValue(1);
+
+      await expect(service.update('user-1', 't1', { title: 'x' })).rejects.toThrow(
+        new ForbiddenException(READ_ONLY_PROJECT),
+      );
+      await expect(service.remove('user-1', 't1')).rejects.toBeInstanceOf(ForbiddenException);
+      expect(prisma.task.delete).not.toHaveBeenCalled();
+    });
+
+    it('un éditeur supprime la tâche d’un coéquipier dans le projet', async () => {
+      prisma.task.findFirst.mockResolvedValue({
+        status: TaskStatus.TODO,
+        projectId: 'p1',
+        userId: 'user-2',
+      });
+
+      await service.remove('user-1', 't1');
+      expect(prisma.task.delete).toHaveBeenCalledWith({ where: { id: 't1' } });
+    });
+
+    it('seul l’auteur peut retirer une tâche du projet (sinon elle disparaîtrait pour l’équipe)', async () => {
+      prisma.task.findFirst.mockResolvedValue({
+        status: TaskStatus.TODO,
+        projectId: 'p1',
+        userId: 'user-2',
+      });
+
+      await expect(service.update('user-1', 't1', { projectId: null })).rejects.toThrow(
+        new ForbiddenException(TASK_LEAVE_PROJECT),
+      );
+      expect(tx.task.update).not.toHaveBeenCalled();
+    });
   });
 });

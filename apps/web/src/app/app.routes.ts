@@ -53,6 +53,13 @@ export const routes: Routes = [
           import('./features/notes/editor/note-editor.page').then((m) => m.NoteEditorPage),
       },
       {
+        // Lien reçu par email : authGuard renvoie vers /login?returnUrl=… si besoin
+        path: 'invitations/:token',
+        title: 'titles.invitation',
+        loadComponent: () =>
+          import('./features/invitations/invitation.page').then((m) => m.InvitationPage),
+      },
+      {
         path: 'settings',
         title: 'titles.settings',
         loadComponent: () =>

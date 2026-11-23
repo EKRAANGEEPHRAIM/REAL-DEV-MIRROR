@@ -1,4 +1,9 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { type Paginated, paginate } from '../../common/dto/paginated-response.dto.js';
 import { toSkipTake } from '../../common/dto/pagination-query.dto.js';
 import { parseSort } from '../../common/dto/sort.js';
@@ -9,18 +14,40 @@ import type { CreateProjectDto } from './dto/create-project.dto.js';
 import { PROJECT_SORT_FIELDS, type ProjectQueryDto } from './dto/project-query.dto.js';
 import type { ProjectProgressDto, ProjectResponseDto } from './dto/project-response.dto.js';
 import type { UpdateProjectDto } from './dto/update-project.dto.js';
+import {
+  type AccessRole,
+  canEdit,
+  editableProjects,
+  memberRoleInclude,
+  roleOf,
+  visibleProjects,
+} from './project-access.js';
 
 export const PROJECT_NOT_FOUND = 'Projet introuvable';
+export const READ_ONLY_PROJECT = 'Vous avez un accès en lecture seule à ce projet';
+export const OWNER_ONLY = 'Seul le propriétaire du projet peut faire cela';
 
-const projectInclude = {
-  tags: { select: { id: true, name: true, color: true }, orderBy: { name: 'asc' } },
-} satisfies Prisma.ProjectInclude;
+function projectInclude(userId: string) {
+  return {
+    tags: { select: { id: true, name: true, color: true }, orderBy: { name: 'asc' } },
+    user: { select: { id: true, name: true, avatarUrl: true } },
+    // Le rôle de l'utilisateur connecté, et le nombre de membres pour l'affichage
+    members: memberRoleInclude(userId),
+    _count: { select: { members: true } },
+  } satisfies Prisma.ProjectInclude;
+}
 
-type ProjectWithTags = Prisma.ProjectGetPayload<{ include: typeof projectInclude }>;
+type ProjectWithRelations = Prisma.ProjectGetPayload<{
+  include: ReturnType<typeof projectInclude>;
+}>;
 
 const NO_TASKS: ProjectProgressDto = { total: 0, done: 0, percent: 0 };
 
-function toResponse(project: ProjectWithTags, progress = NO_TASKS): ProjectResponseDto {
+function toResponse(
+  userId: string,
+  project: ProjectWithRelations,
+  progress = NO_TASKS,
+): ProjectResponseDto {
   return {
     id: project.id,
     name: project.name,
@@ -32,13 +59,13 @@ function toResponse(project: ProjectWithTags, progress = NO_TASKS): ProjectRespo
     color: project.color,
     tags: project.tags,
     progress,
+    // Chargé avec `visibleProjects` : le rôle n'est jamais nul ici
+    role: roleOf(userId, project)!,
+    owner: project.user,
+    memberCount: project._count.members,
     createdAt: project.createdAt,
     updatedAt: project.updatedAt,
   };
-}
-
-function isNotFound(error: unknown): boolean {
-  return error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025';
 }
 
 /** Champs modifiables d'un projet, communs à la création et à la mise à jour. */
@@ -56,7 +83,10 @@ function projectFields(dto: CreateProjectDto | UpdateProjectDto) {
 
 const toConnect = (ids: readonly string[]) => ids.map((id) => ({ id }));
 
-/** Projets de l'utilisateur connecté : toute requête est filtrée par `userId`. */
+/**
+ * Projets de l'utilisateur connecté et projets partagés avec lui.
+ * Les droits (propriétaire, éditeur, lecteur) viennent de `project-access.ts`.
+ */
 @Injectable()
 export class ProjectsService {
   constructor(
@@ -73,7 +103,7 @@ export class ProjectsService {
         where,
         // id en second critère : ordre stable entre deux pages quand le premier est à égalité
         orderBy: [orderBy, { id: 'asc' }],
-        include: projectInclude,
+        include: projectInclude(userId),
         ...toSkipTake(query),
       }),
       this.prisma.project.count({ where }),
@@ -81,7 +111,7 @@ export class ProjectsService {
 
     const progress = await this.progressByProject(projects.map((project) => project.id));
     return paginate(
-      projects.map((project) => toResponse(project, progress.get(project.id))),
+      projects.map((project) => toResponse(userId, project, progress.get(project.id))),
       total,
       query,
     );
@@ -89,13 +119,13 @@ export class ProjectsService {
 
   async findOne(userId: string, id: string): Promise<ProjectResponseDto> {
     const project = await this.prisma.project.findFirst({
-      where: { id, userId },
-      include: projectInclude,
+      where: { AND: [{ id }, visibleProjects(userId)] },
+      include: projectInclude(userId),
     });
     if (!project) throw new NotFoundException(PROJECT_NOT_FOUND);
 
     const progress = await this.progressByProject([id]);
-    return toResponse(project, progress.get(id));
+    return toResponse(userId, project, progress.get(id));
   }
 
   async create(userId: string, dto: CreateProjectDto): Promise<ProjectResponseDto> {
@@ -109,83 +139,112 @@ export class ProjectsService {
           userId,
           ...(dto.tagIds?.length ? { tags: { connect: toConnect(dto.tagIds) } } : {}),
         },
-        include: projectInclude,
+        include: projectInclude(userId),
       });
       await tx.activity.create({
         data: { userId, type: 'PROJECT_CREATED', entityType: 'PROJECT', entityId: created.id },
       });
       return created;
     });
-    return toResponse(project);
+    return toResponse(userId, project);
   }
 
   async update(userId: string, id: string, dto: UpdateProjectDto): Promise<ProjectResponseDto> {
-    if (dto.tagIds) await this.tags.assertOwned(userId, dto.tagIds);
-
-    try {
-      // `userId` dans le where : modifier le projet d'un autre utilisateur donne P2025 -> 404.
-      const project = await this.prisma.project.update({
-        where: { id, userId },
-        data: {
-          ...projectFields(dto),
-          // `set` remplace la liste entière ; absent du corps, les tags restent inchangés.
-          ...(dto.tagIds ? { tags: { set: toConnect(dto.tagIds) } } : {}),
-        },
-        include: projectInclude,
-      });
-      const progress = await this.progressByProject([id]);
-      return toResponse(project, progress.get(id));
-    } catch (error) {
-      if (isNotFound(error)) throw new NotFoundException(PROJECT_NOT_FOUND);
-      throw error;
+    const role = await this.roleFor(userId, id);
+    if (!canEdit(role)) throw new ForbiddenException(READ_ONLY_PROJECT);
+    if (dto.tagIds) {
+      // Les étiquettes sont personnelles : seul le propriétaire étiquette son projet.
+      if (role !== 'OWNER') throw new ForbiddenException(OWNER_ONLY);
+      await this.tags.assertOwned(userId, dto.tagIds);
     }
+
+    const project = await this.prisma.project.update({
+      where: { id },
+      data: {
+        ...projectFields(dto),
+        // `set` remplace la liste entière ; absent du corps, les tags restent inchangés.
+        ...(dto.tagIds ? { tags: { set: toConnect(dto.tagIds) } } : {}),
+      },
+      include: projectInclude(userId),
+    });
+    const progress = await this.progressByProject([id]);
+    return toResponse(userId, project, progress.get(id));
   }
 
   /** Supprime le projet et ses tâches (cascade) ; ses notes restent, détachées du projet. */
   async remove(userId: string, id: string): Promise<void> {
-    try {
-      await this.prisma.project.delete({ where: { id, userId } });
-    } catch (error) {
-      if (isNotFound(error)) throw new NotFoundException(PROJECT_NOT_FOUND);
-      throw error;
+    await this.assertOwner(userId, id);
+    await this.prisma.project.delete({ where: { id } });
+  }
+
+  /**
+   * Rôle de l'utilisateur sur le projet. Un projet inexistant ou invisible donne 404 :
+   * on ne révèle pas l'existence d'un projet à quelqu'un qui n'en fait pas partie.
+   */
+  async roleFor(userId: string, projectId: string): Promise<AccessRole> {
+    const project = await this.prisma.project.findFirst({
+      where: { AND: [{ id: projectId }, visibleProjects(userId)] },
+      select: { userId: true, members: memberRoleInclude(userId) },
+    });
+    const role = project ? roleOf(userId, project) : null;
+    if (!role) throw new NotFoundException(PROJECT_NOT_FOUND);
+    return role;
+  }
+
+  /** Gestion de l'équipe et suppression : réservées au propriétaire. */
+  async assertOwner(userId: string, projectId: string): Promise<void> {
+    if ((await this.roleFor(userId, projectId)) !== 'OWNER') {
+      throw new ForbiddenException(OWNER_ONLY);
     }
   }
 
-  /** Vérifie qu'un projet appartient à l'utilisateur avant d'y rattacher une tâche ou une note. */
-  async assertOwned(userId: string, projectId: string): Promise<void> {
-    const owned = await this.prisma.project.count({ where: { id: projectId, userId } });
-    if (owned === 0) throw new BadRequestException(PROJECT_NOT_FOUND);
+  /** Avant de créer ou déplacer une tâche dans un projet : il faut pouvoir y écrire. */
+  async assertCanEdit(userId: string, projectId: string): Promise<void> {
+    const count = await this.prisma.project.count({
+      where: { AND: [{ id: projectId }, editableProjects(userId)] },
+    });
+    if (count === 0) throw new BadRequestException(PROJECT_NOT_FOUND);
+  }
+
+  /** Avant de rattacher une note personnelle à un projet : il suffit de le voir. */
+  async assertVisible(userId: string, projectId: string): Promise<void> {
+    const count = await this.prisma.project.count({
+      where: { AND: [{ id: projectId }, visibleProjects(userId)] },
+    });
+    if (count === 0) throw new BadRequestException(PROJECT_NOT_FOUND);
   }
 
   /** Même contrôle pour une liste (objectifs liés à plusieurs projets) : tout ou rien. */
-  async assertAllOwned(userId: string, projectIds: readonly string[]): Promise<void> {
+  async assertAllVisible(userId: string, projectIds: readonly string[]): Promise<void> {
     if (projectIds.length === 0) return;
-    const owned = await this.prisma.project.count({
-      where: { userId, id: { in: [...projectIds] } },
+    const count = await this.prisma.project.count({
+      where: { AND: [{ id: { in: [...projectIds] } }, visibleProjects(userId)] },
     });
-    if (owned !== new Set(projectIds).size) {
+    if (count !== new Set(projectIds).size) {
       throw new BadRequestException('Un ou plusieurs projets sont introuvables');
     }
   }
 
   private buildWhere(userId: string, query: ProjectQueryDto): Prisma.ProjectWhereInput {
-    const where: Prisma.ProjectWhereInput = { userId };
+    const conditions: Prisma.ProjectWhereInput[] = [visibleProjects(userId)];
 
     if (query.status) {
-      where.status = query.status;
+      conditions.push({ status: query.status });
     } else if (!query.includeArchived) {
-      where.status = { not: ProjectStatus.ARCHIVED };
+      conditions.push({ status: { not: ProjectStatus.ARCHIVED } });
     }
     if (query.q) {
-      where.OR = [
-        { name: { contains: query.q, mode: 'insensitive' } },
-        { description: { contains: query.q, mode: 'insensitive' } },
-      ];
+      conditions.push({
+        OR: [
+          { name: { contains: query.q, mode: 'insensitive' } },
+          { description: { contains: query.q, mode: 'insensitive' } },
+        ],
+      });
     }
     if (query.tag) {
-      where.tags = { some: { name: { equals: query.tag, mode: 'insensitive' } } };
+      conditions.push({ tags: { some: { name: { equals: query.tag, mode: 'insensitive' } } } });
     }
-    return where;
+    return { AND: conditions };
   }
 
   /** Progression de plusieurs projets en une seule requête groupée (pas une requête par projet). */

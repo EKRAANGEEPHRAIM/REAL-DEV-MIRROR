@@ -1,4 +1,4 @@
-import { BadRequestException, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { TaskStatus } from '../../generated/prisma/client.js';
 import type { PrismaService } from '../../prisma/prisma.service.js';
 import type { ProjectsService } from '../projects/projects.service.js';
@@ -60,13 +60,13 @@ describe('TasksService.reorder', () => {
 
     expect(tx.task.update).toHaveBeenCalledTimes(1);
     expect(tx.task.update.mock.calls[0][0]).toMatchObject({
-      where: { id: 'b', userId: 'user-1' },
+      where: { id: 'b' },
       data: { position: 1, status: TaskStatus.DONE, completedAt: expect.any(Date) },
     });
     expect(tx.activity.create).toHaveBeenCalledTimes(1);
   });
 
-  it('refuse tout si une tâche est inconnue ou appartient à un autre utilisateur', async () => {
+  it('refuse tout si une tâche est inconnue ou non modifiable (lecteur, autre équipe)', async () => {
     prisma.task.findMany.mockResolvedValueOnce([{ id: 'a', status: TaskStatus.TODO, position: 0 }]);
 
     await expect(
@@ -78,6 +78,8 @@ describe('TasksService.reorder', () => {
 
 describe('SubtasksService', () => {
   const prisma = {
+    // [modifiable, visible] : les deux comptages de la vérification d'accès
+    $transaction: vi.fn((operations: Promise<unknown>[]) => Promise.all(operations)),
     task: { count: vi.fn() },
     subtask: {
       count: vi.fn(),
@@ -105,7 +107,7 @@ describe('SubtasksService', () => {
     });
   });
 
-  it('renvoie 404 si la tâche parente appartient à un autre utilisateur', async () => {
+  it('renvoie 404 si la tâche parente est invisible pour l’utilisateur', async () => {
     prisma.task.count.mockResolvedValue(0);
 
     await expect(service.create('user-1', 't-autre', { title: 'X' })).rejects.toThrow(
@@ -123,15 +125,24 @@ describe('SubtasksService', () => {
     );
   });
 
-  it('vérifie que la sous-tâche appartient à la tâche et à l’utilisateur', async () => {
+  it('vérifie que la sous-tâche appartient à la tâche', async () => {
+    prisma.task.count.mockResolvedValue(1);
     prisma.subtask.count.mockResolvedValue(0);
 
     await expect(service.update('user-1', 't1', 's9', { done: true })).rejects.toBeInstanceOf(
       NotFoundException,
     );
-    expect(prisma.subtask.count).toHaveBeenCalledWith({
-      where: { id: 's9', taskId: 't1', task: { userId: 'user-1' } },
-    });
+    expect(prisma.subtask.count).toHaveBeenCalledWith({ where: { id: 's9', taskId: 't1' } });
+    expect(prisma.subtask.update).not.toHaveBeenCalled();
+  });
+
+  it('un lecteur ne coche pas la checklist d’un projet partagé (403)', async () => {
+    // modifiable : 0, visible : 1
+    prisma.task.count.mockResolvedValueOnce(0).mockResolvedValueOnce(1);
+
+    await expect(service.update('user-1', 't1', 's1', { done: true })).rejects.toBeInstanceOf(
+      ForbiddenException,
+    );
     expect(prisma.subtask.update).not.toHaveBeenCalled();
   });
 });

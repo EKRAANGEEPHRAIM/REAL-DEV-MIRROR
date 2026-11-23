@@ -11,6 +11,7 @@ import { translate } from '../i18n/translate';
 import { ThemePreferenceSync } from '../theme/theme-preference-sync';
 import { ThemeToggle } from '../theme/theme-toggle';
 import { EmailVerificationBanner } from './email-verification-banner';
+import { InvitationsBanner } from '../invitations/invitations-banner';
 import { MAIN_NAV, SECONDARY_NAV } from './navigation';
 import { SidebarNav } from './sidebar-nav';
 import { UserMenu } from './user-menu';
@@ -29,6 +30,7 @@ import { UserMenu } from './user-menu';
     ThemeToggle,
     UserMenu,
     EmailVerificationBanner,
+    InvitationsBanner,
   ],
   providers: [provideIcons({ lucideMenu, lucideScanFace, lucideSearch })],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -110,6 +112,7 @@ import { UserMenu } from './user-menu';
         </header>
 
         <dm-email-verification-banner />
+        <dm-invitations-banner />
 
         <main id="contenu" tabindex="-1" class="flex-1 px-4 py-6 outline-none md:px-8">
           <router-outlet />

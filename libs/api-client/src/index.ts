@@ -29,6 +29,15 @@ export type UpdateProjectRequest = Schemas['UpdateProjectDto'];
 export type ProjectListQuery = NonNullable<
   operations['ProjectsController_findAll']['parameters']['query']
 >;
+export type AccessRole = Schemas['ProjectResponseDto']['role'];
+export type ProjectRole = Schemas['CreateInvitationDto']['role'] & string;
+export type ProjectOwner = Schemas['ProjectOwnerDto'];
+export type ProjectMember = Schemas['MemberResponseDto'];
+export type ProjectInvitation = Schemas['InvitationResponseDto'];
+export type ReceivedInvitation = Schemas['ReceivedInvitationDto'];
+export type AcceptedInvitation = Schemas['AcceptedInvitationDto'];
+export type CreateInvitationRequest = Schemas['CreateInvitationDto'];
+export type UpdateMemberRequest = Schemas['UpdateMemberDto'];
 
 export type Tag = Schemas['TagResponseDto'];
 export type TagUsage = Schemas['TagUsageDto'];
