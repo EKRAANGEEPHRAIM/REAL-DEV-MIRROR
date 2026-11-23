@@ -7,7 +7,7 @@ import {
 import type { ConfigService } from '@nestjs/config';
 import type { EnvironmentVariables } from '../../config/env.validation.js';
 import { hashOpaqueToken } from '../../common/crypto/opaque-token.js';
-import { ProjectRole } from '../../generated/prisma/client.js';
+import { Prisma, ProjectRole } from '../../generated/prisma/client.js';
 import type { PrismaService } from '../../prisma/prisma.service.js';
 import type { MailService } from '../mail/mail.service.js';
 import type { ProjectsService } from '../projects/projects.service.js';
@@ -15,6 +15,7 @@ import {
   ALREADY_MEMBER,
   INVITATION_NOT_FOUND,
   MAX_PENDING_INVITATIONS,
+  MEMBER_NOT_FOUND,
   MembersService,
   NOT_YOUR_INVITATION,
   OWNER_CANNOT_LEAVE,
@@ -276,6 +277,90 @@ describe('MembersService', () => {
         [owner.id, 'OWNER'],
         [grace.id, ProjectRole.VIEWER],
       ]);
+    });
+
+    it('le propriétaire change le rôle d’un membre ; membre inconnu : 404', async () => {
+      prisma.projectMember.update.mockResolvedValueOnce({
+        role: ProjectRole.VIEWER,
+        createdAt: new Date('2026-02-01'),
+        user: { id: grace.id, name: 'Grace', email: grace.email, avatarUrl: null },
+      });
+
+      await expect(
+        service.updateMember(owner.id, 'p1', grace.id, { role: ProjectRole.VIEWER }),
+      ).resolves.toMatchObject({ userId: grace.id, role: ProjectRole.VIEWER });
+      expect(projects.assertOwner).toHaveBeenCalledWith(owner.id, 'p1');
+
+      prisma.projectMember.update.mockRejectedValueOnce(
+        new Prisma.PrismaClientKnownRequestError('absent', {
+          code: 'P2025',
+          clientVersion: '7.10.0',
+        }),
+      );
+      await expect(
+        service.updateMember(owner.id, 'p1', 'inconnu', { role: ProjectRole.EDITOR }),
+      ).rejects.toThrow(new NotFoundException(MEMBER_NOT_FOUND));
+    });
+  });
+
+  describe('invitations en attente', () => {
+    it('le propriétaire liste les invitations non acceptées et non expirées', async () => {
+      prisma.projectInvitation.findMany.mockResolvedValue([]);
+
+      await service.listInvitations(owner.id, 'p1');
+
+      expect(projects.assertOwner).toHaveBeenCalledWith(owner.id, 'p1');
+      expect(prisma.projectInvitation.findMany.mock.calls[0][0].where).toMatchObject({
+        projectId: 'p1',
+        acceptedAt: null,
+        expiresAt: { gt: expect.any(Date) },
+      });
+    });
+
+    it('annuler une invitation : 404 si elle n’existe plus ou est déjà acceptée', async () => {
+      prisma.projectInvitation.deleteMany.mockResolvedValueOnce({ count: 1 });
+      await service.revokeInvitation(owner.id, 'p1', 'inv-1');
+      expect(prisma.projectInvitation.deleteMany).toHaveBeenCalledWith({
+        where: { id: 'inv-1', projectId: 'p1', acceptedAt: null },
+      });
+
+      prisma.projectInvitation.deleteMany.mockResolvedValueOnce({ count: 0 });
+      await expect(service.revokeInvitation(owner.id, 'p1', 'inv-1')).rejects.toBeInstanceOf(
+        NotFoundException,
+      );
+    });
+
+    it('l’invité ne voit que les invitations adressées à son email', async () => {
+      prisma.projectInvitation.findMany.mockResolvedValue([]);
+
+      await service.receivedInvitations({ id: grace.id, email: ' Grace@Example.com ' });
+
+      expect(prisma.projectInvitation.findMany.mock.calls[0][0].where).toMatchObject({
+        email: 'grace@example.com',
+        acceptedAt: null,
+      });
+    });
+
+    it('aperçu par le lien : informations du projet, sans l’identifiant du propriétaire', async () => {
+      prisma.projectInvitation.findUnique.mockResolvedValue(pendingInvitation());
+
+      const preview = await service.previewByToken(grace, 'jeton');
+
+      expect(preview.project).toEqual({ id: 'p1', name: 'DevMirror', color: null });
+      await expect(
+        service.previewByToken({ id: 'u9', email: 'intrus@example.com' }, 'jeton'),
+      ).rejects.toBeInstanceOf(ForbiddenException);
+    });
+
+    it('refuser supprime l’invitation ; celle d’un autre est introuvable', async () => {
+      prisma.projectInvitation.findFirst.mockResolvedValueOnce(pendingInvitation());
+      await service.decline(grace, 'inv-1');
+      expect(prisma.projectInvitation.delete).toHaveBeenCalledWith({ where: { id: 'inv-1' } });
+
+      prisma.projectInvitation.findFirst.mockResolvedValueOnce(null);
+      await expect(service.decline(grace, 'inv-2')).rejects.toThrow(
+        new NotFoundException(INVITATION_NOT_FOUND),
+      );
     });
   });
 });

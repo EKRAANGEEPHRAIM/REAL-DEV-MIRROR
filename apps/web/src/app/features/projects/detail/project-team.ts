@@ -175,17 +175,19 @@ const ROLES: readonly ProjectRole[] = ['EDITOR', 'VIEWER'];
                   formControlName="email"
                   [placeholder]="t('projects.team.emailPlaceholder')"
                 />
-                <div class="flex gap-2">
+                <div class="flex flex-wrap gap-2">
                   <label class="sr-only" for="invite-role">{{
                     t('projects.team.roleLabel')
                   }}</label>
+                  <!-- Libellé court : une option longue élargirait la carte sur petit écran -->
                   <select
                     id="invite-role"
                     formControlName="role"
-                    [class]="selectClasses + ' flex-1'"
+                    aria-describedby="invite-role-hint"
+                    [class]="selectClasses + ' min-w-0 flex-1'"
                   >
                     @for (role of roles; track role) {
-                      <option [value]="role">{{ roleLabel(role) }} — {{ roleHint(role) }}</option>
+                      <option [value]="role">{{ roleLabel(role) }}</option>
                     }
                   </select>
                   <button hlmBtn type="submit" [disabled]="form.invalid || sending()">
@@ -193,6 +195,9 @@ const ROLES: readonly ProjectRole[] = ['EDITOR', 'VIEWER'];
                     {{ sending() ? t('projects.team.sending') : t('projects.team.invite') }}
                   </button>
                 </div>
+                <p id="invite-role-hint" class="text-muted-foreground text-xs">
+                  {{ roleHint(form.controls.role.value) }}
+                </p>
                 @if (inviteError()) {
                   <dm-form-alert>{{ inviteError() }}</dm-form-alert>
                 }

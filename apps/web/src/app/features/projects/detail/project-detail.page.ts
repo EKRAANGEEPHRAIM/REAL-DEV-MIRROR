@@ -155,7 +155,7 @@ import { translate } from '../../../core/i18n/translate';
               (viewChange)="setTasksView($event)"
             />
 
-            <div class="flex flex-col gap-4">
+            <div class="flex min-w-0 flex-col gap-4">
               <aside hlmCard aria-labelledby="info-title">
                 <div hlmCardHeader>
                   <h2 hlmCardTitle id="info-title">{{ t('projects.detail.info') }}</h2>
