@@ -6,6 +6,7 @@ import type {
   NoteSummary,
   Paginated,
   Project,
+  ProjectMember,
   SearchResults,
   StatsOverview,
   Tag,
@@ -42,6 +43,40 @@ const tags: Tag[] = [
 ];
 const tagRef = (tag: Tag) => ({ id: tag.id, name: tag.name, color: tag.color });
 
+/** Projet d'Ada (propriétaire), avec `members` personnes invitées. */
+const owned = (members: number) => ({
+  role: 'OWNER' as const,
+  owner: { id: 'u1', name: 'Ada Lovelace', avatarUrl: null },
+  memberCount: members,
+});
+
+const team: ProjectMember[] = [
+  {
+    userId: 'u1',
+    name: 'Ada Lovelace',
+    email: 'ada@devmirror.dev',
+    avatarUrl: null,
+    role: 'OWNER',
+    joinedAt: iso(-30),
+  },
+  {
+    userId: 'u2',
+    name: 'Grace Hopper',
+    email: 'grace@devmirror.dev',
+    avatarUrl: null,
+    role: 'EDITOR',
+    joinedAt: iso(-20),
+  },
+  {
+    userId: 'u3',
+    name: 'Linus Torvalds',
+    email: 'linus@devmirror.dev',
+    avatarUrl: null,
+    role: 'VIEWER',
+    joinedAt: iso(-10),
+  },
+];
+
 const projects: Project[] = [
   {
     id: 'p1',
@@ -54,6 +89,7 @@ const projects: Project[] = [
     color: '#6366f1',
     tags: [tagRef(tags[0]), tagRef(tags[1])],
     progress: { total: 4, done: 1, percent: 25 },
+    ...owned(2),
     createdAt: iso(-30),
     updatedAt: iso(-1),
   },
@@ -68,6 +104,7 @@ const projects: Project[] = [
     color: '#ec4899',
     tags: [tagRef(tags[0])],
     progress: { total: 0, done: 0, percent: 0 },
+    ...owned(0),
     createdAt: iso(-12),
     updatedAt: iso(-5),
   },
@@ -82,6 +119,7 @@ const projects: Project[] = [
     color: null,
     tags: [],
     progress: { total: 3, done: 3, percent: 100 },
+    ...owned(0),
     createdAt: iso(-50),
     updatedAt: iso(-20),
   },
@@ -339,6 +377,11 @@ export async function mockApi(page: Page, options: MockOptions = {}): Promise<vo
     if (method !== 'GET') return json({});
 
     if (path === '/projects') return json(paginated(list(projects)));
+    // Équipe d'un projet : p1 est partagé avec deux personnes, les autres sont solo
+    if (path.startsWith('/projects/') && path.endsWith('/members'))
+      return json(path.includes('/p1/') ? team : team.slice(0, 1));
+    if (path.startsWith('/projects/') && path.endsWith('/invitations')) return json([]);
+    if (path === '/invitations') return json([]);
     if (path.startsWith('/projects/'))
       return json(projects.find((p) => path.endsWith(p.id)) ?? projects[0]);
     if (path === '/tasks') {

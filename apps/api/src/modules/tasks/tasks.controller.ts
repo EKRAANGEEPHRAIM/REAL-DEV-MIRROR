@@ -13,6 +13,7 @@ import {
 import {
   ApiBadRequestResponse,
   ApiBearerAuth,
+  ApiForbiddenResponse,
   ApiCreatedResponse,
   ApiNoContentResponse,
   ApiNotFoundResponse,
@@ -65,6 +66,7 @@ export class TasksController {
 
   // Déclarée avant PATCH :id, sinon « reorder » serait pris pour un identifiant.
   @Patch('reorder')
+  @ApiForbiddenResponse({ type: ErrorResponseDto, description: 'Lecture seule sur ce projet' })
   @ApiOperation({
     summary: 'Enregistrer une colonne du Kanban après un glisser-déposer',
     description:
@@ -91,6 +93,7 @@ export class TasksController {
   }
 
   @Patch(':id')
+  @ApiForbiddenResponse({ type: ErrorResponseDto, description: 'Lecture seule sur ce projet' })
   @ApiOperation({
     summary: 'Modifier une tâche',
     description:
@@ -111,6 +114,7 @@ export class TasksController {
   }
 
   @Delete(':id')
+  @ApiForbiddenResponse({ type: ErrorResponseDto, description: 'Lecture seule sur ce projet' })
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: 'Supprimer une tâche et ses sous-tâches' })
   @ApiNoContentResponse()

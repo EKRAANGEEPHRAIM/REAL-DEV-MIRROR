@@ -89,8 +89,13 @@ const MAX_TECHS = 4;
         </div>
       </div>
 
-      <p hlmCardFooter class="text-muted-foreground mt-auto text-xs">
-        {{ t('projects.card.updated', { when: (p.updatedAt | relativeTime) }) }}
+      <p hlmCardFooter class="text-muted-foreground mt-auto flex flex-wrap gap-x-2 text-xs">
+        <span>{{ t('projects.card.updated', { when: (p.updatedAt | relativeTime) }) }}</span>
+        @if (p.role !== 'OWNER') {
+          <span>· {{ t('projects.sharedBy', { name: p.owner.name }) }}</span>
+        } @else if (p.memberCount) {
+          <span>· {{ t('projects.members', { count: p.memberCount + 1 }) }}</span>
+        }
       </p>
     </article>
   `,

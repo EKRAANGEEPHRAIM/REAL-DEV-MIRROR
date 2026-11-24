@@ -318,6 +318,164 @@ export interface paths {
     patch: operations['TagsController_update'];
     trace?: never;
   };
+  '/api/v1/projects/{projectId}/members': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Équipe du projet, propriétaire en tête */
+    get: operations['MembersController_listMembers'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/projects/{projectId}/members/{userId}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    /** Retirer un membre (propriétaire), ou quitter le projet (son propre id) */
+    delete: operations['MembersController_removeMember'];
+    options?: never;
+    head?: never;
+    /** Changer le rôle d’un membre (propriétaire seulement) */
+    patch: operations['MembersController_updateMember'];
+    trace?: never;
+  };
+  '/api/v1/projects/{projectId}/invitations': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Invitations en attente (propriétaire seulement) */
+    get: operations['MembersController_listInvitations'];
+    put?: never;
+    /**
+     * Inviter une personne par email (propriétaire seulement)
+     * @description Réinviter la même adresse remplace l’invitation précédente.
+     */
+    post: operations['MembersController_invite'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/projects/{projectId}/invitations/{invitationId}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    /** Annuler une invitation (propriétaire seulement) */
+    delete: operations['MembersController_revokeInvitation'];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/invitations': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Mes invitations en attente */
+    get: operations['InvitationsController_received'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/invitations/token/{token}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Aperçu d’une invitation ouverte depuis le lien de l’email */
+    get: operations['InvitationsController_preview'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/invitations/token/{token}/accept': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Accepter depuis le lien de l’email */
+    post: operations['InvitationsController_acceptByToken'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/invitations/{id}/accept': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Accepter depuis l’application (adresse email vérifiée requise) */
+    post: operations['InvitationsController_acceptById'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/invitations/{id}/decline': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Refuser une invitation */
+    post: operations['InvitationsController_decline'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/v1/tasks': {
     parameters: {
       query?: never;
@@ -788,6 +946,19 @@ export interface components {
        */
       percent: number;
     };
+    /**
+     * @description Rôle de l’utilisateur connecté : OWNER (propriétaire), EDITOR ou VIEWER
+     * @enum {string}
+     */
+    AccessRole: 'OWNER' | 'EDITOR' | 'VIEWER';
+    ProjectOwnerDto: {
+      /** @example clx0usr000001 */
+      id: string;
+      /** @example Ada Lovelace */
+      name: string;
+      /** @example null */
+      avatarUrl: string | null;
+    };
     ProjectResponseDto: {
       /** @example clx1a2b3c0000qz8h4k9d7f2e */
       id: string;
@@ -812,6 +983,17 @@ export interface components {
       color: string | null;
       tags: components['schemas']['ProjectTagDto'][];
       progress: components['schemas']['ProjectProgressDto'];
+      /**
+       * @description Rôle de l’utilisateur connecté : OWNER (propriétaire), EDITOR ou VIEWER
+       * @example OWNER
+       */
+      role: components['schemas']['AccessRole'];
+      owner: components['schemas']['ProjectOwnerDto'];
+      /**
+       * @description Membres invités (propriétaire non compris)
+       * @example 2
+       */
+      memberCount: number;
       /**
        * Format: date-time
        * @example 2026-10-21T09:00:00.000Z
@@ -914,6 +1096,92 @@ export interface components {
       name?: string;
       /** @example #dd0031 */
       color?: string | null;
+    };
+    MemberResponseDto: {
+      /** @example clx0usr000002 */
+      userId: string;
+      /** @example Grace Hopper */
+      name: string;
+      /** @example grace@example.com */
+      email: string;
+      /** @example null */
+      avatarUrl: string | null;
+      /** @example EDITOR */
+      role: components['schemas']['AccessRole'];
+      /**
+       * Format: date-time
+       * @description Arrivée dans le projet
+       * @example 2026-11-23T09:00:00.000Z
+       */
+      joinedAt: string;
+    };
+    /** @enum {string} */
+    ProjectRole: 'EDITOR' | 'VIEWER';
+    UpdateMemberDto: {
+      /** @example VIEWER */
+      role: components['schemas']['ProjectRole'];
+    };
+    InviterDto: {
+      /** @example clx0usr000001 */
+      id: string;
+      /** @example Ada Lovelace */
+      name: string;
+    };
+    InvitationResponseDto: {
+      /** @example clx0inv000001 */
+      id: string;
+      /** @example grace@example.com */
+      email: string;
+      /** @example EDITOR */
+      role: components['schemas']['ProjectRole'];
+      invitedBy: components['schemas']['InviterDto'];
+      /**
+       * Format: date-time
+       * @example 2026-11-30T09:00:00.000Z
+       */
+      expiresAt: string;
+      /**
+       * Format: date-time
+       * @example 2026-11-23T09:00:00.000Z
+       */
+      createdAt: string;
+    };
+    CreateInvitationDto: {
+      /** @example grace@example.com */
+      email: string;
+      /**
+       * @description EDITOR : modifie le projet et ses tâches ; VIEWER : lecture seule
+       * @default EDITOR
+       */
+      role?: components['schemas']['ProjectRole'];
+    };
+    InvitedProjectDto: {
+      /** @example clx1a2b3c0000qz8h4k9d7f2e */
+      id: string;
+      /** @example DevMirror */
+      name: string;
+      /** @example #6366f1 */
+      color: string | null;
+    };
+    ReceivedInvitationDto: {
+      /** @example clx0inv000001 */
+      id: string;
+      project: components['schemas']['InvitedProjectDto'];
+      /** @example EDITOR */
+      role: components['schemas']['ProjectRole'];
+      invitedBy: components['schemas']['InviterDto'];
+      /**
+       * Format: date-time
+       * @example 2026-11-30T09:00:00.000Z
+       */
+      expiresAt: string;
+    };
+    AcceptedInvitationDto: {
+      /**
+       * @description Projet rejoint
+       * @example clx1a2b3c0000qz8h4k9d7f2e
+       */
+      projectId: string;
     };
     /** @enum {string} */
     TaskStatus: 'TODO' | 'IN_PROGRESS' | 'IN_REVIEW' | 'DONE';
@@ -2265,6 +2533,15 @@ export interface operations {
           'application/json': components['schemas']['ErrorResponseDto'];
         };
       };
+      /** @description Réservé au propriétaire */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponseDto'];
+        };
+      };
       /** @description Projet introuvable */
       404: {
         headers: {
@@ -2310,6 +2587,15 @@ export interface operations {
       };
       /** @description Jeton d’accès manquant ou invalide */
       401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponseDto'];
+        };
+      };
+      /** @description Lecture seule, ou étiquettes réservées au propriétaire */
+      403: {
         headers: {
           [name: string]: unknown;
         };
@@ -2495,6 +2781,540 @@ export interface operations {
       };
     };
   };
+  MembersController_listMembers: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        projectId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['MemberResponseDto'][];
+        };
+      };
+      /** @description Jeton d’accès manquant ou invalide */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponseDto'];
+        };
+      };
+      /** @description Projet introuvable */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponseDto'];
+        };
+      };
+    };
+  };
+  MembersController_removeMember: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        projectId: string;
+        userId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Membre retiré */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Le propriétaire ne peut pas partir */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponseDto'];
+        };
+      };
+      /** @description Jeton d’accès manquant ou invalide */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponseDto'];
+        };
+      };
+      /** @description Réservé au propriétaire */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponseDto'];
+        };
+      };
+      /** @description Projet introuvable */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponseDto'];
+        };
+      };
+    };
+  };
+  MembersController_updateMember: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        projectId: string;
+        userId: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['UpdateMemberDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['MemberResponseDto'];
+        };
+      };
+      /** @description Rôle invalide */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponseDto'];
+        };
+      };
+      /** @description Jeton d’accès manquant ou invalide */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponseDto'];
+        };
+      };
+      /** @description Réservé au propriétaire */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponseDto'];
+        };
+      };
+      /** @description Projet introuvable */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponseDto'];
+        };
+      };
+    };
+  };
+  MembersController_listInvitations: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        projectId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['InvitationResponseDto'][];
+        };
+      };
+      /** @description Jeton d’accès manquant ou invalide */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponseDto'];
+        };
+      };
+      /** @description Réservé au propriétaire */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponseDto'];
+        };
+      };
+      /** @description Projet introuvable */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponseDto'];
+        };
+      };
+    };
+  };
+  MembersController_invite: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        projectId: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CreateInvitationDto'];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['InvitationResponseDto'];
+        };
+      };
+      /** @description Email invalide ou limite atteinte */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponseDto'];
+        };
+      };
+      /** @description Jeton d’accès manquant ou invalide */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponseDto'];
+        };
+      };
+      /** @description Action désactivée sur le compte de démo */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponseDto'];
+        };
+      };
+      /** @description Projet introuvable */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponseDto'];
+        };
+      };
+      /** @description Déjà membre du projet */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponseDto'];
+        };
+      };
+    };
+  };
+  MembersController_revokeInvitation: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        projectId: string;
+        invitationId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Invitation annulée */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Jeton d’accès manquant ou invalide */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponseDto'];
+        };
+      };
+      /** @description Réservé au propriétaire */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponseDto'];
+        };
+      };
+      /** @description Projet introuvable */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponseDto'];
+        };
+      };
+    };
+  };
+  InvitationsController_received: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ReceivedInvitationDto'][];
+        };
+      };
+      /** @description Jeton d’accès manquant ou invalide */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponseDto'];
+        };
+      };
+    };
+  };
+  InvitationsController_preview: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        token: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ReceivedInvitationDto'];
+        };
+      };
+      /** @description Jeton d’accès manquant ou invalide */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponseDto'];
+        };
+      };
+      /** @description Invitation destinée à une autre adresse */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponseDto'];
+        };
+      };
+      /** @description Invitation introuvable ou expirée */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponseDto'];
+        };
+      };
+    };
+  };
+  InvitationsController_acceptByToken: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        token: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['AcceptedInvitationDto'];
+        };
+      };
+      /** @description Jeton d’accès manquant ou invalide */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponseDto'];
+        };
+      };
+      /** @description Invitation destinée à une autre adresse */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponseDto'];
+        };
+      };
+      /** @description Invitation introuvable ou expirée */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponseDto'];
+        };
+      };
+    };
+  };
+  InvitationsController_acceptById: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['AcceptedInvitationDto'];
+        };
+      };
+      /** @description Jeton d’accès manquant ou invalide */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponseDto'];
+        };
+      };
+      /** @description Adresse email non vérifiée */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponseDto'];
+        };
+      };
+      /** @description Invitation introuvable ou expirée */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponseDto'];
+        };
+      };
+    };
+  };
+  InvitationsController_decline: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Invitation refusée */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Jeton d’accès manquant ou invalide */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponseDto'];
+        };
+      };
+      /** @description Invitation introuvable ou expirée */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponseDto'];
+        };
+      };
+    };
+  };
   TasksController_findAll: {
     parameters: {
       query?: {
@@ -2637,6 +3457,15 @@ export interface operations {
           'application/json': components['schemas']['ErrorResponseDto'];
         };
       };
+      /** @description Lecture seule sur ce projet */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponseDto'];
+        };
+      };
     };
   };
   TasksController_findOne: {
@@ -2704,6 +3533,15 @@ export interface operations {
           'application/json': components['schemas']['ErrorResponseDto'];
         };
       };
+      /** @description Lecture seule sur ce projet */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponseDto'];
+        };
+      };
       /** @description Tâche introuvable */
       404: {
         headers: {
@@ -2749,6 +3587,15 @@ export interface operations {
       };
       /** @description Jeton d’accès manquant ou invalide */
       401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponseDto'];
+        };
+      };
+      /** @description Lecture seule sur ce projet */
+      403: {
         headers: {
           [name: string]: unknown;
         };
@@ -2808,6 +3655,15 @@ export interface operations {
           'application/json': components['schemas']['ErrorResponseDto'];
         };
       };
+      /** @description Lecture seule sur ce projet */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponseDto'];
+        };
+      };
       /** @description Tâche introuvable */
       404: {
         headers: {
@@ -2839,6 +3695,15 @@ export interface operations {
       };
       /** @description Jeton d’accès manquant ou invalide */
       401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponseDto'];
+        };
+      };
+      /** @description Lecture seule sur ce projet */
+      403: {
         headers: {
           [name: string]: unknown;
         };
@@ -2883,6 +3748,15 @@ export interface operations {
       };
       /** @description Jeton d’accès manquant ou invalide */
       401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponseDto'];
+        };
+      };
+      /** @description Lecture seule sur ce projet */
+      403: {
         headers: {
           [name: string]: unknown;
         };

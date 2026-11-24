@@ -4,6 +4,7 @@ import type { PrismaService } from '../../prisma/prisma.service.js';
 import type { NotesService } from '../notes/notes.service.js';
 import { SearchQueryDto } from './dto/search.dto.js';
 import { SearchService, titleScore } from './search.service.js';
+import { visibleProjects, visibleTasks } from '../projects/project-access.js';
 
 describe('titleScore', () => {
   it('classe identique > début > début de mot > présence', () => {
@@ -49,8 +50,11 @@ describe('SearchService', () => {
   it('filtre chaque catégorie par utilisateur', async () => {
     await service.search('user-1', { q: 'jwt', limit: 5 });
 
-    expect(prisma.project.findMany.mock.calls[0][0].where.userId).toBe('user-1');
-    expect(prisma.task.findMany.mock.calls[0][0].where.userId).toBe('user-1');
+    // Projets et tâches : les siens et ceux des projets partagés avec lui
+    expect(prisma.project.findMany.mock.calls[0][0].where.AND[0]).toEqual(
+      visibleProjects('user-1'),
+    );
+    expect(prisma.task.findMany.mock.calls[0][0].where.AND[0]).toEqual(visibleTasks('user-1'));
     expect(notes.search).toHaveBeenCalledWith('user-1', 'jwt');
     expect(prisma.note.findMany).not.toHaveBeenCalled();
   });

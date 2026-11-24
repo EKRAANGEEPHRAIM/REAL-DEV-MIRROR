@@ -1,10 +1,16 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { type Paginated, paginate } from '../../common/dto/paginated-response.dto.js';
 import { toSkipTake } from '../../common/dto/pagination-query.dto.js';
 import { parseSort } from '../../common/dto/sort.js';
 import { Prisma, TaskStatus } from '../../generated/prisma/client.js';
 import { PrismaService } from '../../prisma/prisma.service.js';
-import { ProjectsService } from '../projects/projects.service.js';
+import { editableTasks, visibleTasks } from '../projects/project-access.js';
+import { ProjectsService, READ_ONLY_PROJECT } from '../projects/projects.service.js';
 import type { ReorderTasksDto } from './dto/reorder-tasks.dto.js';
 import { TASK_SORT_FIELDS, type TaskQueryDto } from './dto/task-query.dto.js';
 import type { TaskResponseDto } from './dto/task-response.dto.js';
@@ -12,6 +18,8 @@ import type { CreateTaskDto, UpdateTaskDto } from './dto/task.dto.js';
 
 export const TASK_NOT_FOUND = 'Tâche introuvable';
 export const UNKNOWN_TASKS = 'Une ou plusieurs tâches sont introuvables';
+export const TASK_LEAVE_PROJECT =
+  'Seul l’auteur d’une tâche peut la retirer du projet pour en faire une tâche personnelle';
 
 const taskInclude = {
   project: { select: { id: true, name: true, color: true } },
@@ -42,7 +50,10 @@ function toResponse(task: TaskWithRelations): TaskResponseDto {
   };
 }
 
-/** Tâches de l'utilisateur connecté : toute requête est filtrée par `userId`. */
+/**
+ * Tâches personnelles de l'utilisateur et tâches des projets partagés avec lui.
+ * Les droits (lecture, écriture) viennent de `project-access.ts`.
+ */
 @Injectable()
 export class TasksService {
   constructor(
@@ -71,13 +82,16 @@ export class TasksService {
   }
 
   async findOne(userId: string, id: string): Promise<TaskResponseDto> {
-    const task = await this.prisma.task.findFirst({ where: { id, userId }, include: taskInclude });
+    const task = await this.prisma.task.findFirst({
+      where: { AND: [{ id }, visibleTasks(userId)] },
+      include: taskInclude,
+    });
     if (!task) throw new NotFoundException(TASK_NOT_FOUND);
     return toResponse(task);
   }
 
   async create(userId: string, dto: CreateTaskDto): Promise<TaskResponseDto> {
-    if (dto.projectId) await this.projects.assertOwned(userId, dto.projectId);
+    if (dto.projectId) await this.projects.assertCanEdit(userId, dto.projectId);
     const status = dto.status ?? TaskStatus.TODO;
     const projectId = dto.projectId ?? null;
 
@@ -103,12 +117,12 @@ export class TasksService {
   }
 
   async update(userId: string, id: string, dto: UpdateTaskDto): Promise<TaskResponseDto> {
-    const existing = await this.prisma.task.findFirst({
-      where: { id, userId },
-      select: { status: true, projectId: true },
-    });
-    if (!existing) throw new NotFoundException(TASK_NOT_FOUND);
-    if (dto.projectId) await this.projects.assertOwned(userId, dto.projectId);
+    const existing = await this.findEditable(userId, id);
+    if (dto.projectId) await this.projects.assertCanEdit(userId, dto.projectId);
+    // Sortie du projet : la tâche redeviendrait personnelle à son auteur, invisible pour l'équipe.
+    if (dto.projectId === null && existing.projectId && existing.userId !== userId) {
+      throw new ForbiddenException(TASK_LEAVE_PROJECT);
+    }
 
     const status = dto.status ?? existing.status;
     const projectId = dto.projectId === undefined ? existing.projectId : dto.projectId;
@@ -132,7 +146,7 @@ export class TasksService {
         data.position = await this.nextPosition(tx, userId, projectId, status);
       }
 
-      const updated = await tx.task.update({ where: { id, userId }, data, include: taskInclude });
+      const updated = await tx.task.update({ where: { id }, data, include: taskInclude });
       if (becameDone) await this.recordCompletion(tx, userId, id);
       return updated;
     });
@@ -140,18 +154,38 @@ export class TasksService {
   }
 
   async remove(userId: string, id: string): Promise<void> {
-    const { count } = await this.prisma.task.deleteMany({ where: { id, userId } });
-    if (count === 0) throw new NotFoundException(TASK_NOT_FOUND);
+    await this.findEditable(userId, id);
+    await this.prisma.task.delete({ where: { id } });
+  }
+
+  /**
+   * Tâche que l'utilisateur peut modifier. Invisible : 404 (on ne révèle pas qu'elle existe) ;
+   * visible en lecture seule : 403.
+   */
+  async findEditable(
+    userId: string,
+    id: string,
+  ): Promise<{ status: TaskStatus; projectId: string | null; userId: string }> {
+    const [editable, visible] = await this.prisma.$transaction([
+      this.prisma.task.findFirst({
+        where: { AND: [{ id }, editableTasks(userId)] },
+        select: { status: true, projectId: true, userId: true },
+      }),
+      this.prisma.task.count({ where: { AND: [{ id }, visibleTasks(userId)] } }),
+    ]);
+    if (editable) return editable;
+    if (visible > 0) throw new ForbiddenException(READ_ONLY_PROJECT);
+    throw new NotFoundException(TASK_NOT_FOUND);
   }
 
   /**
    * Enregistre une colonne du Kanban après un glisser-déposer : statut et positions 0, 1, 2…
-   * dans l'ordre reçu, en une transaction. Tout ou rien : un seul id inconnu (ou d'un autre
-   * utilisateur) refuse l'ensemble. Seules les tâches qui changent sont mises à jour.
+   * dans l'ordre reçu, en une transaction. Tout ou rien : un seul id inconnu (ou d'une tâche
+   * qu'il ne peut pas modifier) refuse l'ensemble. Seules les tâches qui changent sont mises à jour.
    */
   async reorder(userId: string, dto: ReorderTasksDto): Promise<TaskResponseDto[]> {
     const current = await this.prisma.task.findMany({
-      where: { userId, id: { in: dto.taskIds } },
+      where: { AND: [{ id: { in: dto.taskIds } }, editableTasks(userId)] },
       select: { id: true, status: true, position: true },
     });
     if (current.length !== dto.taskIds.length) throw new BadRequestException(UNKNOWN_TASKS);
@@ -164,7 +198,7 @@ export class TasksService {
         if (!statusChanged && previous.position === position) continue;
 
         await tx.task.update({
-          where: { id, userId },
+          where: { id },
           data: {
             position,
             status: dto.status,
@@ -180,7 +214,7 @@ export class TasksService {
     });
 
     const tasks = await this.prisma.task.findMany({
-      where: { userId, id: { in: dto.taskIds } },
+      where: { id: { in: dto.taskIds } },
       orderBy: { position: 'asc' },
       include: taskInclude,
     });
@@ -188,7 +222,7 @@ export class TasksService {
   }
 
   private buildWhere(userId: string, query: TaskQueryDto): Prisma.TaskWhereInput {
-    const conditions: Prisma.TaskWhereInput[] = [{ userId }];
+    const conditions: Prisma.TaskWhereInput[] = [visibleTasks(userId)];
 
     if (query.projectId) conditions.push({ projectId: query.projectId });
     else if (query.withoutProject) conditions.push({ projectId: null });
@@ -208,7 +242,10 @@ export class TasksService {
     return { AND: conditions };
   }
 
-  /** Position en bas d'une colonne (même utilisateur, même projet, même statut). */
+  /**
+   * Position en bas d'une colonne. Dans un projet, la colonne est commune à toute l'équipe ;
+   * sans projet, elle est propre à l'utilisateur.
+   */
   private async nextPosition(
     tx: Tx,
     userId: string,
@@ -216,7 +253,7 @@ export class TasksService {
     status: TaskStatus,
   ): Promise<number> {
     const { _max } = await tx.task.aggregate({
-      where: { userId, projectId, status },
+      where: projectId ? { projectId, status } : { userId, projectId: null, status },
       _max: { position: true },
     });
     return _max.position === null ? 0 : _max.position + 1;

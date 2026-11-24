@@ -96,7 +96,7 @@ export class GoalsService {
   }
 
   async create(userId: string, dto: CreateGoalDto): Promise<GoalResponseDto> {
-    await this.projects.assertAllOwned(userId, dto.projectIds ?? []);
+    await this.projects.assertAllVisible(userId, dto.projectIds ?? []);
 
     const goal = await this.prisma.goal.create({
       data: {
@@ -119,7 +119,7 @@ export class GoalsService {
   }
 
   async update(userId: string, id: string, dto: UpdateGoalDto): Promise<GoalResponseDto> {
-    if (dto.projectIds) await this.projects.assertAllOwned(userId, dto.projectIds);
+    if (dto.projectIds) await this.projects.assertAllVisible(userId, dto.projectIds);
     try {
       const goal = await this.prisma.goal.update({
         where: { id, userId },

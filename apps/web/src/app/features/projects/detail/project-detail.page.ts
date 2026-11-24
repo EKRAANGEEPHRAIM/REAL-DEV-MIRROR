@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import type { AccessRole } from '@devmirror/api-client';
 import { NgIcon, provideIcons } from '@ng-icons/core';
 import {
   lucideArrowLeft,
@@ -26,6 +27,7 @@ import { ProjectsApi } from '../data/projects.api';
 import { ProjectDialogs } from '../form/project-dialogs';
 import { projectStatus } from '../project-status';
 import { ProjectTasks, type ProjectTasksView } from './project-tasks';
+import { ProjectTeam } from './project-team';
 import { translate } from '../../../core/i18n/translate';
 
 @Component({
@@ -40,6 +42,7 @@ import { translate } from '../../../core/i18n/translate';
     FormAlert,
     RelativeTimePipe,
     ProjectTasks,
+    ProjectTeam,
   ],
   providers: [
     ProjectDetailStore,
@@ -108,6 +111,17 @@ import { translate } from '../../../core/i18n/translate';
                   {{ t(status().label) }}
                 </span>
               </div>
+              @if (project.role !== 'OWNER') {
+                <p class="text-muted-foreground text-sm">
+                  {{ t('projects.sharedBy', { name: project.owner.name }) }} ·
+                  {{ roleLabel(project.role) }}
+                </p>
+              }
+              @if (project.role === 'VIEWER') {
+                <p class="text-muted-foreground text-sm" role="note">
+                  {{ t('projects.readOnly') }}
+                </p>
+              }
               @if (project.description) {
                 <p class="text-muted-foreground max-w-3xl whitespace-pre-line">
                   {{ project.description }}
@@ -115,14 +129,18 @@ import { translate } from '../../../core/i18n/translate';
               }
             </div>
             <div class="flex shrink-0 gap-2">
-              <button hlmBtn variant="outline" (click)="edit()">
-                <ng-icon name="lucidePencil" aria-hidden="true" />
-                {{ t('common.edit') }}
-              </button>
-              <button hlmBtn variant="outline" class="text-destructive" (click)="remove()">
-                <ng-icon name="lucideTrash2" aria-hidden="true" />
-                {{ t('common.delete') }}
-              </button>
+              @if (project.role !== 'VIEWER') {
+                <button hlmBtn variant="outline" (click)="edit()">
+                  <ng-icon name="lucidePencil" aria-hidden="true" />
+                  {{ t('common.edit') }}
+                </button>
+              }
+              @if (project.role === 'OWNER') {
+                <button hlmBtn variant="outline" class="text-destructive" (click)="remove()">
+                  <ng-icon name="lucideTrash2" aria-hidden="true" />
+                  {{ t('common.delete') }}
+                </button>
+              }
             </div>
           </header>
 
@@ -132,82 +150,87 @@ import { translate } from '../../../core/i18n/translate';
               class="lg:col-span-2"
               [class.lg:col-span-3]="tasksView() === 'board'"
               [projectId]="project.id"
+              [readOnly]="project.role === 'VIEWER'"
               [view]="tasksView()"
               (viewChange)="setTasksView($event)"
             />
 
-            <aside hlmCard aria-labelledby="info-title">
-              <div hlmCardHeader>
-                <h2 hlmCardTitle id="info-title">{{ t('projects.detail.info') }}</h2>
-              </div>
-              <dl hlmCardContent class="flex flex-col gap-4 text-sm">
-                @if (project.repoUrl || project.demoUrl) {
+            <div class="flex min-w-0 flex-col gap-4">
+              <aside hlmCard aria-labelledby="info-title">
+                <div hlmCardHeader>
+                  <h2 hlmCardTitle id="info-title">{{ t('projects.detail.info') }}</h2>
+                </div>
+                <dl hlmCardContent class="flex flex-col gap-4 text-sm">
+                  @if (project.repoUrl || project.demoUrl) {
+                    <div class="flex flex-col gap-1">
+                      <dt class="text-muted-foreground">{{ t('projects.detail.links') }}</dt>
+                      <dd class="flex flex-col gap-1">
+                        @if (project.repoUrl) {
+                          <a
+                            [href]="project.repoUrl"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            class="flex items-center gap-1.5 hover:underline"
+                          >
+                            <ng-icon name="lucideGithub" aria-hidden="true" />
+                            {{ t('projects.detail.repo') }}
+                            <span class="sr-only">{{ t('common.newTab') }}</span>
+                          </a>
+                        }
+                        @if (project.demoUrl) {
+                          <a
+                            [href]="project.demoUrl"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            class="flex items-center gap-1.5 hover:underline"
+                          >
+                            <ng-icon name="lucideExternalLink" aria-hidden="true" />
+                            {{ t('projects.detail.demo') }}
+                            <span class="sr-only">{{ t('common.newTab') }}</span>
+                          </a>
+                        }
+                      </dd>
+                    </div>
+                  }
+                  @if (project.techStack.length) {
+                    <div class="flex flex-col gap-1.5">
+                      <dt class="text-muted-foreground">{{ t('projects.form.techStack') }}</dt>
+                      <dd class="flex flex-wrap gap-1.5">
+                        @for (tech of project.techStack; track tech) {
+                          <span hlmBadge variant="secondary">{{ tech }}</span>
+                        }
+                      </dd>
+                    </div>
+                  }
+                  @if (project.tags.length) {
+                    <div class="flex flex-col gap-1.5">
+                      <dt class="text-muted-foreground">{{ t('projects.form.tags') }}</dt>
+                      <dd class="flex flex-wrap gap-1.5">
+                        @for (tag of project.tags; track tag.id) {
+                          <a
+                            hlmBadge
+                            variant="outline"
+                            [routerLink]="['/projects']"
+                            [queryParams]="{ tag: tag.name }"
+                            >#{{ tag.name }}</a
+                          >
+                        }
+                      </dd>
+                    </div>
+                  }
                   <div class="flex flex-col gap-1">
-                    <dt class="text-muted-foreground">{{ t('projects.detail.links') }}</dt>
-                    <dd class="flex flex-col gap-1">
-                      @if (project.repoUrl) {
-                        <a
-                          [href]="project.repoUrl"
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          class="flex items-center gap-1.5 hover:underline"
-                        >
-                          <ng-icon name="lucideGithub" aria-hidden="true" />
-                          {{ t('projects.detail.repo') }}
-                          <span class="sr-only">{{ t('common.newTab') }}</span>
-                        </a>
-                      }
-                      @if (project.demoUrl) {
-                        <a
-                          [href]="project.demoUrl"
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          class="flex items-center gap-1.5 hover:underline"
-                        >
-                          <ng-icon name="lucideExternalLink" aria-hidden="true" />
-                          {{ t('projects.detail.demo') }}
-                          <span class="sr-only">{{ t('common.newTab') }}</span>
-                        </a>
-                      }
-                    </dd>
+                    <dt class="text-muted-foreground">{{ t('projects.detail.createdAt') }}</dt>
+                    <dd>{{ longDate(project.createdAt) }}</dd>
                   </div>
-                }
-                @if (project.techStack.length) {
-                  <div class="flex flex-col gap-1.5">
-                    <dt class="text-muted-foreground">{{ t('projects.form.techStack') }}</dt>
-                    <dd class="flex flex-wrap gap-1.5">
-                      @for (tech of project.techStack; track tech) {
-                        <span hlmBadge variant="secondary">{{ tech }}</span>
-                      }
-                    </dd>
+                  <div class="flex flex-col gap-1">
+                    <dt class="text-muted-foreground">{{ t('projects.detail.updatedAt') }}</dt>
+                    <dd>{{ project.updatedAt | relativeTime }}</dd>
                   </div>
-                }
-                @if (project.tags.length) {
-                  <div class="flex flex-col gap-1.5">
-                    <dt class="text-muted-foreground">{{ t('projects.form.tags') }}</dt>
-                    <dd class="flex flex-wrap gap-1.5">
-                      @for (tag of project.tags; track tag.id) {
-                        <a
-                          hlmBadge
-                          variant="outline"
-                          [routerLink]="['/projects']"
-                          [queryParams]="{ tag: tag.name }"
-                          >#{{ tag.name }}</a
-                        >
-                      }
-                    </dd>
-                  </div>
-                }
-                <div class="flex flex-col gap-1">
-                  <dt class="text-muted-foreground">{{ t('projects.detail.createdAt') }}</dt>
-                  <dd>{{ longDate(project.createdAt) }}</dd>
-                </div>
-                <div class="flex flex-col gap-1">
-                  <dt class="text-muted-foreground">{{ t('projects.detail.updatedAt') }}</dt>
-                  <dd>{{ project.updatedAt | relativeTime }}</dd>
-                </div>
-              </dl>
-            </aside>
+                </dl>
+              </aside>
+
+              <dm-project-team [project]="project" (changed)="refreshProject()" />
+            </div>
           </div>
         }
       }
@@ -228,6 +251,10 @@ export class ProjectDetailPage {
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
 
+  protected roleLabel(role: AccessRole): string {
+    return translate(`projects.roles.${role}`);
+  }
+
   protected longDate(value: string): string {
     return formatDate(value, { dateStyle: 'long' });
   }
@@ -242,6 +269,11 @@ export class ProjectDetailPage {
 
   constructor() {
     this.store.load(this.id);
+  }
+
+  /** Après un changement d'équipe : compteur de membres à jour, sans réafficher le chargement. */
+  protected refreshProject(): void {
+    this.api.get(this.id()).subscribe({ next: (project) => this.store.setProject(project) });
   }
 
   protected setTasksView(view: ProjectTasksView): void {

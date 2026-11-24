@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { ProjectStatus, TaskStatus } from '../../generated/prisma/client.js';
 import { PrismaService } from '../../prisma/prisma.service.js';
+import { visibleProjects } from '../projects/project-access.js';
 import { GOAL_ACTIVE, GOAL_COMPLETED } from '../goals/goals.service.js';
 import { noteExcerpt } from '../notes/note-excerpt.js';
 import type {
@@ -69,8 +70,14 @@ export class StatsService {
       activity,
     ] = await Promise.all([
       this.completedPerWeek(userId, timeZone, weeks[0]),
-      this.prisma.project.groupBy({ by: ['status'], where: { userId }, _count: { _all: true } }),
-      this.prisma.project.count({ where: { userId, status: ProjectStatus.IN_PROGRESS } }),
+      this.prisma.project.groupBy({
+        by: ['status'],
+        where: visibleProjects(userId),
+        _count: { _all: true },
+      }),
+      this.prisma.project.count({
+        where: { AND: [visibleProjects(userId), { status: ProjectStatus.IN_PROGRESS }] },
+      }),
       this.prisma.task.count({ where: { userId, status: notDone } }),
       this.prisma.task.count({ where: { userId, status: notDone, dueDate: { lt: now } } }),
       this.prisma.goal.count({ where: { AND: [{ userId }, GOAL_ACTIVE] } }),

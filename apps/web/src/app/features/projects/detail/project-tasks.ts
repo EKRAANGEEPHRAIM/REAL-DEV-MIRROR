@@ -66,10 +66,12 @@ export type ProjectTasksView = 'list' | 'board';
                 {{ t('tasks.view.board') }}
               </button>
             </div>
-            <button hlmBtn size="sm" (click)="create()">
-              <ng-icon name="lucidePlus" aria-hidden="true" />
-              {{ t('tasks.new') }}
-            </button>
+            @if (!readOnly()) {
+              <button hlmBtn size="sm" (click)="create()">
+                <ng-icon name="lucidePlus" aria-hidden="true" />
+                {{ t('tasks.new') }}
+              </button>
+            }
           </div>
         </div>
 
@@ -107,6 +109,7 @@ export type ProjectTasksView = 'list' | 'board';
         @if (board()) {
           <dm-kanban-board
             [showProject]="false"
+            [readOnly]="readOnly()"
             (opened)="edit($event)"
             (created)="create($event)"
           />
@@ -129,10 +132,12 @@ export type ProjectTasksView = 'list' | 'board';
             <p class="text-muted-foreground text-sm">
               {{ t('projects.detail.emptyTasks') }}
             </p>
-            <button hlmBtn variant="outline" (click)="create()">
-              <ng-icon name="lucidePlus" aria-hidden="true" />
-              {{ t('tasks.add') }}
-            </button>
+            @if (!readOnly()) {
+              <button hlmBtn variant="outline" (click)="create()">
+                <ng-icon name="lucidePlus" aria-hidden="true" />
+                {{ t('tasks.add') }}
+              </button>
+            }
           </div>
         } @else {
           <ul class="flex flex-col gap-2">
@@ -140,7 +145,7 @@ export type ProjectTasksView = 'list' | 'board';
               <li>
                 <dm-task-row
                   [task]="task"
-                  (toggled)="tasks.toggleDone($event)"
+                  (toggled)="readOnly() || tasks.toggleDone($event)"
                   (opened)="edit($event)"
                 />
               </li>
@@ -156,6 +161,8 @@ export class ProjectTasks {
   readonly projectId = input.required<string>();
   readonly view = input<ProjectTasksView>('list');
   readonly viewChange = output<ProjectTasksView>();
+  /** Lecteur d'un projet partagé : il consulte, sans créer ni modifier. */
+  readonly readOnly = input(false);
 
   protected readonly tasks = inject(TasksStore);
   private readonly kanban = inject(KanbanStore);

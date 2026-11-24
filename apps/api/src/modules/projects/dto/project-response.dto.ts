@@ -1,5 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { ProjectStatus } from '../../../generated/prisma/client.js';
+import { ACCESS_ROLES, type AccessRole } from '../project-access.js';
 
 export class ProjectTagDto {
   @ApiProperty({ example: 'clx0tag000001' })
@@ -21,6 +22,18 @@ export class ProjectProgressDto {
 
   @ApiProperty({ example: 42, description: 'Pourcentage arrondi (0 sans tâche)' })
   percent: number;
+}
+
+/** Personne qui a créé le projet (affichée sur les projets partagés). */
+export class ProjectOwnerDto {
+  @ApiProperty({ example: 'clx0usr000001' })
+  id: string;
+
+  @ApiProperty({ example: 'Ada Lovelace' })
+  name: string;
+
+  @ApiProperty({ type: String, nullable: true, example: null })
+  avatarUrl: string | null;
 }
 
 export class ProjectResponseDto {
@@ -57,6 +70,20 @@ export class ProjectResponseDto {
 
   @ApiProperty({ type: ProjectProgressDto })
   progress: ProjectProgressDto;
+
+  @ApiProperty({
+    enum: ACCESS_ROLES,
+    enumName: 'AccessRole',
+    example: 'OWNER',
+    description: 'Rôle de l’utilisateur connecté : OWNER (propriétaire), EDITOR ou VIEWER',
+  })
+  role: AccessRole;
+
+  @ApiProperty({ type: ProjectOwnerDto })
+  owner: ProjectOwnerDto;
+
+  @ApiProperty({ example: 2, description: 'Membres invités (propriétaire non compris)' })
+  memberCount: number;
 
   @ApiProperty({ example: '2026-10-21T09:00:00.000Z' })
   createdAt: Date;

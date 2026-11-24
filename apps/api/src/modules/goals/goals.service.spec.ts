@@ -50,7 +50,7 @@ describe('GoalsService', () => {
     },
     $transaction: vi.fn((queries: Promise<unknown>[]) => Promise.all(queries)),
   };
-  const projects = { assertAllOwned: vi.fn() };
+  const projects = { assertAllVisible: vi.fn() };
   const service = new GoalsService(
     prisma as unknown as PrismaService,
     projects as unknown as ProjectsService,
@@ -142,7 +142,7 @@ describe('GoalsService', () => {
       milestones: ['API', 'Front'],
     });
 
-    expect(projects.assertAllOwned).toHaveBeenCalledWith('user-1', ['p1']);
+    expect(projects.assertAllVisible).toHaveBeenCalledWith('user-1', ['p1']);
     expect(prisma.goal.create.mock.calls[0][0].data).toMatchObject({
       projects: { connect: [{ id: 'p1' }] },
       milestones: {
@@ -157,14 +157,14 @@ describe('GoalsService', () => {
   it('remplace les projets liés seulement si projectIds est fourni', async () => {
     await service.update('user-1', 'g1', { title: 'Nouveau titre' });
     expect(prisma.goal.update.mock.calls[0][0].data).not.toHaveProperty('projects');
-    expect(projects.assertAllOwned).not.toHaveBeenCalled();
+    expect(projects.assertAllVisible).not.toHaveBeenCalled();
 
     await service.update('user-1', 'g1', { projectIds: [] });
     expect(prisma.goal.update.mock.calls[1][0].data.projects).toEqual({ set: [] });
   });
 
   it('refuse un projet étranger sans rien écrire', async () => {
-    projects.assertAllOwned.mockRejectedValueOnce(new BadRequestException());
+    projects.assertAllVisible.mockRejectedValueOnce(new BadRequestException());
 
     await expect(
       service.create('user-1', { title: 'X', projectIds: ['p-autre'] }),

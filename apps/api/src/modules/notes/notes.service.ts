@@ -100,7 +100,7 @@ export class NotesService {
   }
 
   async create(userId: string, dto: CreateNoteDto): Promise<NoteResponseDto> {
-    if (dto.projectId) await this.projects.assertOwned(userId, dto.projectId);
+    if (dto.projectId) await this.projects.assertVisible(userId, dto.projectId);
     await this.tags.assertOwned(userId, dto.tagIds ?? []);
 
     const note = await this.prisma.$transaction(async (tx) => {
@@ -124,7 +124,7 @@ export class NotesService {
   }
 
   async update(userId: string, id: string, dto: UpdateNoteDto): Promise<NoteResponseDto> {
-    if (dto.projectId) await this.projects.assertOwned(userId, dto.projectId);
+    if (dto.projectId) await this.projects.assertVisible(userId, dto.projectId);
     if (dto.tagIds) await this.tags.assertOwned(userId, dto.tagIds);
 
     try {

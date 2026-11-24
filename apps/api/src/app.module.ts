@@ -10,6 +10,7 @@ import { AuthModule } from './modules/auth/auth.module.js';
 import { GoalsModule } from './modules/goals/goals.module.js';
 import { HealthModule } from './modules/health/health.module.js';
 import { MailModule } from './modules/mail/mail.module.js';
+import { MembersModule } from './modules/members/members.module.js';
 import { NotesModule } from './modules/notes/notes.module.js';
 import { ProjectsModule } from './modules/projects/projects.module.js';
 import { SearchModule } from './modules/search/search.module.js';
@@ -43,6 +44,7 @@ import { PrismaModule } from './prisma/prisma.module.js';
     HealthModule,
     AuthModule,
     ProjectsModule,
+    MembersModule,
     TagsModule,
     TasksModule,
     GoalsModule,

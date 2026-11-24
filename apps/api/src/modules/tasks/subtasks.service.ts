@@ -1,5 +1,12 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service.js';
+import { editableTasks, visibleTasks } from '../projects/project-access.js';
+import { READ_ONLY_PROJECT } from '../projects/projects.service.js';
 import type { CreateSubtaskDto, UpdateSubtaskDto } from './dto/subtask.dto.js';
 import type { SubtaskDto } from './dto/task-response.dto.js';
 import { TASK_NOT_FOUND } from './tasks.service.js';
@@ -9,13 +16,13 @@ export const MAX_SUBTASKS_PER_TASK = 50;
 
 const subtaskSelect = { id: true, title: true, done: true, position: true } as const;
 
-/** Checklist d'une tâche ; l'appartenance est vérifiée à travers la tâche parente. */
+/** Checklist d'une tâche ; les droits sont ceux de la tâche parente (et donc de son projet). */
 @Injectable()
 export class SubtasksService {
   constructor(private readonly prisma: PrismaService) {}
 
   async create(userId: string, taskId: string, dto: CreateSubtaskDto): Promise<SubtaskDto> {
-    await this.assertTaskOwned(userId, taskId);
+    await this.assertTaskEditable(userId, taskId);
 
     const [count, last] = await Promise.all([
       this.prisma.subtask.count({ where: { taskId } }),
@@ -54,14 +61,21 @@ export class SubtasksService {
     await this.prisma.subtask.delete({ where: { id } });
   }
 
-  private async assertTaskOwned(userId: string, taskId: string): Promise<void> {
-    const owned = await this.prisma.task.count({ where: { id: taskId, userId } });
-    if (owned === 0) throw new NotFoundException(TASK_NOT_FOUND);
+  /** Invisible : 404 ; visible en lecture seule : 403. */
+  private async assertTaskEditable(userId: string, taskId: string): Promise<void> {
+    const [editable, visible] = await this.prisma.$transaction([
+      this.prisma.task.count({ where: { AND: [{ id: taskId }, editableTasks(userId)] } }),
+      this.prisma.task.count({ where: { AND: [{ id: taskId }, visibleTasks(userId)] } }),
+    ]);
+    if (editable > 0) return;
+    if (visible > 0) throw new ForbiddenException(READ_ONLY_PROJECT);
+    throw new NotFoundException(TASK_NOT_FOUND);
   }
 
-  /** La sous-tâche doit appartenir à cette tâche, elle-même à l'utilisateur. */
+  /** La sous-tâche doit appartenir à cette tâche, que l'utilisateur peut modifier. */
   private async assertSubtaskOwned(userId: string, taskId: string, id: string): Promise<void> {
-    const owned = await this.prisma.subtask.count({ where: { id, taskId, task: { userId } } });
-    if (owned === 0) throw new NotFoundException(SUBTASK_NOT_FOUND);
+    await this.assertTaskEditable(userId, taskId);
+    const count = await this.prisma.subtask.count({ where: { id, taskId } });
+    if (count === 0) throw new NotFoundException(SUBTASK_NOT_FOUND);
   }
 }

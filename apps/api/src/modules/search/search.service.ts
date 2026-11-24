@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service.js';
+import { visibleProjects, visibleTasks } from '../projects/project-access.js';
 import { noteExcerpt } from '../notes/note-excerpt.js';
 import { NotesService } from '../notes/notes.service.js';
 import type {
@@ -61,8 +62,10 @@ export class SearchService {
     const contains = { contains: q, mode: 'insensitive' } as const;
     const projects = await this.prisma.project.findMany({
       where: {
-        userId,
-        OR: [{ name: contains }, { description: contains }, { techStack: { has: q } }],
+        AND: [
+          visibleProjects(userId),
+          { OR: [{ name: contains }, { description: contains }, { techStack: { has: q } }] },
+        ],
       },
       select: { id: true, name: true, color: true, status: true, updatedAt: true },
       orderBy: { updatedAt: 'desc' },
@@ -79,7 +82,9 @@ export class SearchService {
   private async searchTasks(userId: string, q: string, limit: number): Promise<TaskHitDto[]> {
     const contains = { contains: q, mode: 'insensitive' } as const;
     const tasks = await this.prisma.task.findMany({
-      where: { userId, OR: [{ title: contains }, { description: contains }] },
+      where: {
+        AND: [visibleTasks(userId), { OR: [{ title: contains }, { description: contains }] }],
+      },
       select: {
         id: true,
         title: true,
