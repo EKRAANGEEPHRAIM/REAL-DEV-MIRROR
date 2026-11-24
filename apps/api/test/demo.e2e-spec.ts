@@ -10,6 +10,7 @@ import { MailService } from './../src/modules/mail/mail.service.js';
 import { AvatarStorage } from './../src/modules/users/avatar-storage.js';
 import { PrismaService } from './../src/prisma/prisma.service.js';
 import { seedDemoAccount } from './../src/seed/demo-seed.js';
+import { DEMO_TEAM_DOMAIN } from './../src/seed/demo-team.js';
 
 // Seule suite à utiliser DEMO_EMAIL : le seed supprime puis recrée ce compte.
 const PASSWORD = 'DemoE2e2026';
@@ -48,7 +49,9 @@ describe('Compte de démo (e2e)', () => {
   });
 
   afterAll(async () => {
-    await prisma.user.deleteMany({ where: { email: DEMO_EMAIL } });
+    await prisma.user.deleteMany({
+      where: { OR: [{ email: DEMO_EMAIL }, { email: { endsWith: `@${DEMO_TEAM_DOMAIN}` } }] },
+    });
     await app.close();
   });
 
@@ -58,7 +61,8 @@ describe('Compte de démo (e2e)', () => {
 
     const { body: overview } = await get('/api/v1/stats/overview?tz=Europe/Paris').expect(200);
     expect(overview.indicators).toMatchObject({
-      activeProjects: 3,
+      // Ses 3 projets en cours, plus le design system partagé par Awa
+      activeProjects: 4,
       overdueTasks: 2,
       completedGoals: 1,
       activeGoals: 2,
@@ -80,9 +84,34 @@ describe('Compte de démo (e2e)', () => {
     expect((Date.now() - first) / 86_400_000).toBeGreaterThan(80);
 
     const { body: projects } = await get('/api/v1/projects').expect(200);
-    expect(projects.meta.total).toBe(6);
+    expect(projects.meta.total).toBe(7);
     const { body: search } = await get('/api/v1/search?q=refresh').expect(200);
     expect(search.notes.length).toBeGreaterThan(0);
+  });
+
+  it('travaille en équipe : coéquipiers, projet partagé avec elle, invitation en attente', async () => {
+    const { body: projects } = await get('/api/v1/projects?q=Kente').expect(200);
+    expect(projects.data[0]).toMatchObject({ role: 'EDITOR', owner: { name: 'Awa Koné' } });
+
+    const { body: mine } = await get('/api/v1/projects?q=DevMirror').expect(200);
+    const devmirror = mine.data[0];
+    expect(devmirror).toMatchObject({ role: 'OWNER', memberCount: 2 });
+    const { body: team } = await get(`/api/v1/projects/${devmirror.id}/members`).expect(200);
+    expect(team.map((member: { name: string }) => member.name)).toEqual([
+      'Camille Démo',
+      'Awa Koné',
+      'Yann Kouassi',
+    ]);
+    const { body: invitations } = await get(`/api/v1/projects/${devmirror.id}/invitations`).expect(
+      200,
+    );
+    expect(invitations).toHaveLength(1);
+
+    // Les coéquipiers fictifs n'ont pas de mot de passe connu
+    await request(app.getHttpServer())
+      .post('/api/v1/auth/login')
+      .send({ email: `awa.kone@${DEMO_TEAM_DOMAIN}`, password: PASSWORD })
+      .expect(401);
   });
 
   it('rejouer le seed remet le compte à zéro sans dupliquer les données', async () => {
@@ -98,6 +127,9 @@ describe('Compte de démo (e2e)', () => {
     const { body: projects } = await get('/api/v1/projects?q=visiteur').expect(200);
     expect(projects.meta.total).toBe(0);
     expect(await prisma.user.count({ where: { email: DEMO_EMAIL } })).toBe(1);
+    expect(
+      await prisma.user.count({ where: { email: { endsWith: `@${DEMO_TEAM_DOMAIN}` } } }),
+    ).toBe(3);
   }, 120_000); // un seed complet vers une base distante
 
   it('les visiteurs modifient les données, pas le compte', async () => {
