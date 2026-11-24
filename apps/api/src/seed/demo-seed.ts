@@ -1,5 +1,8 @@
-import type { PrismaClient } from '../generated/prisma/client.js';
+import { randomBytes } from 'node:crypto';
+import { generateOpaqueToken, hashOpaqueToken } from '../common/crypto/opaque-token.js';
+import type { Prisma, PrismaClient } from '../generated/prisma/client.js';
 import { buildDemoData, demoActivity } from './demo-data.js';
+import { buildDemoTeam, type DemoTeamTask } from './demo-team.js';
 
 export interface DemoSeedOptions {
   email: string;
@@ -15,6 +18,8 @@ export interface DemoSeedSummary {
   notes: number;
   tags: number;
   activity: number;
+  teammates: number;
+  sharedProjects: number;
 }
 
 type Hasher = { hash(password: string): Promise<string> };
@@ -30,11 +35,17 @@ export async function seedDemoAccount(
   { email, password, now = new Date() }: DemoSeedOptions,
 ): Promise<DemoSeedSummary> {
   const data = buildDemoData(now);
+  const team = buildDemoTeam(now);
   const passwordHash = await passwords.hash(password);
+  // Coéquipiers fictifs : empreinte d'un secret aléatoire jeté, donc aucune connexion possible.
+  const lockedHash = await passwords.hash(randomBytes(32).toString('base64url'));
 
   return prisma.$transaction(
     async (tx) => {
-      await tx.user.deleteMany({ where: { email } });
+      // Comptes de démo et coéquipiers fictifs : leurs données suivent en cascade.
+      await tx.user.deleteMany({
+        where: { email: { in: [email, ...team.teammates.map((teammate) => teammate.email)] } },
+      });
       const user = await tx.user.create({
         data: {
           email,
@@ -144,6 +155,8 @@ export async function seedDemoAccount(
       }));
       await tx.activity.createMany({ data: activity });
 
+      const teammates = await seedTeam(tx, team, { userId, lockedHash, projectIds });
+
       return {
         userId,
         projects: projectIdList.length,
@@ -152,9 +165,109 @@ export async function seedDemoAccount(
         notes: noteIds.length,
         tags: tags.length,
         activity: activity.length,
+        teammates,
+        sharedProjects: 1,
       };
     },
     // Une centaine d'écritures vers une base distante : bien plus que les 15 s par défaut.
     { maxWait: 15_000, timeout: 120_000 },
   );
+}
+
+/**
+ * Équipe fictive : coéquipiers sur les projets de Camille, un projet partagé avec elle,
+ * des tâches écrites par d'autres et une invitation en attente. Renvoie le nombre de coéquipiers.
+ */
+async function seedTeam(
+  tx: Prisma.TransactionClient,
+  team: ReturnType<typeof buildDemoTeam>,
+  context: { userId: string; lockedHash: string; projectIds: Map<string, string> },
+): Promise<number> {
+  const { userId, lockedHash, projectIds } = context;
+  const users = await tx.user.createManyAndReturn({
+    data: team.teammates.map(({ key: _key, ...teammate }) => ({
+      ...teammate,
+      passwordHash: lockedHash,
+      links: {},
+      preferences: {},
+      emailVerified: true,
+    })),
+    select: { id: true, email: true },
+  });
+  const idOf = (key: string) =>
+    key === 'demo'
+      ? userId
+      : users.find((user) => user.email === team.teammates.find((t) => t.key === key)!.email)!.id;
+
+  await tx.projectMember.createMany({
+    data: team.memberships.map(({ project, teammate, role, joinedAt }) => ({
+      projectId: projectIds.get(project)!,
+      userId: idOf(teammate),
+      role,
+      createdAt: joinedAt,
+    })),
+  });
+
+  const taskData = (task: DemoTeamTask, projectId: string, position: number) => ({
+    title: task.title,
+    description: task.description,
+    status: task.status,
+    priority: task.priority,
+    dueDate: task.dueDate,
+    completedAt: task.completedAt,
+    createdAt: task.createdAt,
+    userId: idOf(task.author),
+    projectId,
+    position,
+  });
+
+  // Contributions dans les projets de Camille : en bas de leur colonne
+  await tx.task.createMany({
+    data: team.contributions.map((task, index) =>
+      taskData(task, projectIds.get(task.project)!, 1000 + index),
+    ),
+  });
+
+  const shared = team.sharedProject;
+  const project = await tx.project.create({
+    data: {
+      name: shared.name,
+      description: shared.description,
+      status: 'IN_PROGRESS',
+      techStack: shared.techStack,
+      color: shared.color,
+      createdAt: shared.createdAt,
+      userId: idOf(shared.owner),
+      members: {
+        create: [
+          { userId, role: shared.demoRole },
+          ...shared.members.map(({ teammate, role }) => ({ userId: idOf(teammate), role })),
+        ],
+      },
+    },
+    select: { id: true },
+  });
+  const positions = new Map<string, number>();
+  await tx.task.createMany({
+    data: shared.tasks.map((task) => {
+      const position = positions.get(task.status) ?? 0;
+      positions.set(task.status, position + 1);
+      return taskData(task, project.id, position);
+    }),
+  });
+
+  const invitation = team.pendingInvitation;
+  await tx.projectInvitation.create({
+    data: {
+      projectId: projectIds.get(invitation.project)!,
+      email: invitation.email,
+      role: invitation.role,
+      // Jeton jamais envoyé : l'invitation sert seulement à l'affichage
+      tokenHash: hashOpaqueToken(generateOpaqueToken()),
+      invitedById: userId,
+      createdAt: invitation.createdAt,
+      expiresAt: new Date(invitation.createdAt.getTime() + 7 * 86_400_000),
+    },
+  });
+  return users.length;
 }

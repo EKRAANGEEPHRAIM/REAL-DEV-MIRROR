@@ -45,7 +45,8 @@ async function main(): Promise<void> {
     console.log(
       `Compte ${DEMO_EMAIL} recréé en ${((Date.now() - started) / 1000).toFixed(1)} s : ` +
         `${summary.projects} projets, ${summary.tasks} tâches, ${summary.goals} objectifs, ` +
-        `${summary.notes} notes, ${summary.tags} tags, ${summary.activity} activités.`,
+        `${summary.notes} notes, ${summary.tags} tags, ${summary.activity} activités, ` +
+        `${summary.teammates} coéquipiers et ${summary.sharedProjects} projet partagé.`,
     );
   } finally {
     await prisma.$disconnect();
