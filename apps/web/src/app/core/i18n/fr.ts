@@ -59,6 +59,46 @@ export const fr = {
     resetPassword: 'Nouveau mot de passe',
     verifyEmail: 'Vérification de l’email',
     legal: 'Mentions légales et confidentialité',
+    home: 'Espace de travail partagé pour développeurs',
+  },
+  landing: {
+    nav: 'Accueil',
+    login: 'Se connecter',
+    tryDemo: 'Essayer la démo',
+    prompt: 'devmirror --equipe',
+    title: 'Un espace de travail pour toute l’équipe.',
+    lead: 'Projets, tâches en Kanban, objectifs et notes au même endroit. Invitez vos coéquipiers, donnez à chacun un rôle, et avancez ensemble sur le même projet.',
+    demoHint: 'Compte de démonstration partagé : rien à installer, rien à créer.',
+    terminal: {
+      label: 'Exemple de sortie du terminal',
+      status: 'devmirror status',
+      projects: '4 projets actifs · 2 objectifs en cours',
+      done: 'Awa Koné a terminé « Maquettes de l’écran Équipe »',
+      viewer: 'Yann Kouassi suit le projet DevMirror en lecture seule',
+      invite: '1 invitation en attente : moussa.traore',
+    },
+    commandsTitle: 'Ce qu’on y fait',
+    commands: {
+      projects: 'Chaque projet avec sa pile technique, son dépôt, ses tâches et sa progression.',
+      tasks:
+        'Une liste ou un tableau Kanban, des priorités, des échéances, et les retards qui ressortent.',
+      team: 'Des coéquipiers en éditeur ou en lecteur, invités par email ; chacun ne voit que ce qu’il a le droit de voir.',
+      goals: 'Des objectifs découpés en étapes, avec leur progression au fil des semaines.',
+      notes:
+        'Des notes en Markdown, avec le code coloré : décisions, recherches, ce qu’on a appris.',
+      search: 'Ctrl+K pour tout retrouver : projets, tâches, notes, objectifs.',
+    },
+    stackTitle: 'Sous le capot',
+    stack: {
+      front: 'Angular 22 sans zone.js, NgRx Signal Store, Spartan UI',
+      back: 'NestJS 12, Prisma, PostgreSQL',
+      quality: 'Vitest, Playwright, audit d’accessibilité automatisé',
+      deploy: 'GitHub Actions, Render, Vercel',
+    },
+    ctaTitle: 'Entrez dans l’équipe de démo',
+    ctaText:
+      'Camille, Awa, Yann et Fatou partagent déjà sept projets. Connectez-vous avec le compte de démonstration : rien à créer.',
+    madeBy: 'Conçu et développé par Ange Ephraïm Ekra',
   },
   layout: {
     skipToContent: 'Aller au contenu',

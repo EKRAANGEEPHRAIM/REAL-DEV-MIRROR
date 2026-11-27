@@ -12,6 +12,7 @@ interface AuditedPage {
 }
 
 const PAGES: AuditedPage[] = [
+  { name: 'accueil', path: '/', options: { authenticated: false } },
   { name: 'connexion', path: '/login', options: { authenticated: false } },
   { name: 'inscription', path: '/register', options: { authenticated: false } },
   { name: 'mot-de-passe-oublie', path: '/forgot-password', options: { authenticated: false } },

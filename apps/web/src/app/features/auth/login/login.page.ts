@@ -120,6 +120,8 @@ export class LoginPage implements OnInit {
   protected readonly store = inject(AuthStore);
   /** Page demandée avant la redirection vers la connexion (paramètre ?returnUrl=). */
   readonly returnUrl = input<string | undefined>();
+  /** ?demo=1 (boutons de la page d'accueil) : connexion directe au compte de démo. */
+  readonly demo = input<string | undefined>();
 
   protected readonly form = inject(NonNullableFormBuilder).group({
     email: ['', [Validators.required, Validators.email]],
@@ -128,6 +130,7 @@ export class LoginPage implements OnInit {
 
   ngOnInit(): void {
     this.store.clearError();
+    if (this.demo() === '1') this.tryDemo();
   }
 
   protected showError(control: 'email' | 'password'): boolean {

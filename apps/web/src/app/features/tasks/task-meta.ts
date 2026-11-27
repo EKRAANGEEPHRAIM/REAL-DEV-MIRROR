@@ -36,7 +36,8 @@ export const TASK_PRIORITIES: readonly Option<TaskPriority>[] = [
   {
     value: 'URGENT',
     label: 'tasks.priority.URGENT',
-    tone: 'bg-red-500/15 text-red-700 dark:text-red-300',
+    // red-800 : ≥ 4.5:1 sur le fond rouge pâle posé sur le papier crème du thème clair
+    tone: 'bg-red-500/15 text-red-800 dark:text-red-300',
   },
   {
     value: 'HIGH',

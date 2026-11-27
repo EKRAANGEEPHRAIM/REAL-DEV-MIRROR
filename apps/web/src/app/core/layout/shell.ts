@@ -2,7 +2,7 @@ import { NgTemplateOutlet } from '@angular/common';
 import { ChangeDetectionStrategy, Component, DOCUMENT, inject } from '@angular/core';
 import { RouterLink, RouterOutlet } from '@angular/router';
 import { NgIcon, provideIcons } from '@ng-icons/core';
-import { lucideMenu, lucideScanFace, lucideSearch } from '@ng-icons/lucide';
+import { lucideMenu, lucideSearch } from '@ng-icons/lucide';
 import { HlmButtonImports } from '@spartan-ng/helm/button';
 import { HlmSheetImports } from '@spartan-ng/helm/sheet';
 import { CommandPalette } from '../command-palette/command-palette';
@@ -11,6 +11,7 @@ import { translate } from '../i18n/translate';
 import { ThemePreferenceSync } from '../theme/theme-preference-sync';
 import { ThemeToggle } from '../theme/theme-toggle';
 import { EmailVerificationBanner } from './email-verification-banner';
+import { Logo } from './logo';
 import { InvitationsBanner } from '../invitations/invitations-banner';
 import { MAIN_NAV, SECONDARY_NAV } from './navigation';
 import { SidebarNav } from './sidebar-nav';
@@ -31,8 +32,9 @@ import { UserMenu } from './user-menu';
     UserMenu,
     EmailVerificationBanner,
     InvitationsBanner,
+    Logo,
   ],
-  providers: [provideIcons({ lucideMenu, lucideScanFace, lucideSearch })],
+  providers: [provideIcons({ lucideMenu, lucideSearch })],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { '(document:keydown)': 'onKeydown($event)' },
   template: `
@@ -88,7 +90,7 @@ import { UserMenu } from './user-menu';
             </hlm-sheet-content>
           </hlm-sheet>
 
-          <span class="font-semibold md:hidden">DevMirror</span>
+          <dm-logo class="md:hidden" />
 
           <button
             type="button"
@@ -121,9 +123,8 @@ import { UserMenu } from './user-menu';
     </div>
 
     <ng-template #brand>
-      <a routerLink="/dashboard" class="flex h-14 items-center gap-2 border-b px-5 font-semibold">
-        <ng-icon name="lucideScanFace" class="text-primary text-xl" aria-hidden="true" />
-        DevMirror
+      <a routerLink="/dashboard" class="flex h-14 items-center border-b px-5">
+        <dm-logo />
       </a>
     </ng-template>
   `,
