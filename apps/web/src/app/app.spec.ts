@@ -41,7 +41,7 @@ describe('App', () => {
     expect(TestBed.inject(Router).url).toBe('/dashboard');
   });
 
-  it('« / » sans session mène à la connexion, pas à un layout vide', async () => {
+  it('« / » sans session affiche la page d’accueil publique, pas un layout vide', async () => {
     const fixture = TestBed.createComponent(App);
     const navigation = TestBed.inject(Router).navigateByUrl('/');
     backend
@@ -50,7 +50,28 @@ describe('App', () => {
     await navigation;
     await fixture.whenStable();
 
-    expect(TestBed.inject(Router).url).toBe('/login?returnUrl=%2Fdashboard');
+    const element = fixture.nativeElement as HTMLElement;
+    expect(TestBed.inject(Router).url).toBe('/');
+    expect(element.querySelector('h1')?.textContent).toContain(
+      'Un espace de travail pour toute l’équipe.',
+    );
+    // Les deux accès à la démo connectent directement au compte partagé
+    const demoLinks = Array.from(element.querySelectorAll('a')).filter((a) =>
+      a.getAttribute('href')?.includes('demo=1'),
+    );
+    expect(demoLinks.length).toBe(2);
+  });
+
+  it('une adresse de l’espace connecté sans session mène toujours à la connexion', async () => {
+    const fixture = TestBed.createComponent(App);
+    const navigation = TestBed.inject(Router).navigateByUrl('/projects');
+    backend
+      .expectOne('/api/v1/auth/refresh')
+      .flush(null, { status: 401, statusText: 'Unauthorized' });
+    await navigation;
+    await fixture.whenStable();
+
+    expect(TestBed.inject(Router).url).toBe('/login?returnUrl=%2Fprojects');
   });
 
   it('les pages publiques s’ouvrent sans session', async () => {

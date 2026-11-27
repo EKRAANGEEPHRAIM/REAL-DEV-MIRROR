@@ -1,6 +1,11 @@
 import { inject } from '@angular/core';
 import { toObservable } from '@angular/core/rxjs-interop';
-import { type ActivatedRouteSnapshot, type CanActivateFn, Router } from '@angular/router';
+import {
+  type ActivatedRouteSnapshot,
+  type CanActivateFn,
+  type CanMatchFn,
+  Router,
+} from '@angular/router';
 import { filter, map, type Observable, take } from 'rxjs';
 import { AuthStore, DEFAULT_REDIRECT } from './auth.store';
 
@@ -45,3 +50,10 @@ export const guestGuard: CanActivateFn = () => {
     map((authenticated) => !authenticated || router.parseUrl(DEFAULT_REDIRECT)),
   );
 };
+
+/**
+ * Page d'accueil publique : retenue pour un visiteur sans session. Connecté, la route ne
+ * correspond pas et « / » retombe sur l'espace connecté (redirigé vers le tableau de bord).
+ */
+export const guestMatch: CanMatchFn = () =>
+  isAuthenticatedAfterRestore().pipe(map((authenticated) => !authenticated));

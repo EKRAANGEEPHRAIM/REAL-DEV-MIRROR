@@ -1,11 +1,19 @@
 import { Routes } from '@angular/router';
-import { authGuard, guestGuard } from './core/auth/auth.guards';
+import { authGuard, guestGuard, guestMatch } from './core/auth/auth.guards';
 import { AuthLayout } from './features/auth/auth-layout';
 
 // Ordre important : les deux layouts ont un chemin vide. Le shell vient en premier pour que
 // « / » y soit résolu ; un layout à chemin vide sans enfant correspondant s'afficherait vide.
+// Seule exception, avant lui : la page d'accueil publique, retenue uniquement sans session.
 // title : clé de traduction, traduite par I18nTitleStrategy (« Projets · DevMirror »).
 export const routes: Routes = [
+  {
+    path: '',
+    pathMatch: 'full',
+    title: 'titles.home',
+    canMatch: [guestMatch],
+    loadComponent: () => import('./features/landing/landing.page').then((m) => m.LandingPage),
+  },
   {
     path: '',
     // Chargé après authGuard : menus, panneau mobile et palette restent hors du bundle initial.
